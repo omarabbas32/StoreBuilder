@@ -1,0 +1,22 @@
+.star-rating {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+}
+
+.star-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    line-height: 0;
+    transition: transform var(--transition-base);
+}
+
+.star-button:not(:disabled):hover {
+    transform: scale(1.1);
+}
+
+.star-rating.readonly .star-button {
+    cursor: default;
+}

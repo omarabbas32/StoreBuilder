@@ -1,0 +1,1 @@
+ALTER TABLE components ADD COLUMN IF NOT EXISTS description TEXT;

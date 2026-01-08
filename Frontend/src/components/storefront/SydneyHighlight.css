@@ -1,0 +1,84 @@
+.sydney-highlight {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-16) 0;
+}
+
+.sydney-highlight-image-wrapper {
+    flex: 1;
+}
+
+.sydney-highlight-main-img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    display: block;
+}
+
+.sydney-highlight-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.sydney-highlight-title {
+    font-family: 'Inria Serif', serif;
+    font-size: var(--text-4xl);
+    font-weight: 700;
+}
+
+.sydney-highlight-description {
+    font-size: var(--text-lg);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.sydney-highlight-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: var(--space-8);
+}
+
+.sydney-highlight-link {
+    background: none;
+    border: none;
+    border-bottom: 2px solid;
+    padding: 0;
+    padding-bottom: var(--space-1);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.sydney-highlight-link:hover {
+    opacity: 0.7;
+}
+
+.sydney-highlight-mini-wrapper {
+    width: 120px;
+    height: 120px;
+}
+
+.sydney-highlight-mini-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
+@media (max-width: 768px) {
+    .sydney-highlight {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .sydney-highlight-footer {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-8);
+    }
+}

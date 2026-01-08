@@ -1,0 +1,48 @@
+.sydney-hero {
+    height: 80vh;
+    min-height: 500px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    padding: 0 var(--space-4);
+}
+
+.sydney-hero-content {
+    max-width: 800px;
+}
+
+.sydney-hero-title {
+    font-family: 'Inria Serif', serif;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: var(--space-4);
+}
+
+.sydney-hero-subtitle {
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    font-weight: 400;
+    margin-bottom: var(--space-8);
+    opacity: 0.9;
+}
+
+.sydney-hero-cta {
+    padding: var(--space-4) var(--space-10);
+    border: none;
+    border-radius: var(--radius-full);
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.sydney-hero-cta:hover {
+    transform: scale(1.05);
+}

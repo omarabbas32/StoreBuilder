@@ -1,0 +1,130 @@
+.product-detail-page {
+    padding: var(--space-8) 0;
+}
+
+.back-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-8);
+    transition: color var(--transition-base);
+}
+
+.back-link:hover {
+    color: var(--color-primary);
+}
+
+.product-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    margin-bottom: var(--space-16);
+}
+
+.main-image-placeholder {
+    width: 100%;
+    aspect-ratio: 1;
+    background-color: var(--color-bg-alt);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.main-image-placeholder span {
+    font-size: 100px;
+}
+
+.product-name {
+    font-size: var(--text-4xl);
+    font-weight: 800;
+    margin-bottom: var(--space-4);
+}
+
+.product-price {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-8);
+}
+
+.product-description {
+    margin-bottom: var(--space-8);
+}
+
+.product-description h3 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+}
+
+.product-description p {
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.product-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-8);
+    padding: var(--space-4);
+    background-color: var(--color-bg-alt);
+    border-radius: var(--radius-md);
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.add-to-cart-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+}
+
+.product-reviews-section {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+}
+
+.reviews-header {
+    margin-bottom: var(--space-8);
+}
+
+.reviews-header h2 {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: var(--space-12);
+}
+
+.product-detail-loading,
+.product-detail-error {
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 992px) {
+    .product-main {
+        grid-template-columns: 1fr;
+    }
+
+    .reviews-grid {
+        grid-template-columns: 1fr;
+    }
+}
