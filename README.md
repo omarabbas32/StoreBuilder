@@ -11,11 +11,15 @@ A full-stack, production-ready e-commerce platform with multi-tenant support, ad
 ### Backend (Node.js + Express + PostgreSQL)
 - ✅ **RESTful API** with 50+ endpoints
 - ✅ **Authentication System** (JWT, Email Verification, Password Reset)
-- ✅ **Multi-Tenant Architecture** (Stores, Products, Orders)
+- ✅ **Password Hashing** (bcryptjs implementation)
+- ✅ **JWT Verification Middleware** (Secure route protection)
+- ✅ **Multi-Tenant Architecture** (Store-specific data isolation)
+- ✅ **Subdomain Support** (Automatic storefront routing based on subdomain)
 - ✅ **Admin CMS** (Themes & Components Management)
 - ✅ **File Uploads** (Cloudinary Integration)
 - ✅ **Email Service** (Nodemailer with Gmail SMTP)
-- ✅ **Security** (Helmet, CORS, Input Validation)
+- ✅ **Database Migrations** (Custom migration runner for SQL scripts)
+- ✅ **Security** (Helmet, CORS, Input Validation, Rate Limiting placeholder)
 
 ### Frontend (React + Vite + Zustand)
 - ✅ **Admin Dashboard** (Theme/Component CMS, Analytics)
@@ -46,7 +50,7 @@ npm install
 cp .env.example .env
 # Edit .env with your database credentials
 
-# Run migrations (if you have a migrate script)
+# Run migrations
 npm run migrate
 
 # Start development server
@@ -200,14 +204,14 @@ storely/
 
 ## 🛡️ Security Features
 
-- **JWT Authentication** with token refresh
+- **JWT Authentication** with token verification and route protection
 - **Role-Based Access Control** (Admin, Store Owner, Customer)
-- **Input Validation** (Zod schemas)
+- **Input Validation** (Joi/Zod schemas)
 - **XSS Protection** (React escaping + Helmet)
 - **CSRF Protection** (CORS configuration)
-- **Password Hashing** (Placeholder - implement bcrypt)
-- **Email Verification** (Non-blocking)
-- **Rate Limiting** (Placeholder)
+- **Password Hashing** (Secure bcryptjs implementation)
+- **Email Verification** (Token-based verification flow)
+- **Rate Limiting** (Middleware structure ready)
 
 ---
 
@@ -262,16 +266,16 @@ storely/
 ## 🚧 Next Steps for Production
 
 ### High Priority
-1. **Implement bcrypt** for password hashing
-2. **Add JWT token verification** in auth middleware
-3. **Database migrations** - Create migration runner
-4. **Error handling** - Implement global error handler
+1. **Order Processing** - Complete the order fulfillment workflow
+2. **Shopping Cart Persistence** - Save cart items to database for logged-in users
+3. **Advanced Filtering** - Search and filter products by category/price
+4. **Global Error Handling** - Refining error responses across all controllers
 5. **Testing** - Add unit and integration tests
 
 ### Medium Priority
 6. **File upload validation** - Restrict file types and sizes
-7. **Rate limiting** - Implement actual rate limiting
-8. **Logging** - Enhance Winston logging
+7. **Rate limiting** - Implement actual rate limiting (Redis/Express-rate-limit)
+8. **Logging** - Enhance Winston logging for production
 9. **API documentation** - Add Swagger/OpenAPI
 10. **Performance** - Add caching (Redis)
 
@@ -336,5 +340,4 @@ This project demonstrates:
 ---
 
 **Built with ❤️ using modern web technologies**
-#   s t o r l y  
- 
+#   s t o r l y  
