@@ -36,6 +36,7 @@ class AuthController {
             await AuthService.forgotPassword(email);
             res.json({ message: 'If that email exists, a reset link has been sent' });
         } catch (error) {
+            console.error('Error in forgotPassword:', error);
             res.status(500).json({ error: 'Failed to process request' });
         }
     }
@@ -52,6 +53,17 @@ class AuthController {
 
     async logout(req, res) {
         res.json({ message: 'Logged out' });
+    }
+
+
+    async getMe(req,res){
+        try {
+            const user = await AuthService.getMe(req.user.id);
+            res.json(user);
+        } catch (error) {
+            console.error('Error in getMe:', error);
+            res.status(400).json({ error: error.message });
+        }
     }
 }
 
