@@ -2,7 +2,7 @@ const Order = require('../models/Order');
 const db = require('../config/database');
 
 class OrderService {
-    async createOrder(orderData, items) {
+    async createOrder(orderData, items, cartId = null) {
         const client = await db.pool.connect();
         try {
             await client.query('BEGIN');
@@ -46,6 +46,11 @@ class OrderService {
                 await client.query(stockQuery, [item.quantity, item.product_id || item.id]);
             }
 
+            // 4. Clear the cart if cartId is provided
+            if (cartId) {
+                await client.query('DELETE FROM cart_items WHERE cart_id = $1', [cartId]);
+            }
+
             await client.query('COMMIT');
             return order;
         } catch (error) {
@@ -65,6 +70,34 @@ class OrderService {
             ORDER BY o.created_at DESC
         `;
         const { rows } = await db.query(query, [storeId]);
+        return rows;
+    }
+
+    async getCustomerOrders(customerId, storeId = null) {
+        let query;
+        let params;
+
+        if (storeId) {
+            query = `
+                SELECT o.*, 
+                (SELECT json_agg(oi.*) FROM order_items oi WHERE oi.order_id = o.id) as items
+                FROM orders o
+                WHERE o.customer_id = $1 AND o.store_id = $2
+                ORDER BY o.created_at DESC
+            `;
+            params = [customerId, storeId];
+        } else {
+            query = `
+                SELECT o.*, 
+                (SELECT json_agg(oi.*) FROM order_items oi WHERE oi.order_id = o.id) as items
+                FROM orders o
+                WHERE o.customer_id = $1
+                ORDER BY o.created_at DESC
+            `;
+            params = [customerId];
+        }
+
+        const { rows } = await db.query(query, params);
         return rows;
     }
 }
