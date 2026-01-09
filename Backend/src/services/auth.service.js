@@ -71,7 +71,10 @@ class AuthService {
         const user = await User.findByResetToken(token);
         if (!user) throw new Error('Invalid or expired reset token');
 
-        await User.updatePassword(user.id, newPassword);
+
+        // Hash the new password before saving it to DB
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await User.updatePassword(user.id, hashedPassword);
     }
 }
 
