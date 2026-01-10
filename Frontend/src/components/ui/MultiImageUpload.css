@@ -1,0 +1,99 @@
+.multi-image-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.upload-label {
+  font-weight: 500;
+  margin-bottom: var(--space-1);
+  display: block;
+}
+
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.image-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.remove-image-btn:hover {
+  background: rgba(255, 0, 0, 0.7);
+}
+
+.multi-drop-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-secondary);
+}
+
+.multi-drop-zone:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-hover);
+}
+
+.multi-drop-zone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upload-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-muted);
+}
+
+.upload-prompt span {
+  font-size: 0.875rem;
+}
+
+.upload-prompt .small {
+  font-size: 0.75rem;
+}
+
+.upload-error {
+  color: var(--error-color);
+  font-size: 0.875rem;
+  margin-top: var(--space-1);
+}
+
+.file-input {
+  display: none;
+}
