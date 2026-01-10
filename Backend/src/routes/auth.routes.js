@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const AuthController = require('../controllers/auth.controller');
+const validate = require('../middleware/validate.middleware');
+const schemas = require('../utils/schemas');
 
-router.post('/register', AuthController.register);
-router.post('/login', AuthController.login);
+router.post('/register', validate(schemas.register), AuthController.register);
+router.post('/login', validate(schemas.login), AuthController.login);
 router.get('/verify-email', AuthController.verifyEmail);
 router.post('/forgot-password', AuthController.forgotPassword);
 router.post('/reset-password', AuthController.resetPassword);

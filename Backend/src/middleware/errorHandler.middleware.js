@@ -1,13 +1,15 @@
+const { nodeEnv } = require('../config/env');
+const response = require('../utils/response');
+
 module.exports = (err, req, res, next) => {
-    console.error(err.stack);
+    if (nodeEnv !== 'production') {
+        console.error(err.stack);
+    }
 
-    const status = err.status || 500;
-    const message = err.message || 'Internal Server Error';
+    const status = err.statusCode || 500;
+    const message = (nodeEnv === 'production' && status === 500)
+        ? 'Internal Server Error'
+        : err.message || 'Internal Server Error';
 
-    res.status(status).json({
-        error: {
-            message,
-            status
-        }
-    });
+    return response.error(res, message, status, nodeEnv !== 'production' ? { stack: err.stack } : null);
 };

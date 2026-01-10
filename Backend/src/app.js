@@ -5,6 +5,7 @@ const cors = require('cors');
 const routes = require('./routes/index');
 const { port } = require('./config/env');
 const errorHandler = require('./middleware/errorHandler.middleware');
+const tenantMiddleware = require('./middleware/tenant.middleware');
 
 // Create Express app
 const app = express();
@@ -15,6 +16,9 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Global Multi-tenancy Isolation
+app.use(tenantMiddleware);
 
 // Routes
 app.use('/api', routes);

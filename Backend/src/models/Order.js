@@ -3,7 +3,7 @@ const BaseModel = require('./BaseModel');
 
 class Order extends BaseModel {
     constructor() {
-        super('orders');
+        super('orders', ['status', 'shipping_address', 'notes', 'customer_name', 'customer_email', 'customer_phone', 'total_amount']);
     }
 
     async createWithItems(orderData, items) {

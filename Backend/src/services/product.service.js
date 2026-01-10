@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const { NotFoundError } = require('../utils/errors');
 
 class ProductService {
     async createProduct(data) {
@@ -6,7 +7,9 @@ class ProductService {
     }
 
     async getProductById(id) {
-        return await Product.findById(id);
+        const product = await Product.findById(id);
+        if (!product) throw new NotFoundError('Product not found');
+        return product;
     }
 
     async getAllProducts(limit, offset) {

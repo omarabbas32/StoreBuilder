@@ -41,10 +41,18 @@ const ProductManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await productService.createProduct({
+
+    // Prepare data for submission
+    const submissionData = {
       ...formData,
-      store_id: store.id,
-    });
+      price: parseFloat(formData.price) || 0,
+      stock: parseInt(formData.stock, 10) || 0,
+      store_id: store?.id,
+    };
+
+    console.log("Submitting product data:", submissionData);
+
+    const result = await productService.createProduct(submissionData);
     if (result.success) {
       setShowForm(false);
       setFormData({
@@ -55,6 +63,8 @@ const ProductManager = () => {
         images: [],
       });
       loadProducts();
+    } else {
+      alert(result.error || "Failed to create product");
     }
   };
 
@@ -213,9 +223,8 @@ const ProductManager = () => {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`draggable-wrapper ${
-                            snapshot.isDragging ? "dragging" : ""
-                          }`}
+                          className={`draggable-wrapper ${snapshot.isDragging ? "dragging" : ""
+                            }`}
                         >
                           <Card className="product-card">
                             <div

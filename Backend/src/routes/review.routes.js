@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const ReviewController = require('../controllers/review.controller');
+const validate = require('../middleware/validate.middleware');
+const schemas = require('../utils/schemas');
 // const authMiddleware = require('../middleware/auth.middleware'); // Uncomment when creating auth
 // const upload = require('../middleware/upload.middleware'); // Uncomment when creating upload
 
@@ -8,7 +10,7 @@ const ReviewController = require('../controllers/review.controller');
 const authMiddleware = (req, res, next) => next();
 const upload = { array: () => (req, res, next) => next() };
 
-router.post('/', authMiddleware, upload.array('images', 5), ReviewController.create);
+router.post('/', authMiddleware, upload.array('images', 5), validate(schemas.createReview), ReviewController.create);
 router.get('/product/:productId', ReviewController.getProductReviews);
 router.post('/:id/helpful', authMiddleware, ReviewController.markHelpful);
 

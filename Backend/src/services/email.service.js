@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const { mail } = require('../config/env');
 const logger = require('../utils/logger');
+const { AppError } = require('../utils/errors');
 
 class EmailService {
     constructor() {
@@ -32,7 +33,7 @@ class EmailService {
     }
 
     async sendVerificationEmail(user, token) {
-        const url = `http://localhost:3000/api/auth/verify-email?token=${token}`;
+        const url = `${require('../config/env').frontendUrl}/verify-email?token=${token}`;
         const html = `
             <h1>Welcome to Storely!</h1>
             <p>Please verify your email by clicking the link below:</p>
@@ -42,7 +43,7 @@ class EmailService {
     }
 
     async sendPasswordResetEmail(user, token) {
-        const url = `http://localhost:3000/api/auth/reset-password?token=${token}`;
+        const url = `${require('../config/env').frontendUrl}/reset-password?token=${token}`;
         const html = `
             <h1>Password Reset Request</h1>
             <p>You requested a password reset. Click the link below to set a new password:</p>

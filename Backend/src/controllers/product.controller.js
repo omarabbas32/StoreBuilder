@@ -1,8 +1,9 @@
 const ProductService = require('../services/product.service');
 const StoreService = require('../services/store.service');
+const response = require('../utils/response');
 
 class ProductController {
-    async create(req, res) {
+    async create(req, res, next) {
         try {
             const { store_id } = req.body;
             const ownerId = req.user?.id;
@@ -10,88 +11,94 @@ class ProductController {
             // Verify store ownership
             const store = await StoreService.getStoreById(store_id);
             if (!store || store.owner_id !== ownerId) {
-                return res.status(403).json({ error: 'Forbidden: You do not own this store' });
+                return response.error(res, 'Forbidden: You do not own this store', 403);
             }
 
             const product = await ProductService.createProduct(req.body);
-            res.status(201).json(product);
+            return response.success(res, product, 'Product created successfully', 201);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getAll(req, res) {
+    async getAll(req, res, next) {
         try {
-            const { limit, offset, store_id } = req.query;
+            let { limit, offset, store_id } = req.query;
+
+            // Multi-tenancy support: use tenant ID if store_id is not provided in query
+            if (!store_id && req.tenant) {
+                store_id = req.tenant;
+            }
+
             let products;
             if (store_id) {
                 products = await ProductService.getProductsByStore(store_id, limit, offset);
             } else {
                 products = await ProductService.getAllProducts(limit, offset);
             }
-            res.json(products);
+            return response.success(res, products);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getById(req, res) {
+    async getById(req, res, next) {
         try {
             const product = await ProductService.getProductById(req.params.id);
-            if (!product) return res.status(404).json({ error: 'Product not found' });
-            res.json(product);
+            if (!product) return response.error(res, 'Product not found', 404);
+            return response.success(res, product);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async reorder(req, res) {
+    async reorder(req, res, next) {
         try {
             const { productIds } = req.body;
             await ProductService.reorderProducts(productIds);
-            res.json({ success: true });
+            return response.success(res, null, 'Products reordered successfully');
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 
-    async update(req, res) {
+    async update(req, res, next) {
         try {
             const productId = req.params.id;
             const ownerId = req.user?.id;
 
             const product = await ProductService.getProductById(productId);
-            if (!product) return res.status(404).json({ error: 'Product not found' });
+            if (!product) return response.error(res, 'Product not found', 404);
 
             const store = await StoreService.getStoreById(product.store_id);
             if (!store || store.owner_id !== ownerId) {
-                return res.status(403).json({ error: 'Forbidden: You do not own this store' });
+                return response.error(res, 'Forbidden: You do not own this store', 403);
             }
 
             const updatedProduct = await ProductService.updateProduct(productId, req.body);
-            res.json(updatedProduct);
+            return response.success(res, updatedProduct, 'Product updated successfully');
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 
-    async delete(req, res) {
+    async delete(req, res, next) {
         try {
             const productId = req.params.id;
             const ownerId = req.user?.id;
 
             const product = await ProductService.getProductById(productId);
-            if (!product) return res.status(404).json({ error: 'Product not found' });
+            if (!product) return response.error(res, 'Product not found', 404);
 
             const store = await StoreService.getStoreById(product.store_id);
             if (!store || store.owner_id !== ownerId) {
-                return res.status(403).json({ error: 'Forbidden: You do not own this store' });
+                return response.error(res, 'Forbidden: You do not own this store', 403);
             }
 
             await ProductService.deleteProduct(productId);
-            res.status(204).send();
+            return response.success(res, null, 'Product deleted successfully', 200);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 }

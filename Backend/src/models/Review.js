@@ -1,7 +1,16 @@
+const BaseModel = require('./BaseModel');
 const db = require('../config/database');
 
-class Review {
-    static async create(data) {
+class Review extends BaseModel {
+    constructor() {
+        super('product_reviews', [
+            'product_id', 'store_id', 'customer_id', 'order_id',
+            'rating', 'title', 'comment', 'images', 'status',
+            'is_verified_purchase', 'owner_response', 'owner_response_at'
+        ]);
+    }
+
+    async create(data) {
         const {
             product_id, store_id, customer_id, order_id,
             rating, title, comment, images, status, is_verified_purchase
@@ -26,7 +35,7 @@ class Review {
         return rows[0];
     }
 
-    static async findByProductId(productId, limit = 20, offset = 0, status = 'approved') {
+    async findByProductId(productId, limit = 20, offset = 0, status = 'approved') {
         const query = `
       SELECT r.*, u.name as customer_name
       FROM product_reviews r
@@ -40,19 +49,13 @@ class Review {
         return rows;
     }
 
-    static async countByProductId(productId, status = 'approved') {
+    async countByProductId(productId, status = 'approved') {
         const query = `SELECT COUNT(*) FROM product_reviews WHERE product_id = $1 AND status = $2`;
         const { rows } = await db.query(query, [productId, status]);
         return parseInt(rows[0].count);
     }
 
-    static async findById(id) {
-        const query = `SELECT * FROM product_reviews WHERE id = $1`;
-        const { rows } = await db.query(query, [id]);
-        return rows[0];
-    }
-
-    static async updateStatus(id, status) {
+    async updateStatus(id, status) {
         const query = `
       UPDATE product_reviews 
       SET status = $2, updated_at = NOW()
@@ -63,13 +66,7 @@ class Review {
         return rows[0];
     }
 
-    static async delete(id) {
-        const query = `DELETE FROM product_reviews WHERE id = $1 RETURNING id`;
-        const { rows } = await db.query(query, [id]);
-        return rows[0];
-    }
-
-    static async addHelpfulVote(reviewId, customerId) {
+    async addHelpfulVote(reviewId, customerId) {
         const query = `
       INSERT INTO review_helpful_votes (review_id, customer_id)
       VALUES ($1, $2)
@@ -87,4 +84,4 @@ class Review {
     }
 }
 
-module.exports = Review;
+module.exports = new Review();
