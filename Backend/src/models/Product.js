@@ -3,7 +3,7 @@ const db = require('../config/database');
 
 class Product extends BaseModel {
     constructor() {
-        super('products');
+        super('products', ['name', 'description', 'price', 'stock', 'images', 'category_id', 'sort_order']);
     }
 
     async create(data) {
@@ -25,11 +25,20 @@ class Product extends BaseModel {
     }
 
     async reorder(productIds) {
-        const promises = productIds.map((id, index) => {
-            return db.query(`UPDATE products SET sort_order = $1 WHERE id = $2`, [index, id]);
-        });
-        await Promise.all(promises);
-        return true;
+        const client = await db.pool.connect();
+        try {
+            await client.query('BEGIN');
+            for (let i = 0; i < productIds.length; i++) {
+                await client.query(`UPDATE products SET sort_order = $1 WHERE id = $2`, [i, productIds[i]]);
+            }
+            await client.query('COMMIT');
+            return true;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 }
 

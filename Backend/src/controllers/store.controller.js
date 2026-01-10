@@ -1,34 +1,34 @@
 const StoreService = require('../services/store.service');
+const response = require('../utils/response');
 
 class StoreController {
-    async create(req, res) {
+    async create(req, res, next) {
         try {
             const ownerId = req.user?.id;
-            if (!ownerId) return res.status(401).json({ error: 'Unauthorized' });
+            if (!ownerId) return response.error(res, 'Unauthorized', 401);
 
             const storeData = { ...req.body, owner_id: ownerId };
             const store = await StoreService.createStore(storeData);
-            res.status(201).json(store);
+            return response.success(res, store, 'Store created successfully', 201);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getAll(req, res) {
+    async getAll(req, res, next) {
         try {
-            // Filter by owner if authenticated
             const ownerId = req.user?.id;
             if (!ownerId) {
-                return res.status(401).json({ error: 'Unauthorized' });
+                return response.error(res, 'Unauthorized', 401);
             }
             const stores = await StoreService.getStoresByOwner(ownerId);
-            res.json(stores);
+            return response.success(res, stores);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getByIdOrSlug(req, res) {
+    async getByIdOrSlug(req, res, next) {
         try {
             const { id } = req.params;
             const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
@@ -40,14 +40,14 @@ class StoreController {
                 store = await StoreService.getStoreBySlug(id);
             }
 
-            if (!store) return res.status(404).json({ error: 'Store not found' });
-            res.json(store);
+            if (!store) return response.error(res, 'Store not found', 404);
+            return response.success(res, store);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async update(req, res) {
+    async update(req, res, next) {
         try {
             const ownerId = req.user?.id;
             const storeId = req.params.id;
@@ -55,13 +55,13 @@ class StoreController {
             // Verify ownership
             const existingStore = await StoreService.getStoreById(storeId);
             if (!existingStore || existingStore.owner_id !== ownerId) {
-                return res.status(403).json({ error: 'Forbidden: You do not own this store' });
+                return response.error(res, 'Forbidden: You do not own this store', 403);
             }
 
             const store = await StoreService.updateStore(storeId, req.body);
-            res.json(store);
+            return response.success(res, store, 'Store updated successfully');
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 }

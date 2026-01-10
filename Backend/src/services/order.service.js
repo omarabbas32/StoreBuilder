@@ -41,9 +41,13 @@ class OrderService {
                 const stockQuery = `
                     UPDATE products 
                     SET stock = stock - $1 
-                    WHERE id = $2
+                    WHERE id = $2 AND stock >= $1
                 `;
-                await client.query(stockQuery, [item.quantity, item.product_id || item.id]);
+                const { rowCount } = await client.query(stockQuery, [item.quantity, item.product_id || item.id]);
+
+                if (rowCount === 0) {
+                    throw new Error(`Insufficient stock for product ${item.name || item.product_id || item.id}`);
+                }
             }
 
             // 4. Clear the cart if cartId is provided

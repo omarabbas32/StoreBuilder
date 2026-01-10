@@ -3,7 +3,7 @@ const db = require('../config/database');
 
 class Cart extends BaseModel {
     constructor() {
-        super('carts');
+        super('carts', ['customer_id', 'session_id', 'store_id']);
     }
 
     async findBySessionId(sessionId, storeId) {

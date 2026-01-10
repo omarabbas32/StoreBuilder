@@ -3,7 +3,7 @@ const db = require('../config/database');
 
 class Store extends BaseModel {
     constructor() {
-        super('stores');
+        super('stores', ['name', 'slug', 'description', 'settings']);
     }
 
     async create(data) {

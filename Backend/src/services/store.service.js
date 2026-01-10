@@ -1,4 +1,5 @@
 const Store = require('../models/Store');
+const { NotFoundError } = require('../utils/errors');
 
 class StoreService {
     async createStore(data) {
@@ -6,7 +7,9 @@ class StoreService {
     }
 
     async getStoreBySlug(slug) {
-        return await Store.findBySlug(slug);
+        const store = await Store.findBySlug(slug);
+        if (!store) throw new NotFoundError('Store not found');
+        return store;
     }
 
     async getAllStores() {
@@ -18,7 +21,9 @@ class StoreService {
     }
 
     async getStoreById(id) {
-        return await Store.findById(id);
+        const store = await Store.findById(id);
+        if (!store) throw new NotFoundError('Store not found');
+        return store;
     }
 
     async updateStore(id, data) {

@@ -3,7 +3,7 @@ const db = require('../config/database');
 
 class Component extends BaseModel {
     constructor() {
-        super('components');
+        super('components', ['name', 'type', 'content_schema', 'screenshot_url', 'is_active']);
     }
 
     async create(data) {

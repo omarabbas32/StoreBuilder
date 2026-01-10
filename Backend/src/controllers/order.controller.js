@@ -1,19 +1,19 @@
 const OrderService = require('../services/order.service');
 const StoreService = require('../services/store.service');
-const CartService = require('../services/cart.service');
+const response = require('../utils/response');
 
 class OrderController {
-    async create(req, res) {
+    async create(req, res, next) {
         try {
             const { orderData, items, cartId } = req.body;
             const customerId = req.user?.id || null; // Get customer_id from auth if logged in
 
             if (!items || items.length === 0) {
-                return res.status(400).json({ error: 'Order must have items' });
+                return response.error(res, 'Order must have items', 400);
             }
 
             if (!orderData.store_id) {
-                return res.status(400).json({ error: 'Store ID is required' });
+                return response.error(res, 'Store ID is required', 400);
             }
 
             // Enrich orderData with customer_id from auth
@@ -23,14 +23,13 @@ class OrderController {
             };
 
             const order = await OrderService.createOrder(enrichedOrderData, items, cartId);
-            res.status(201).json(order);
+            return response.success(res, order, 'Order created successfully', 201);
         } catch (error) {
-            console.error('Order creation error:', error);
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getByStore(req, res) {
+    async getByStore(req, res, next) {
         try {
             const { storeId } = req.params;
             const ownerId = req.user?.id;
@@ -38,29 +37,29 @@ class OrderController {
             // Verify store ownership
             const store = await StoreService.getStoreById(storeId);
             if (!store || store.owner_id !== ownerId) {
-                return res.status(403).json({ error: 'Forbidden: You do not own this store' });
+                return response.error(res, 'Forbidden: You do not own this store', 403);
             }
 
             const orders = await OrderService.getStoreOrders(storeId);
-            res.json(orders);
+            return response.success(res, orders);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getMyOrders(req, res) {
+    async getMyOrders(req, res, next) {
         try {
             const customerId = req.user?.id;
             const storeId = req.headers['x-store-id'];
 
             if (!customerId) {
-                return res.status(401).json({ error: 'Unauthorized' });
+                return response.error(res, 'Unauthorized', 401);
             }
 
             const orders = await OrderService.getCustomerOrders(customerId, storeId);
-            res.json(orders);
+            return response.success(res, orders);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 }

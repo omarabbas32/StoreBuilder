@@ -1,8 +1,9 @@
 const db = require('../config/database');
 
 class BaseModel {
-    constructor(tableName) {
+    constructor(tableName, allowedFields = []) {
         this.tableName = tableName;
+        this.allowedFields = allowedFields;
     }
 
     async findAll(limit = 20, offset = 0) {
@@ -24,10 +25,22 @@ class BaseModel {
     }
 
     async update(id, data) {
+        // Filter data to only include allowed fields
+        const filteredData = {};
         const keys = Object.keys(data);
-        const setClause = keys.map((key, index) => `"${key}" = $${index + 2}`).join(', ');
-        const values = [id, ...keys.map(key => {
-            const val = data[key];
+
+        keys.forEach(key => {
+            if (this.allowedFields.includes(key)) {
+                filteredData[key] = data[key];
+            }
+        });
+
+        const updateKeys = Object.keys(filteredData);
+        if (updateKeys.length === 0) return null;
+
+        const setClause = updateKeys.map((key, index) => `"${key}" = $${index + 2}`).join(', ');
+        const values = [id, ...updateKeys.map(key => {
+            const val = filteredData[key];
             return (typeof val === 'object' && val !== null) ? JSON.stringify(val) : val;
         })];
 

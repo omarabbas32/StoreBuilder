@@ -4,25 +4,32 @@ const db = require('../config/database');
 class CartService {
     async getOrCreateCart(sessionId, customerId = null, storeId = null) {
         if (!storeId) throw new Error('storeId is required for cart operations');
-        let cart;
+
+        let query;
+        let values;
 
         if (customerId) {
-            cart = await Cart.findByCustomerId(customerId, storeId);
-        } else if (sessionId) {
-            cart = await Cart.findBySessionId(sessionId, storeId);
-        }
-
-        if (!cart) {
-            const query = `
-                INSERT INTO carts (session_id, customer_id, store_id)
-                VALUES ($1, $2, $3)
+            query = `
+                INSERT INTO carts (customer_id, store_id)
+                VALUES ($1, $2)
+                ON CONFLICT (customer_id, store_id) 
+                DO UPDATE SET updated_at = NOW()
                 RETURNING *
             `;
-            const { rows } = await db.query(query, [sessionId, customerId, storeId]);
-            cart = rows[0];
+            values = [customerId, storeId];
+        } else {
+            query = `
+                INSERT INTO carts (session_id, store_id)
+                VALUES ($1, $2)
+                ON CONFLICT (session_id, store_id) 
+                DO UPDATE SET updated_at = NOW()
+                RETURNING *
+            `;
+            values = [sessionId, storeId];
         }
 
-        return cart;
+        const { rows } = await db.query(query, values);
+        return rows[0];
     }
 
     async getCartWithItems(cartId) {

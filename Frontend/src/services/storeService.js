@@ -2,103 +2,39 @@ import apiClient from "./api";
 
 const storeService = {
   async getMyStores() {
-    try {
-      const response = await apiClient.get("/stores");
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Failed to fetch stores",
-      };
-    }
+    return await apiClient.get("/stores");
   },
 
   async getStoreBySlug(slug) {
-    try {
-      const response = await apiClient.get(`/stores/${slug}`);
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Store not found",
-      };
-    }
+    return await apiClient.get(`/stores/${slug}`);
   },
 
   async getStoreById(id) {
-    try {
-      const response = await apiClient.get(`/stores/${id}`);
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Store not found",
-      };
-    }
+    return await apiClient.get(`/stores/${id}`);
   },
 
   async createStore(storeData) {
-    try {
-      const response = await apiClient.post("/stores", storeData);
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Failed to create store",
-      };
-    }
+    return await apiClient.post("/stores", storeData);
   },
 
   async updateStore(id, storeData) {
-    try {
-      const response = await apiClient.put(`/stores/${id}`, storeData);
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Failed to update store",
-      };
-    }
+    return await apiClient.put(`/stores/${id}`, storeData);
   },
 
   async getThemes() {
-    try {
-      const response = await apiClient.get("/themes");
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Failed to fetch themes",
-      };
-    }
+    return await apiClient.get("/themes");
   },
 
   async getComponents() {
-    try {
-      const response = await apiClient.get("/components");
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Failed to fetch components",
-      };
-    }
+    return await apiClient.get("/components");
   },
 
   async uploadImage(formData) {
-    try {
-      const response = await apiClient.post("/media/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || "Failed to upload image",
-      };
-    }
+    return await apiClient.post("/media/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   },
   async uploadMultipleImages(formData) {
     try {

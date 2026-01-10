@@ -3,7 +3,7 @@ const db = require('../config/database');
 
 class User extends BaseModel {
     constructor() {
-        super('users');
+        super('users', ['name', 'email', 'password', 'role', 'is_verified']);
     }
 
     async findByEmail(email) {
