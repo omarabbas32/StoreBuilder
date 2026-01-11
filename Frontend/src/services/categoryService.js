@@ -14,10 +14,11 @@ const categoryService = {
         }
     },
 
-    // Get all categories
-    async getAll() {
+    // Get categories (can filter by store)
+    async getAll(storeId = null) {
         try {
-            const response = await apiClient.get('/categories');
+            const url = storeId ? `/categories?store_id=${storeId}` : '/categories';
+            const response = await apiClient.get(url);
             return { success: true, data: response.data };
         } catch (error) {
             return {

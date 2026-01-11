@@ -9,6 +9,10 @@ class CategoryService {
         return await Category.findAll();
     }
 
+    async getCategoriesByStore(storeId) {
+        return await Category.findByStore(storeId);
+    }
+
     async getCategoryById(id) {
         return await Category.findById(id);
     }

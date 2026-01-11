@@ -23,7 +23,7 @@ class ProductController {
 
     async getAll(req, res, next) {
         try {
-            let { limit, offset, store_id } = req.query;
+            let { limit, offset, store_id, category_id } = req.query;
 
             // Multi-tenancy support: use tenant ID if store_id is not provided in query
             if (!store_id && req.tenant) {
@@ -31,7 +31,10 @@ class ProductController {
             }
 
             let products;
-            if (store_id) {
+            if (category_id) {
+                // Filter by category (and optionally by store)
+                products = await ProductService.getProductsByCategory(category_id, store_id, limit, offset);
+            } else if (store_id) {
                 products = await ProductService.getProductsByStore(store_id, limit, offset);
             } else {
                 products = await ProductService.getAllProducts(limit, offset);

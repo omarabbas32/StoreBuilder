@@ -7,12 +7,14 @@ import orderService from '../services/orderService';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
+import { useStorePath } from '../hooks/useStorePath';
 import './Checkout.css';
 
 const Checkout = () => {
     const navigate = useNavigate();
     const { items, getTotal, clearCart } = useCartStore();
     const { store } = useAuthStore();
+    const storePath = useStorePath();
     const [loading, setLoading] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
     const [orderResult, setOrderResult] = useState(null);
@@ -27,7 +29,7 @@ const Checkout = () => {
 
     useEffect(() => {
         if (items.length === 0 && !orderComplete) {
-            navigate('/demo'); // Or back to store
+            navigate(storePath); // Back to store
         }
     }, [items, orderComplete]);
 
@@ -53,9 +55,8 @@ const Checkout = () => {
         const result = await orderService.createOrder(orderData, items);
 
         if (result.success) {
-            setOrderResult(result.data);
-            setOrderComplete(true);
             clearCart();
+            navigate(`${storePath}/order-success?orderId=${result.data.id}`);
         } else {
             alert('Error: ' + result.error);
         }
@@ -70,7 +71,7 @@ const Checkout = () => {
                     <h1>Order Placed Successfully!</h1>
                     <p className="text-muted">Thank you for your purchase. Your order ID is: {orderResult?.id}</p>
                     <div className="success-actions">
-                        <Button onClick={() => navigate('/demo')}>Continue Shopping</Button>
+                        <Button onClick={() => navigate(storePath)}>Continue Shopping</Button>
                     </div>
                 </Card>
             </div>

@@ -24,6 +24,20 @@ class Product extends BaseModel {
         return rows;
     }
 
+    async findByCategory(categoryId, storeId = null, limit = 50, offset = 0) {
+        let query;
+        let values;
+        if (storeId) {
+            query = `SELECT * FROM products WHERE category_id = $1 AND store_id = $2 ORDER BY sort_order ASC, created_at DESC LIMIT $3 OFFSET $4`;
+            values = [categoryId, storeId, limit, offset];
+        } else {
+            query = `SELECT * FROM products WHERE category_id = $1 ORDER BY sort_order ASC, created_at DESC LIMIT $2 OFFSET $3`;
+            values = [categoryId, limit, offset];
+        }
+        const { rows } = await db.query(query, values);
+        return rows;
+    }
+
     async reorder(productIds) {
         const client = await db.pool.connect();
         try {

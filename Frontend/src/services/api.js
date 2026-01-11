@@ -1,4 +1,5 @@
 import axios from 'axios';
+import useAuthStore from '../store/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -14,8 +15,8 @@ const apiClient = axios.create({
 // Request interceptor - attach JWT token
 apiClient.interceptors.request.use(
     (config) => {
-        // Get token from auth store (will be implemented)
-        const token = localStorage.getItem('auth_token'); // Temporary - will use Zustand
+        // Pull token directly from Zustand state
+        const token = useAuthStore.getState().token;
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -53,7 +54,7 @@ apiClient.interceptors.response.use(
         console.error(`API Error [${status}]:`, message);
 
         if (status === 401) {
-            localStorage.removeItem('auth_token');
+            useAuthStore.getState().clearAuth();
             // We could trigger a global event or store action here to redirect to login
         }
 

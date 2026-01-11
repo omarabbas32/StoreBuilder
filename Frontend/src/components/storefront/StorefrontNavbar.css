@@ -1,15 +1,23 @@
 .storefront-navbar {
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.storefront-navbar.scrolled {
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 1rem 2rem;
+    padding: 0.85rem 2rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -19,43 +27,79 @@
 .navbar-brand {
     display: flex;
     align-items: center;
+    text-decoration: none;
 }
 
 .navbar-logo {
-    height: 40px;
+    height: 32px;
     width: auto;
+    object-fit: contain;
 }
 
 .navbar-name {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--brand-color, #2563eb);
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    background: linear-gradient(135deg, #0f172a 0%, var(--brand-color, #2563eb) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .mobile-menu-toggle {
     display: none;
-    background: none;
-    border: none;
+    background: rgba(241, 245, 249, 0.8);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    border-radius: 8px;
+    padding: 0.5rem;
     cursor: pointer;
-    color: var(--color-text);
+    color: #475569;
+    transition: all 0.2s;
+}
+
+.mobile-menu-toggle:hover {
+    background: #f1f5f9;
+    color: var(--brand-color);
 }
 
 .navbar-menu {
     display: flex;
     align-items: center;
     gap: 2rem;
-    flex: 1;
 }
 
 .nav-link {
     text-decoration: none;
-    color: var(--color-text);
-    font-weight: 500;
-    transition: color var(--transition-base);
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.5rem 0;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--brand-color, #2563eb);
+    transition: width 0.3s ease;
+    border-radius: 2px;
 }
 
 .nav-link:hover {
-    color: var(--brand-color, #2563eb);
+    color: #0f172a;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+.nav-link.mobile-only {
+    display: none;
 }
 
 .navbar-cart {
@@ -63,22 +107,32 @@
 }
 
 .cart-button {
-    background: none;
-    border: none;
+    background: rgba(241, 245, 249, 0.8);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     position: relative;
-    color: var(--color-text);
-    transition: color var(--transition-base);
+    color: #475569;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .cart-button:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
     color: var(--brand-color, #2563eb);
+    border-color: var(--brand-color);
 }
 
 .cart-badge {
     position: absolute;
-    top: -8px;
-    right: -8px;
+    top: -4px;
+    right: -4px;
     background-color: var(--brand-color, #2563eb);
     color: white;
     border-radius: 50%;
@@ -87,28 +141,61 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
+    .navbar-container {
+        padding: 0.75rem 1.5rem;
+    }
+
     .mobile-menu-toggle {
         display: block;
+        order: 3;
+    }
+
+    .navbar-brand {
+        order: 1;
+    }
+
+    .navbar-cart {
+        order: 2;
+        margin-left: auto;
+        margin-right: 1rem;
     }
 
     .navbar-menu {
-        position: absolute;
-        top: 100%;
+        position: fixed;
+        top: 73px;
         left: 0;
         right: 0;
-        background-color: white;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
         flex-direction: column;
-        padding: 1rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        display: none;
+        padding: 2rem;
+        gap: 1.5rem;
+        z-index: 1000;
+        transform: translateX(100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
     }
 
     .navbar-menu.open {
-        display: flex;
+        transform: translateX(0);
+    }
+
+    .nav-link {
+        font-size: 1.25rem;
+        width: 100%;
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .nav-link.mobile-only {
+        display: block;
     }
 }

@@ -7,12 +7,16 @@ import Input from "../components/ui/Input";
 import ImageUpload from "../components/ui/ImageUpload";
 import MultiImageUpload from "../components/ui/MultiImageUpload";
 import productService from "../services/productService";
+import categoryService from "../services/categoryService";
 import useAuthStore from "../store/authStore";
+import { useToast } from "../components/ui/Toast";
 import "./ProductManager.css";
 
 const ProductManager = () => {
   const { store } = useAuthStore();
+  const { success, error: showError } = useToast();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
@@ -22,21 +26,36 @@ const ProductManager = () => {
     price: "",
     stock: "",
     images: [],
+    category_id: "",
   });
 
   useEffect(() => {
     if (store?.id) {
-      loadProducts();
+      loadData();
     }
   }, [store?.id]);
 
-  const loadProducts = async () => {
+  const loadData = async () => {
     setLoading(true);
+    const [productsResult, categoriesResult] = await Promise.all([
+      productService.getProducts(store.id),
+      categoryService.getAll(store.id)
+    ]);
+
+    if (productsResult.success) {
+      setProducts(productsResult.data || []);
+    }
+    if (categoriesResult.success) {
+      setCategories(categoriesResult.data || []);
+    }
+    setLoading(false);
+  };
+
+  const loadProducts = async () => {
     const result = await productService.getProducts(store.id);
     if (result.success) {
       setProducts(result.data || []);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
@@ -61,10 +80,12 @@ const ProductManager = () => {
         price: "",
         stock: "",
         images: [],
+        category_id: "",
       });
+      success("Product created successfully!");
       loadProducts();
     } else {
-      alert(result.error || "Failed to create product");
+      showError(result.error || "Failed to create product");
     }
   };
 
@@ -91,7 +112,9 @@ const ProductManager = () => {
     const result = await productService.reorderProducts(productIds);
     if (result.success) {
       setIsReordering(false);
-      alert("Product order saved successfully!");
+      success("Product order saved successfully!");
+    } else {
+      showError("Failed to save product order");
     }
   };
 
@@ -173,6 +196,27 @@ const ProductManager = () => {
                 }
                 required
               />
+            </div>
+            <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
+              <label className="input-label" style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-color)' }}>Category</label>
+              <select
+                className="category-select"
+                value={formData.category_id}
+                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'white',
+                  fontSize: '1rem'
+                }}
+              >
+                <option value="">Select a category</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
             <div
               className="form-group"
@@ -257,6 +301,11 @@ const ProductManager = () => {
                                 <span className="product-stock">
                                   Stock: {product.stock}
                                 </span>
+                                {product.category_id && (
+                                  <span className="product-category-tag">
+                                    {categories.find(c => c.id === product.category_id)?.name || 'Category'}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div className="product-actions">

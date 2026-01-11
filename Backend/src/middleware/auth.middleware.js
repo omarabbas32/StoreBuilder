@@ -2,6 +2,7 @@ const { verifyToken } = require('../utils/auth.utils');
 const { UnauthorizedError } = require('../utils/errors');
 
 module.exports = (req, res, next) => {
+    console.log(`[DEBUG_AUTH] Path: ${req.originalUrl}, Method: ${req.method}`);
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

@@ -5,7 +5,7 @@ import reviewService from '../../services/reviewService';
 import './ReviewList.css';
 
 const ReviewList = ({ reviews, onHelpfulVote }) => {
-    if (!reviews || reviews.length === 0) {
+    if (!Array.isArray(reviews) || reviews.length === 0) {
         return (
             <div className="review-list-empty">
                 <p>No reviews yet. Be the first to share your thoughts!</p>
@@ -13,7 +13,10 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
         );
     }
 
-    const averageRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+    const validReviews = reviews.filter(r => r && typeof r.rating === 'number');
+    const averageRating = validReviews.length > 0
+        ? validReviews.reduce((acc, r) => acc + r.rating, 0) / validReviews.length
+        : 0;
 
     const handleHelpful = async (reviewId) => {
         const result = await reviewService.markHelpful(reviewId);

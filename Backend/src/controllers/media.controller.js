@@ -8,9 +8,11 @@ class MediaController {
             // The file is already uploaded to Cloudinary by the multer-storage-cloudinary middleware
             // req.file.path contains the secure URL
             res.status(200).json({
-                url: req.file.path,
-                public_id: req.file.filename,
-                success: true
+                success: true,
+                data: {
+                    url: req.file.path,
+                    public_id: req.file.filename
+                }
             });
         } catch (error) {
             console.error('Upload Error:', error);
@@ -29,8 +31,10 @@ class MediaController {
             }));
 
             res.status(200).json({
-                images: uploadedImages,
-                success: true
+                success: true,
+                data: {
+                    images: uploadedImages
+                }
             });
         } catch (error) {
             console.error('Upload Error:', error);

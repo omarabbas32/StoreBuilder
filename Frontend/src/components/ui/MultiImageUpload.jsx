@@ -38,7 +38,7 @@ const MultiImageUpload = ({ value = [], onChange, label, maxImages = 5 }) => {
     try {
       const result = await storeService.uploadMultipleImages(formData);
 
-      if (result.success) {
+      if (result.success && result.data?.images) {
         // According to MediaController, result.data.images is the array
         const newUrls = result.data.images.map((img) => img.url);
         onChange([...value, ...newUrls]);
