@@ -20,6 +20,10 @@ class ProductService {
         return await Product.findByStore(storeId, limit, offset);
     }
 
+    async getProductsByCategory(categoryId, storeId = null, limit, offset) {
+        return await Product.findByCategory(categoryId, storeId, limit, offset);
+    }
+
     async deleteProduct(id) {
         return await Product.delete(id);
     }

@@ -3,6 +3,7 @@ const Store = require('../models/Store');
 
 const restrictTo = (...roles) => {
     return (req, res, next) => {
+        console.log(`[DEBUG_RESTRICT_TO] Path: ${req.originalUrl}, Method: ${req.method}, User Role: ${req.user?.role}, Required Roles: ${roles}`);
         if (!req.user || !roles.includes(req.user.role)) {
             return next(new UnauthorizedError('You do not have permission to perform this action'));
         }

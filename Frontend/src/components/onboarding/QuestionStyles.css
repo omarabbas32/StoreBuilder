@@ -1,0 +1,45 @@
+/* Shared styles for question components */
+
+.question-container {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.question-header {
+    margin-bottom: 2rem;
+}
+
+.question-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+    color: #1f2937;
+}
+
+.question-description {
+    margin: 0;
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+.question-help {
+    margin: 0 0 1.5rem 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.question-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}

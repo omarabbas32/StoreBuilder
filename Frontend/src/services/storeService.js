@@ -30,11 +30,19 @@ const storeService = {
   },
 
   async uploadImage(formData) {
-    return await apiClient.post("/media/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    try {
+      const response = await apiClient.post("/media/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to upload image",
+      };
+    }
   },
   async uploadMultipleImages(formData) {
     try {
@@ -54,6 +62,20 @@ const storeService = {
         error: error.response?.data?.error || "Failed to upload images",
       };
     }
+  },
+
+  async uploadStoreLogo(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    return await apiClient.post('/media/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  async completeOnboarding(storeId, answers) {
+    return await apiClient.post(`/stores/${storeId}/onboarding`, answers);
   },
 };
 

@@ -9,5 +9,6 @@ router.post('/', authMiddleware, validate(schemas.createStore), StoreController.
 router.get('/', authMiddleware, StoreController.getAll);
 router.get('/:id', StoreController.getByIdOrSlug);
 router.put('/:id', authMiddleware, StoreController.update);
+router.post('/:id/onboarding', authMiddleware, StoreController.completeOnboarding);
 
 module.exports = router;

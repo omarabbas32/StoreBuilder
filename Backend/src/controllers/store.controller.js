@@ -1,4 +1,5 @@
 const StoreService = require('../services/store.service');
+const OnboardingService = require('../services/onboarding.service');
 const response = require('../utils/response');
 
 class StoreController {
@@ -60,6 +61,36 @@ class StoreController {
 
             const store = await StoreService.updateStore(storeId, req.body);
             return response.success(res, store, 'Store updated successfully');
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async completeOnboarding(req, res, next) {
+        try {
+            const ownerId = req.user?.id;
+            const storeId = req.params.id;
+            const answers = req.body;
+
+            if (!ownerId) {
+                return response.error(res, 'Unauthorized', 401);
+            }
+
+            // Verify ownership
+            const existingStore = await StoreService.getStoreById(storeId);
+            if (!existingStore || existingStore.owner_id !== ownerId) {
+                return response.error(res, 'Forbidden: You do not own this store', 403);
+            }
+
+            // Generate configuration from answers
+            const config = await OnboardingService.generateStoreConfig(answers);
+
+            // Update store with configuration
+            const updatedStore = await StoreService.updateStore(storeId, {
+                settings: config
+            });
+
+            return response.success(res, updatedStore, 'Onboarding completed successfully');
         } catch (error) {
             next(error);
         }

@@ -1,0 +1,70 @@
+.category-manager {
+    padding: var(--space-4);
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-6);
+}
+
+.category-form {
+    margin-bottom: var(--space-6);
+}
+
+.category-form h3 {
+    margin-bottom: var(--space-4);
+}
+
+.category-form form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-4);
+}
+
+.category-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.category-icon {
+    width: 48px;
+    height: 48px;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.category-info {
+    flex: 1;
+}
+
+.category-info h3 {
+    font-size: var(--text-lg);
+    margin-bottom: 0.25rem;
+}
+
+.category-slug {
+    display: inline-block;
+    font-size: var(--text-xs);
+    background-color: var(--color-bg-alt);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    margin-top: 0.5rem;
+}
+
+.category-actions {
+    display: flex;
+    gap: var(--space-2);
+}

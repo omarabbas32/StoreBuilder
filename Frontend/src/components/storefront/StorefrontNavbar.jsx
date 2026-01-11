@@ -2,27 +2,38 @@ import { ShoppingCart, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
+import { useStorePath } from '../../hooks/useStorePath';
 import './StorefrontNavbar.css';
 
-const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick }) => {
+const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: propLogo }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
     const itemCount = useCartStore(state => state.getItemCount());
+    const storePath = useStorePath();
 
-    const logo = config?.logo;
+    useState(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const logo = propLogo || config?.logo;
     const displayName = config?.storeName || storeName;
     const showCart = config?.showCart !== false;
     const menuItems = config?.menuItems ? JSON.parse(config.menuItems) : [];
 
     return (
-        <nav className="storefront-navbar" style={{ '--brand-color': brandColor }}>
+        <nav className={`storefront-navbar ${scrolled ? 'scrolled' : ''}`} style={{ '--brand-color': brandColor }}>
             <div className="navbar-container">
-                <div className="navbar-brand">
+                <Link to={`${storePath}/`} className="navbar-brand">
                     {logo ? (
                         <img src={logo} alt={displayName} className="navbar-logo" />
                     ) : (
                         <span className="navbar-name">{displayName}</span>
                     )}
-                </div>
+                </Link>
 
                 <button
                     className="mobile-menu-toggle"
@@ -32,12 +43,15 @@ const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick }) => {
                 </button>
 
                 <div className={`navbar-menu ${mobileMenuOpen ? 'open' : ''}`}>
-                    <Link to="/" className="nav-link">Home</Link>
+                    <Link to={`${storePath}/`} className="nav-link">Home</Link>
+                    <Link to={`${storePath}/products`} className="nav-link">Products</Link>
+                    <Link to={`${storePath}/categories`} className="nav-link">Categories</Link>
                     {menuItems.map((item, index) => (
                         <Link key={index} to={item.url || '#'} className="nav-link">
                             {item.label}
                         </Link>
                     ))}
+                    <Link to={`${storePath}/cart`} className="nav-link mobile-only">Cart</Link>
                 </div>
 
                 {showCart && (

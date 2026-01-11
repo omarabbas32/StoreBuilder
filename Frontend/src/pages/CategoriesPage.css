@@ -1,0 +1,221 @@
+.categories-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.categories-loading,
+.categories-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 1rem;
+}
+
+.categories-error h1 {
+    color: #ef4444;
+}
+
+/* Simple Navbar Fallback */
+.simple-navbar {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.simple-navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.simple-navbar .navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--brand-color);
+    text-decoration: none;
+}
+
+.simple-navbar .navbar-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.simple-navbar .navbar-links a {
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.simple-navbar .navbar-links a:hover,
+.simple-navbar .navbar-links a.active {
+    color: var(--brand-color);
+}
+
+/* Main Content */
+.categories-main {
+    flex: 1;
+    padding: 3rem 1rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.page-header .header-icon {
+    margin-bottom: 1rem;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.page-header p {
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+/* Empty State */
+.no-categories {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.no-categories .empty-icon {
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+}
+
+.no-categories p {
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+/* Categories Grid */
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.category-card {
+    background: white;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.category-image {
+    width: 100%;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+}
+
+.category-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.category-card:hover .category-image img {
+    transform: scale(1.05);
+}
+
+.category-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+}
+
+.category-info {
+    padding: 1.5rem;
+}
+
+.category-info h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.category-description {
+    color: #64748b;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.view-products {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: gap 0.2s ease;
+}
+
+.category-card:hover .view-products {
+    gap: 0.75rem;
+}
+
+/* Footer */
+.store-footer {
+    background: #1e293b;
+    color: white;
+    padding: 2rem 0;
+    text-align: center;
+}
+
+.store-footer p {
+    opacity: 0.8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-header h1 {
+        font-size: 2rem;
+    }
+
+    .categories-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+
+    .simple-navbar .navbar-links {
+        gap: 1rem;
+    }
+}

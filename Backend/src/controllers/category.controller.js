@@ -2,7 +2,7 @@ const CategoryService = require('../services/category.service');
 const StoreService = require('../services/store.service');
 
 class CategoryController {
-    async create(req, res) {
+    async create(req, res, next) {
         try {
             const { store_id } = req.body;
             const ownerId = req.user?.id;
@@ -16,41 +16,38 @@ class CategoryController {
             const category = await CategoryService.createCategory(req.body);
             res.status(201).json(category);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getAll(req, res) {
+    async getAll(req, res, next) {
         try {
-            const { store_id } = req.query;
-            const ownerId = req.user?.id;
+            let { store_id } = req.query;
 
-            if (store_id) {
-                // If filtering by store, verify ownership for dashboard usage
-                const store = await StoreService.getStoreById(store_id);
-                if (store && store.owner_id !== ownerId) {
-                    // For public listing, this might be okay, but for the dashboard it should be isolated.
-                    // Assuming this endpoint is used by the dashboard.
-                    return res.status(403).json({ error: 'Forbidden' });
-                }
-                const categories = await CategoryService.getCategoriesByStore(store_id);
-                return res.json(categories);
+            // Multi-tenancy support: use tenant ID if store_id is not provided in query
+            if (!store_id && req.tenant) {
+                store_id = req.tenant;
             }
 
-            const categories = await CategoryService.getAllCategories();
+            let categories;
+            if (store_id) {
+                categories = await CategoryService.getCategoriesByStore(store_id);
+            } else {
+                categories = await CategoryService.getAllCategories();
+            }
             res.json(categories);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async getById(req, res) {
+    async getById(req, res, next) {
         try {
             const category = await CategoryService.getCategoryById(req.params.id);
             if (!category) return res.status(404).json({ error: 'Category not found' });
             res.json(category);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 }

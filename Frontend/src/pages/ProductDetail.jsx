@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import ReviewList from '../components/review/ReviewList';
 import ReviewForm from '../components/review/ReviewForm';
+import { useStorePath } from '../hooks/useStorePath';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -16,6 +17,7 @@ const ProductDetail = () => {
     const [store, setStore] = useState(null);
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
+    const storePath = useStorePath();
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -42,7 +44,8 @@ const ProductDetail = () => {
         }
 
         if (reviewsResult.success) {
-            setReviews(reviewsResult.data || []);
+            // Backend returns { reviews: [], pagination: {} }
+            setReviews(reviewsResult.data?.reviews || reviewsResult.data || []);
         }
 
         setLoading(false);
@@ -60,7 +63,7 @@ const ProductDetail = () => {
     return (
         <div className="product-detail-page">
             <div className="container">
-                <Link to={store ? `/${store.slug}` : '/'} className="back-link">
+                <Link to={`${storePath}/`} className="back-link">
                     <ArrowLeft size={16} />
                     Back to Store
                 </Link>

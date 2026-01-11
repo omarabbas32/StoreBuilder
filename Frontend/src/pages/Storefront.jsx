@@ -3,11 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import storeService from '../services/storeService';
 import productService from '../services/productService';
 import Card from '../components/ui/Card';
-import SydneyHero from '../components/storefront/SydneyHero';
-import SydneyHighlight from '../components/storefront/SydneyHighlight';
-import SydneyAttributeGrid from '../components/storefront/SydneyAttributeGrid';
+import StorefrontHero from '../components/storefront/StorefrontHero';
 import StorefrontNavbar from '../components/storefront/StorefrontNavbar';
 import StorefrontFooter from '../components/storefront/StorefrontFooter';
+import { useStorePath } from '../hooks/useStorePath';
 import StorefrontSidebar from '../components/storefront/StorefrontSidebar';
 import CartDrawer from '../components/storefront/CartDrawer';
 import useCartStore from '../store/cartStore';
@@ -22,6 +21,7 @@ const Storefront = ({ slug: slugProp }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const storePath = useStorePath();
     const addItem = useCartStore(state => state.addItem);
     const initializeSession = useCartStore(state => state.initializeSession);
 
@@ -62,51 +62,73 @@ const Storefront = ({ slug: slugProp }) => {
     if (error) return <div className="storefront-error"><h1>404</h1><p>{error}</p></div>;
 
     const brandColor = store?.settings?.primaryColor || '#2563eb';
-    const componentIds = store?.settings?.componentIds || [];
+    const colorPalette = [brandColor, brandColor, brandColor];
 
-    // Get navbar and footer configs
-    const navbarComponent = availableComponents.find(c => c.name === 'Store Navbar');
-    const footerComponent = availableComponents.find(c => c.name === 'Store Footer');
-    const sidebarComponent = availableComponents.find(c => c.name === 'Category Sidebar');
+    // Standardize: fallback to availableComponents if settings.components is missing or empty
+    const components = (store?.settings?.components && store.settings.components.length > 0)
+        ? store.settings.components
+        : availableComponents;
 
-    const navbarConfig = navbarComponent && componentIds.includes(navbarComponent.id)
-        ? store?.settings?.componentContent?.[navbarComponent.id]
-        : null;
-    const footerConfig = footerComponent && componentIds.includes(footerComponent.id)
-        ? store?.settings?.componentContent?.[footerComponent.id]
-        : null;
-    const sidebarConfig = sidebarComponent && componentIds.includes(sidebarComponent.id)
-        ? store?.settings?.componentContent?.[sidebarComponent.id]
-        : null;
+    // Find specific components for navbar/footer layout wrapping
+    const navbarComp = components.find(c => c.type === 'navbar' || c.type === 'navigation');
+    const footerComp = components.find(c => c.type === 'footer');
+    const sidebarComp = components.find(c => c.type === 'sidebar');
 
-    // Filter and sort components based on store settings order
-    const activeComponents = componentIds
-        .map(id => availableComponents.find(c => c.id === id))
-        .filter(Boolean);
+    const navbarConfig = navbarComp ? (store?.settings?.componentContent?.[navbarComp.id] || {}) : null;
+    const footerConfig = footerComp ? (store?.settings?.componentContent?.[footerComp.id] || {}) : null;
+    const sidebarConfig = sidebarComp ? (store?.settings?.componentContent?.[sidebarComp.id] || {}) : null;
+
+    const activeComponents = components;
 
     const renderComponent = (component) => {
         const content = store?.settings?.componentContent?.[component.id] || {};
 
-        switch (component.name) {
-            case 'Sydney Hero':
-                return <SydneyHero key={component.id} {...content} brandColor={brandColor} />;
-            case 'Sydney Highlight':
-                return <SydneyHighlight key={component.id} {...content} brandColor={brandColor} />;
-            case 'Sydney Attributes':
-                return <SydneyAttributeGrid key={component.id} {...content} />;
-            case 'Sydney Product Grid':
+        // Use component types for stable matching
+        switch (component.type) {
+            case 'hero':
+                return (
+                    <StorefrontHero
+                        key={component.id}
+                        {...content}
+                        brandColor={brandColor}
+                        storeName={store.name}
+                        description={store.description}
+                    />
+                );
+            case 'highlight':
+                return null; // Removing legacy SydneyHighlight
+            case 'attributes':
+                return null; // Removing legacy SydneyAttributeGrid
+            case 'product-grid':
+                const selectedIds = Array.isArray(content.selectedProductIds)
+                    ? content.selectedProductIds.map(String)
+                    : [];
+
+                const productsToShow = selectedIds.length > 0
+                    ? products.filter(p => selectedIds.includes(String(p._id || p.id)))
+                    : products.slice(0, 8);
+
                 return (
                     <section key={component.id} className="products-section container">
-                        <h2>{content.title || 'Our Products'}</h2>
-                        {products.length === 0 ? (
-                            <p className="no-products">No products available in this store yet.</p>
+                        <div className="section-header-modern">
+                            <h2>{content.title || 'Featured Collection'}</h2>
+                            <p>{content.subtitle || 'Hand-picked selections just for you'}</p>
+                        </div>
+                        {productsToShow.length === 0 ? (
+                            <p className="no-products">No products matched the selection.</p>
                         ) : (
                             <div className="products-grid">
-                                {products.slice(0, content.limit || 4).map(product => (
-                                    <Card key={product.id} className="product-card">
-                                        <Link to={`/product/${product.id}`} className="product-link">
-                                            <div className="product-image-placeholder">
-                                                <div className="image-icon">🛍️</div>
+                                {productsToShow.map(product => (
+                                    <Card key={product._id || product.id} className="product-card">
+                                        <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
+                                            <div className="product-image-container">
+                                                {product.images?.[0] ? (
+                                                    <img src={product.images[0]} alt={product.name} className="product-img" />
+                                                ) : (
+                                                    <div className="product-image-placeholder">
+                                                        <div className="image-icon">🛍️</div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="product-info">
                                                 <h3>{product.name}</h3>
@@ -134,85 +156,52 @@ const Storefront = ({ slug: slugProp }) => {
         }
     };
 
+    // Apply CSS variables for color palette
+    const cssVariables = {
+        '--primary-color': brandColor,
+        '--color-palette-primary': colorPalette[0] || brandColor,
+        '--color-palette-secondary': colorPalette[1] || brandColor,
+        '--color-palette-accent': colorPalette[2] || brandColor,
+    };
+
     return (
-        <div className="storefront" style={{ '--primary-color': brandColor }}>
+        <div className="storefront" style={cssVariables}>
             {navbarConfig && (
                 <StorefrontNavbar
                     config={navbarConfig}
                     brandColor={brandColor}
                     storeName={store.name}
+                    logo={store.settings?.logo_url} // Global logo fallback
                     onCartClick={() => setIsCartOpen(true)}
                 />
             )}
 
-            {!componentIds.length ? (
-                // Fallback / Default view if no components selected
-                <>
-                    <header className="store-header">
-                        <div className="container">
-                            <h1 className="store-name">{store.name}</h1>
-                            <p className="store-description">{store.description}</p>
-                        </div>
-                    </header>
-                    <main className="container">
-                        <section className="products-section">
-                            <h2>Our Products</h2>
-                            <div className="products-grid">
-                                {products.map(product => (
-                                    <Card key={product.id} className="product-card">
-                                        <Link to={`/product/${product.id}`} className="product-link">
-                                            <div className="product-image-placeholder">
-                                                <div className="image-icon">🛍️</div>
-                                            </div>
-                                            <div className="product-info">
-                                                <h3>{product.name}</h3>
-                                                <p className="product-price">${product.price}</p>
-                                            </div>
-                                        </Link>
-                                        <button
-                                            className="add-to-cart"
-                                            style={{ backgroundColor: brandColor }}
-                                            onClick={() => {
-                                                addItem(product);
-                                                setIsCartOpen(true);
-                                            }}
-                                        >
-                                            Add to Cart
-                                        </button>
-                                    </Card>
-                                ))}
-                            </div>
-                        </section>
-                    </main>
-                </>
-            ) : (
-                <main className={sidebarConfig ? "storefront-main-with-sidebar container" : "container"}>
-                    {sidebarConfig && (
-                        <StorefrontSidebar
-                            config={sidebarConfig}
-                            brandColor={brandColor}
-                        />
-                    )}
-                    <div className="storefront-content">
-                        {activeComponents
-                            .filter(c => !['navigation', 'footer', 'sidebar'].includes(c.type))
-                            .map(renderComponent)}
-                    </div>
-                </main>
-            )}
-
-            <footer className="store-footer">
-                <div className="container">
-                    <p>&copy; {new Date().getFullYear()} {store.name}. Powered by Storely.</p>
+            <main className={sidebarConfig ? "storefront-main-with-sidebar container" : "container"}>
+                {sidebarConfig && (
+                    <StorefrontSidebar
+                        config={sidebarConfig}
+                        brandColor={brandColor}
+                    />
+                )}
+                <div className="storefront-content">
+                    {activeComponents
+                        .filter(c => !['navigation', 'navbar', 'footer', 'sidebar'].includes(c.type))
+                        .map(renderComponent)}
                 </div>
-            </footer>
+            </main>
 
-            {footerConfig && (
+            {footerConfig !== null ? (
                 <StorefrontFooter
                     config={footerConfig}
                     brandColor={brandColor}
                     storeName={store.name}
                 />
+            ) : (
+                <footer className="store-footer">
+                    <div className="container">
+                        <p>&copy; {new Date().getFullYear()} {store.name}. Powered by Storely.</p>
+                    </div>
+                </footer>
             )}
 
             <CartDrawer
@@ -220,7 +209,7 @@ const Storefront = ({ slug: slugProp }) => {
                 onClose={() => setIsCartOpen(false)}
                 brandColor={brandColor}
             />
-        </div>
+        </div >
     );
 };
 

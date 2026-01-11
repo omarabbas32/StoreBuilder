@@ -1,6 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
+console.log('[DEBUG_INDEX] Loading routes...');
+try {
+    console.log('[DEBUG_INDEX] categoryRoutes path:', require.resolve('./category.routes'));
+} catch (e) {
+    console.log('[DEBUG_INDEX] Failed to resolve categoryRoutes');
+}
+
 const authRoutes = require('./auth.routes');
 const storeRoutes = require('./store.routes');
 const productRoutes = require('./product.routes');

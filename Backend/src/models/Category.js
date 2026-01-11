@@ -7,14 +7,20 @@ class Category extends BaseModel {
     }
 
     async create(data) {
-        const { name, slug, parent_id } = data;
+        const { name, slug, description, store_id, parent_id } = data;
         const query = `
-      INSERT INTO categories (name, slug, parent_id)
-      VALUES ($1, $2, $3)
+      INSERT INTO categories (name, slug, description, store_id, parent_id)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-        const { rows } = await db.query(query, [name, slug, parent_id]);
+        const { rows } = await db.query(query, [name, slug, description, store_id, parent_id]);
         return rows[0];
+    }
+
+    async findByStore(store_id) {
+        const query = `SELECT * FROM categories WHERE store_id = $1 ORDER BY created_at DESC`;
+        const { rows } = await db.query(query, [store_id]);
+        return rows;
     }
 }
 

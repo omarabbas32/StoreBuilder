@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, DollarSign, TrendingUp, Plus, Store as StoreIcon } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -10,6 +11,7 @@ import useAuthStore from '../store/authStore';
 import './UserDashboard.css';
 
 const UserDashboard = () => {
+    const navigate = useNavigate();
     const { store, setStore } = useAuthStore();
     const [stores, setStores] = useState([]);
     const [stats, setStats] = useState({
@@ -18,12 +20,6 @@ const UserDashboard = () => {
         revenue: 0,
     });
     const [loading, setLoading] = useState(true);
-    const [showCreateForm, setShowCreateForm] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '',
-        slug: '',
-        description: '',
-    });
 
     useEffect(() => {
         loadDashboard();
@@ -37,12 +33,20 @@ const UserDashboard = () => {
             setStores(storesResult.data);
 
             // Set the first store as active if none is selected
-            if (!store) {
-                const firstStore = storesResult.data[0];
-                setStore(firstStore);
-                await loadStoreStats(firstStore.id);
-            } else {
-                await loadStoreStats(store.id);
+            const activeStore = store || storesResult.data[0];
+            if (activeStore) {
+                setStore(activeStore);
+
+                // Check if onboarding is incomplete
+                const settings = activeStore.settings || {};
+                if (!settings.onboardingCompleted) {
+                    // Redirect to onboarding
+                    navigate(`/onboarding/${activeStore.id}`);
+                    setLoading(false);
+                    return;
+                }
+
+                await loadStoreStats(activeStore.id);
             }
         }
 
@@ -75,15 +79,7 @@ const UserDashboard = () => {
         });
     };
 
-    const handleCreateStore = async (e) => {
-        e.preventDefault();
-        const result = await storeService.createStore(formData);
-        if (result.success) {
-            setShowCreateForm(false);
-            setFormData({ name: '', slug: '', description: '' });
-            loadDashboard();
-        }
-    };
+
 
     const handleStoreSwitch = async (selectedStore) => {
         setStore(selectedStore);
@@ -100,43 +96,8 @@ const UserDashboard = () => {
                 <Card className="welcome-card">
                     <h1>Welcome to Storely!</h1>
                     <p className="text-muted">You don't have a store yet. Create one to get started.</p>
-                    <Button onClick={() => setShowCreateForm(true)}>Create Your First Store</Button>
+                    <Button onClick={() => navigate('/create-store')}>Create Your First Store</Button>
                 </Card>
-
-                {showCreateForm && (
-                    <Card className="create-store-form">
-                        <h3>Create New Store</h3>
-                        <form onSubmit={handleCreateStore}>
-                            <Input
-                                label="Store Name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                required
-                                fullWidth
-                            />
-                            <Input
-                                label="Store Slug (URL)"
-                                value={formData.slug}
-                                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-                                placeholder="my-awesome-store"
-                                required
-                                fullWidth
-                            />
-                            <Input
-                                label="Description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                fullWidth
-                            />
-                            <div className="form-actions">
-                                <Button type="button" variant="secondary" onClick={() => setShowCreateForm(false)}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit">Create Store</Button>
-                            </div>
-                        </form>
-                    </Card>
-                )}
             </div>
         );
     }
@@ -175,7 +136,7 @@ const UserDashboard = () => {
                     <h1>Store Overview</h1>
                     <p className="text-muted">Manage your online stores</p>
                 </div>
-                <Button onClick={() => setShowCreateForm(true)}>
+                <Button onClick={() => navigate('/create-store')}>
                     <Plus size={20} />
                     Create New Store
                 </Button>
@@ -203,40 +164,7 @@ const UserDashboard = () => {
                 </Card>
             )}
 
-            {showCreateForm && (
-                <Card className="create-store-form">
-                    <h3>Create New Store</h3>
-                    <form onSubmit={handleCreateStore}>
-                        <Input
-                            label="Store Name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            required
-                            fullWidth
-                        />
-                        <Input
-                            label="Store Slug (URL)"
-                            value={formData.slug}
-                            onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-                            placeholder="my-awesome-store"
-                            required
-                            fullWidth
-                        />
-                        <Input
-                            label="Description"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            fullWidth
-                        />
-                        <div className="form-actions">
-                            <Button type="button" variant="secondary" onClick={() => setShowCreateForm(false)}>
-                                Cancel
-                            </Button>
-                            <Button type="submit">Create Store</Button>
-                        </div>
-                    </form>
-                </Card>
-            )}
+
 
             <div className="stats-grid">
                 {statCards.map((stat) => (

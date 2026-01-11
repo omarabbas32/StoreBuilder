@@ -5,6 +5,10 @@ const productService = {
         return await apiClient.get(`/products?store_id=${storeId}`);
     },
 
+    async getProductsByCategory(storeId, categoryId) {
+        return await apiClient.get(`/products?store_id=${storeId}&category_id=${categoryId}`);
+    },
+
     async getProductById(id) {
         return await apiClient.get(`/products/${id}`);
     },
