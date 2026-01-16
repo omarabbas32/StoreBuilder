@@ -22,7 +22,11 @@ const schemas = {
         description: Joi.string().allow('', null),
         settings: Joi.object().default({})
     }),
-
+    updateStore: Joi.object({
+        name: Joi.string().min(2),
+        description: Joi.string().allow('', null),
+        settings: Joi.object()
+    }),
     // Product
     createProduct: Joi.object({
         store_id: Joi.string().uuid().required(),

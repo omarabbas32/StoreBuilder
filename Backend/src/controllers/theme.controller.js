@@ -1,30 +1,42 @@
 const ThemeService = require('../services/theme.service');
+const response = require('../utils/response');
 
 class ThemeController {
-    async getAll(req, res) {
+    async getAll(req, res, next) {
         try {
-            const themes = await ThemeService.getAllThemes();
-            res.json(themes);
+            const userId = req.user?.id;
+            const themes = await ThemeService.getAllThemes(userId);
+            return response.success(res, themes);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async adminGetAll(req, res) {
+    async adminGetAll(req, res, next) {
         try {
             const themes = await ThemeService.adminGetAllThemes();
-            res.json(themes);
+            return response.success(res, themes);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async create(req, res) {
+    async create(req, res, next) {
         try {
             const theme = await ThemeService.createTheme(req.body);
-            res.status(201).json(theme);
+            return response.success(res, theme, 'Theme created successfully', 201);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
+        }
+    }
+
+    async createTemplate(req, res, next) {
+        try {
+            const userId = req.user.id;
+            const theme = await ThemeService.createTemplate(userId, req.body);
+            return response.success(res, theme, 'Template saved successfully', 201);
+        } catch (error) {
+            next(error);
         }
     }
 }

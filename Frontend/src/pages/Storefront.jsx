@@ -27,6 +27,21 @@ const Storefront = ({ slug: slugProp }) => {
 
     useEffect(() => {
         initializeSession();
+
+        const handleMessage = (event) => {
+            // Security: In production, you might want to check origin
+            // For now, same-origin is implied or managed by the customizer
+            if (event.data?.type === 'STORE_UPDATE') {
+                console.log('Received live update:', event.data.settings);
+                setStore(prev => ({
+                    ...prev,
+                    settings: event.data.settings
+                }));
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
     }, []);
 
     useEffect(() => {
@@ -62,7 +77,13 @@ const Storefront = ({ slug: slugProp }) => {
     if (error) return <div className="storefront-error"><h1>404</h1><p>{error}</p></div>;
 
     const brandColor = store?.settings?.primaryColor || '#2563eb';
-    const colorPalette = [brandColor, brandColor, brandColor];
+    const colorPalette = store?.settings?.colorPalette || [brandColor, brandColor, brandColor];
+    const typography = store?.settings?.typography || {
+        fontFamily: 'Inter',
+        headingSize: 'medium',
+        bodySize: 'medium',
+        fontWeight: 'normal'
+    };
 
     // Standardize: fallback to availableComponents if settings.components is missing or empty
     const components = (store?.settings?.components && store.settings.components.length > 0)
@@ -95,10 +116,6 @@ const Storefront = ({ slug: slugProp }) => {
                         description={store.description}
                     />
                 );
-            case 'highlight':
-                return null; // Removing legacy SydneyHighlight
-            case 'attributes':
-                return null; // Removing legacy SydneyAttributeGrid
             case 'product-grid':
                 const selectedIds = Array.isArray(content.selectedProductIds)
                     ? content.selectedProductIds.map(String)
@@ -109,7 +126,7 @@ const Storefront = ({ slug: slugProp }) => {
                     : products.slice(0, 8);
 
                 return (
-                    <section key={component.id} className="products-section container">
+                    <section key={component.id} className="products-section container" id={`section-${component.id}`}>
                         <div className="section-header-modern">
                             <h2>{content.title || 'Featured Collection'}</h2>
                             <p>{content.subtitle || 'Hand-picked selections just for you'}</p>
@@ -156,12 +173,33 @@ const Storefront = ({ slug: slugProp }) => {
         }
     };
 
-    // Apply CSS variables for color palette
+    const fontSizeMap = {
+        'small': '0.875rem',
+        'medium': '1rem',
+        'large': '1.25rem',
+        'extra-large': '1.5rem'
+    };
+
+    const headingSizeMap = {
+        'small': '1.5rem',
+        'medium': '2rem',
+        'large': '2.5rem',
+        'extra-large': '3.5rem'
+    };
+
+    // Apply CSS variables for color palette and typography
     const cssVariables = {
         '--primary-color': brandColor,
         '--color-palette-primary': colorPalette[0] || brandColor,
         '--color-palette-secondary': colorPalette[1] || brandColor,
         '--color-palette-accent': colorPalette[2] || brandColor,
+        '--font-family': typography.fontFamily,
+        '--heading-font-family': typography.headingFontFamily || typography.fontFamily,
+        '--font-weight': typography.fontWeight === 'bold' ? '700' : (typography.fontWeight === 'light' ? '300' : '400'),
+        '--base-font-size': fontSizeMap[typography.bodySize] || '1rem',
+        '--heading-font-size': headingSizeMap[typography.headingSize] || '2rem',
+        '--line-height': typography.lineHeight || '1.6',
+        '--letter-spacing': typography.letterSpacing || '0px',
     };
 
     return (
@@ -185,6 +223,7 @@ const Storefront = ({ slug: slugProp }) => {
                 )}
                 <div className="storefront-content">
                     {activeComponents
+                        .filter(c => !c.disabled)
                         .filter(c => !['navigation', 'navbar', 'footer', 'sidebar'].includes(c.type))
                         .map(renderComponent)}
                 </div>

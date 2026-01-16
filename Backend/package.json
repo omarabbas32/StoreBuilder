@@ -26,6 +26,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.12",
     "pg": "^8.16.3",
+    "uuid": "^13.0.0",
     "winston": "^3.19.0"
   }
 }

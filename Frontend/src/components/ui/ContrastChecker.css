@@ -1,0 +1,65 @@
+.contrast-checker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.contrast-data {
+    display: flex;
+    flex-direction: column;
+}
+
+.ratio-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.ratio-label {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.wcag-indicators {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.level-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.level-item.pass {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.level-item.fail {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.status-aaa {
+    border-left: 4px solid #22c55e;
+}
+
+.status-aa {
+    border-left: 4px solid #3b82f6;
+}
+
+.status-fail {
+    border-left: 4px solid #ef4444;
+}

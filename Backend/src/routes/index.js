@@ -21,6 +21,7 @@ const componentRoutes = require('./component.routes');
 const adminRoutes = require('./admin.routes');
 const mediaRoutes = require('./media.routes');
 const cartRoutes = require('./cart.routes');
+const uploadRoutes = require('./upload.routes');
 
 router.use('/auth', authRoutes);
 router.use('/stores', storeRoutes);
@@ -35,5 +36,6 @@ router.use('/components', componentRoutes);
 router.use('/admin', adminRoutes);
 router.use('/media', mediaRoutes);
 router.use('/cart', cartRoutes);
+router.use('/stores/:storeId/uploads', uploadRoutes);
 
 module.exports = router;

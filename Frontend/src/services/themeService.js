@@ -39,6 +39,19 @@ const themeService = {
             };
         }
     },
+
+    // Save current design as template (user)
+    async saveAsTemplate(templateData) {
+        try {
+            const response = await apiClient.post('/themes', templateData);
+            return { success: true, data: response.data };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to save template',
+            };
+        }
+    },
 };
 
 export default themeService;

@@ -1,30 +1,31 @@
 const ComponentService = require('../services/component.service');
+const response = require('../utils/response');
 
 class ComponentController {
-    async getActive(req, res) {
+    async getActive(req, res, next) {
         try {
             const components = await ComponentService.getActiveComponents();
-            res.json(components);
+            return response.success(res, components);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async adminGetAll(req, res) {
+    async adminGetAll(req, res, next) {
         try {
             const components = await ComponentService.adminGetAllComponents();
-            res.json(components);
+            return response.success(res, components);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 
-    async create(req, res) {
+    async create(req, res, next) {
         try {
             const component = await ComponentService.createComponent(req.body);
-            res.status(201).json(component);
+            return response.success(res, component, 'Component created successfully', 201);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            next(error);
         }
     }
 }

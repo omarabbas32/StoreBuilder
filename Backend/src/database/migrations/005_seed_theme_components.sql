@@ -29,7 +29,7 @@ VALUES
 ),
 (
     'Sydney Product Grid', 
-    'product_grid', 
+    'product-grid', 
     '{
         "fields": [
             {"name": "title", "type": "text", "label": "Section Title"},

@@ -8,7 +8,7 @@ const schemas = require('../utils/schemas');
 router.post('/', authMiddleware, validate(schemas.createStore), StoreController.create);
 router.get('/', authMiddleware, StoreController.getAll);
 router.get('/:id', StoreController.getByIdOrSlug);
-router.put('/:id', authMiddleware, StoreController.update);
+router.put('/:id', authMiddleware, validate(schemas.updateStore), StoreController.update);
 router.post('/:id/onboarding', authMiddleware, StoreController.completeOnboarding);
 
 module.exports = router;

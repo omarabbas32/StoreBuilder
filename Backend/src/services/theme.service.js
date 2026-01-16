@@ -1,8 +1,8 @@
 const Theme = require('../models/Theme');
 
 class ThemeService {
-    async getAllThemes() {
-        return Theme.findActive();
+    async getAllThemes(userId = null) {
+        return Theme.findActive(userId);
     }
 
     async adminGetAllThemes() {
@@ -11,6 +11,14 @@ class ThemeService {
 
     async createTheme(data) {
         return Theme.create(data);
+    }
+
+    async createTemplate(userId, data) {
+        return Theme.create({
+            ...data,
+            user_id: userId,
+            is_active: true
+        });
     }
 
     async updateTheme(id, data) {

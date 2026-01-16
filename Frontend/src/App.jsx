@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -58,6 +59,7 @@ function App() {
                     <Route path="/order-success" element={<OrderSuccessPage slug={subdomain} />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+                <Toaster position="top-right" />
             </BrowserRouter>
         );
     }
@@ -146,6 +148,7 @@ function App() {
                 <Route path="/:slug/products" element={<ProductsPage />} />
                 <Route path="/product/:productId" element={<ProductDetail />} />
             </Routes>
+            <Toaster position="top-right" />
         </BrowserRouter>
     );
 }

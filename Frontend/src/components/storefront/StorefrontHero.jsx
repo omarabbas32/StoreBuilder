@@ -1,15 +1,49 @@
 import React from 'react';
 import './StorefrontHero.css';
 
-const StorefrontHero = ({ title, subtitle, brandColor, storeName, description, image, ctaText, ctaLink, layout = 'centered' }) => {
-    return (
-        <section
-            className={`storefront-hero ${image ? 'has-bg' : ''} layout-${layout}`}
-            style={{
-                '--hero-brand-color': brandColor,
-                backgroundImage: image ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${image})` : 'none',
+const StorefrontHero = ({
+    title,
+    subtitle,
+    brandColor,
+    storeName,
+    description,
+    image,
+    ctaText,
+    ctaLink,
+    layout = 'centered',
+    useGradient = false,
+    gradientStart = '#2563eb',
+    gradientEnd = '#7c3aed',
+    gradientType = 'linear',
+    gradientAngle = '135deg'
+}) => {
+    const getBackgroundStyle = () => {
+        if (useGradient) {
+            const gradient = gradientType === 'linear'
+                ? `linear-gradient(${gradientAngle}, ${gradientStart}, ${gradientEnd})`
+                : `radial-gradient(circle, ${gradientStart}, ${gradientEnd})`;
+            return { backgroundImage: gradient };
+        }
+
+        if (image) {
+            return {
+                backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${image})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
+            };
+        }
+
+        return {
+            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+        };
+    };
+
+    return (
+        <section
+            className={`storefront-hero ${image || useGradient ? 'has-bg' : ''} layout-${layout}`}
+            style={{
+                '--hero-brand-color': brandColor,
+                ...getBackgroundStyle()
             }}
         >
             <div className="hero-background">

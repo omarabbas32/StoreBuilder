@@ -22,7 +22,9 @@ const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: pr
     const logo = propLogo || config?.logo;
     const displayName = config?.storeName || storeName;
     const showCart = config?.showCart !== false;
-    const menuItems = config?.menuItems ? JSON.parse(config.menuItems) : [];
+    const menuItems = Array.isArray(config?.menuItems)
+        ? config.menuItems
+        : (config?.menuItems ? JSON.parse(config.menuItems) : []);
 
     return (
         <nav className={`storefront-navbar ${scrolled ? 'scrolled' : ''}`} style={{ '--brand-color': brandColor }}>

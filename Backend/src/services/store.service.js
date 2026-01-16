@@ -27,7 +27,14 @@ class StoreService {
     }
 
     async updateStore(id, data) {
-        // Basic implementation placeholder
+        const existingStore = await Store.findById(id);
+        if (!existingStore) throw new NotFoundError('Store not found');
+
+        if (data.settings && existingStore.settings) {
+            const { deepMerge } = require('../utils/helpers');
+            data.settings = deepMerge(existingStore.settings, data.settings);
+        }
+
         return await Store.update(id, data);
     }
 

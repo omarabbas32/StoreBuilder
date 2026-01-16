@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS themes (
 CREATE TABLE IF NOT EXISTS components (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    type VARCHAR(50) NOT NULL, -- e.g., 'hero', 'footer', 'product_grid'
+    type VARCHAR(50) NOT NULL, -- e.g., 'hero', 'footer', 'product-grid'
     content_schema JSONB DEFAULT '{}', -- Defines fields for this component
     screenshot_url TEXT,
     is_active BOOLEAN DEFAULT true,

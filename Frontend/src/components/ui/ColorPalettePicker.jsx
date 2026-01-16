@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { GripVertical, Plus, X, Check } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import Button from './Button';
+import ContrastChecker from './ContrastChecker';
+import { getHarmonySteps } from '../../utils/contrast';
 import './ColorPalettePicker.css';
 
 const PRESET_COLORS = [
@@ -22,6 +24,7 @@ const ColorPalettePicker = ({
     label = 'Color Palette',
     maxColors = 12,
     allowReorder = true,
+    themes = [] // New prop for global theme presets
 }) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [showAddColor, setShowAddColor] = useState(false);
@@ -56,7 +59,7 @@ const ColorPalettePicker = ({
 
     const handleAddColor = () => {
         if (colors.length >= maxColors) return;
-        
+
         const newColors = [...colors, newColor];
         onChange(newColors);
         setSelectedIndex(newColors.length - 1);
@@ -69,7 +72,7 @@ const ColorPalettePicker = ({
 
         const newColors = colors.filter((_, i) => i !== index);
         onChange(newColors);
-        
+
         // Adjust selected index
         if (selectedIndex >= newColors.length) {
             setSelectedIndex(newColors.length - 1);
@@ -122,9 +125,8 @@ const ColorPalettePicker = ({
                                             <div
                                                 ref={provided.innerRef}
                                                 {...provided.draggableProps}
-                                                className={`color-item-wrapper ${
-                                                    snapshot.isDragging ? 'dragging' : ''
-                                                } ${selectedIndex === index ? 'selected' : ''}`}
+                                                className={`color-item-wrapper ${snapshot.isDragging ? 'dragging' : ''
+                                                    } ${selectedIndex === index ? 'selected' : ''}`}
                                             >
                                                 {allowReorder && (
                                                     <div
@@ -178,6 +180,60 @@ const ColorPalettePicker = ({
                         />
                         <span className="color-hex">{selectedColor}</span>
                     </div>
+
+                    <ContrastChecker color={selectedColor} background="#ffffff" />
+
+                    {/* Harmony Suggestions */}
+                    <div className="harmony-suggestions">
+                        <span className="preset-label">Harmony Suggetions:</span>
+                        <div className="harmony-options">
+                            {['analogous', 'triadic', 'complementary', 'monochromatic'].map(mode => (
+                                <div key={mode} className="harmony-row">
+                                    <span className="harmony-mode-label">{mode}</span>
+                                    <div className="harmony-colors">
+                                        {getHarmonySteps(selectedColor, mode).map((c, i) => (
+                                            <div
+                                                key={i}
+                                                className="harmony-color-swatch"
+                                                style={{ backgroundColor: c }}
+                                                onClick={() => handleUpdateColor(selectedIndex, c)}
+                                                title={`Click to use ${c}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Global Themes */}
+                    {themes.length > 0 && (
+                        <div className="global-themes">
+                            <span className="preset-label">Global Themes:</span>
+                            <div className="theme-presets-grid">
+                                {themes.map((theme, idx) => (
+                                    <button
+                                        key={idx}
+                                        type="button"
+                                        className="theme-preset-btn"
+                                        onClick={() => onChange(theme.colors)}
+                                        title={theme.name}
+                                    >
+                                        <div className="theme-preview">
+                                            {theme.colors.slice(0, 3).map((c, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{ backgroundColor: c }}
+                                                    className="theme-color-strip"
+                                                />
+                                            ))}
+                                        </div>
+                                        <span className="theme-name-small">{theme.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Preset Colors */}
                     <div className="preset-colors">
