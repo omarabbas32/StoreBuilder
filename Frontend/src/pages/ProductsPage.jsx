@@ -16,6 +16,7 @@ const ProductsPage = ({ slug: slugProp }) => {
     const slug = slugProp || slugParam;
     const [store, setStore] = useState(null);
     const [products, setProducts] = useState([]);
+    const [availableComponents, setAvailableComponents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -26,7 +27,7 @@ const ProductsPage = ({ slug: slugProp }) => {
 
     useEffect(() => {
         initializeSession();
-    }, []);
+    }, [initializeSession]);
 
     useEffect(() => {
         loadData();
@@ -34,13 +35,21 @@ const ProductsPage = ({ slug: slugProp }) => {
 
     const loadData = async () => {
         setLoading(true);
-        const storeResult = await storeService.getStoreBySlug(slug);
+        const [storeResult, componentsResult] = await Promise.all([
+            storeService.getStoreBySlug(slug),
+            storeService.getComponents()
+        ]);
+
         if (!storeResult.success) {
             setError(storeResult.error);
             setLoading(false);
             return;
         }
         setStore(storeResult.data);
+
+        if (componentsResult.success) {
+            setAvailableComponents(componentsResult.data || []);
+        }
 
         const productsResult = await productService.getProducts(storeResult.data.id);
         if (productsResult.success) {
@@ -58,12 +67,64 @@ const ProductsPage = ({ slug: slugProp }) => {
     if (error) return <div className="products-page-error"><h1>Error</h1><p>{error}</p></div>;
 
     const brandColor = store?.settings?.colorPalette?.[0] || store?.settings?.primaryColor || '#2563eb';
+    const colorPalette = store?.settings?.colorPalette || [brandColor, brandColor, brandColor];
+    const typography = store?.settings?.typography || {
+        fontFamily: 'Inter',
+        headingSize: 'medium',
+        bodySize: 'medium',
+        fontWeight: 'normal'
+    };
+
+    const components = (store?.settings?.components && store.settings.components.length > 0)
+        ? store.settings.components
+        : availableComponents;
+
+    const navbarComp = components.find(c => c.type === 'navbar' || c.type === 'navigation');
+    const footerComp = components.find(c => c.type === 'footer');
+
+    const navbarConfig = navbarComp
+        ? store?.settings?.componentContent?.[navbarComp.id]
+        : null;
+    const footerConfig = footerComp
+        ? (store?.settings?.componentContent?.[footerComp.id] || {})
+        : null;
+
+    const fontSizeMap = {
+        small: '0.875rem',
+        medium: '1rem',
+        large: '1.25rem',
+        'extra-large': '1.5rem'
+    };
+
+    const headingSizeMap = {
+        small: '1.5rem',
+        medium: '2rem',
+        large: '2.5rem',
+        'extra-large': '3.5rem'
+    };
+
+    const cssVariables = {
+        '--brand-color': brandColor,
+        '--primary-color': brandColor,
+        '--color-palette-primary': colorPalette[0] || brandColor,
+        '--color-palette-secondary': colorPalette[1] || brandColor,
+        '--color-palette-accent': colorPalette[2] || brandColor,
+        '--font-family': typography.fontFamily,
+        '--heading-font-family': typography.headingFontFamily || typography.fontFamily,
+        '--font-weight': typography.fontWeight === 'bold' ? '700' : (typography.fontWeight === 'light' ? '300' : '400'),
+        '--base-font-size': fontSizeMap[typography.bodySize] || '1rem',
+        '--heading-font-size': headingSizeMap[typography.headingSize] || '2rem',
+        '--line-height': typography.lineHeight || '1.6',
+        '--letter-spacing': typography.letterSpacing || '0px'
+    };
 
     return (
-        <div className="products-page" style={{ '--brand-color': brandColor }}>
+        <div className="products-page" style={cssVariables}>
             <StorefrontNavbar
+                config={navbarConfig}
                 brandColor={brandColor}
                 storeName={store.name}
+                logo={store.settings?.logo_url}
                 onCartClick={() => setIsCartOpen(true)}
             />
 
@@ -97,8 +158,8 @@ const ProductsPage = ({ slug: slugProp }) => {
                     ) : (
                         <div className="products-grid">
                             {products.map(product => (
-                                <Card key={product.id} className="product-card">
-                                    <Link to={`${storePath}/product/${product.id}`} className="product-link">
+                                <Card key={product._id || product.id} className="product-card">
+                                    <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
                                         <div className="product-image">
                                             {product.images?.[0] ? (
                                                 <img src={product.images[0]} alt={product.name} />
@@ -129,11 +190,19 @@ const ProductsPage = ({ slug: slugProp }) => {
                 </div>
             </main>
 
-            <footer className="store-footer">
-                <div className="container">
-                    <p>&copy; {new Date().getFullYear()} {store.name}. Powered by Storely.</p>
-                </div>
-            </footer>
+            {footerConfig !== null ? (
+                <StorefrontFooter
+                    config={footerConfig}
+                    brandColor={brandColor}
+                    storeName={store.name}
+                />
+            ) : (
+                <footer className="store-footer">
+                    <div className="container">
+                        <p>&copy; {new Date().getFullYear()} {store.name}. Powered by Storely.</p>
+                    </div>
+                </footer>
+            )}
 
             <CartDrawer
                 isOpen={isCartOpen}

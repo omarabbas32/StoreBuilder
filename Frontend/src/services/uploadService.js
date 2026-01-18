@@ -43,13 +43,13 @@ const uploadService = {
                 },
             });
 
-            if (response.data.success) {
-                toast.success('Image uploaded successfully!');
-                return response.data;
-            } else {
-                toast.error('Upload failed. Please try again.');
-                return { success: false, error: 'Upload failed' };
+            if (!response.success) {
+                toast.error(response.error || 'Upload failed. Please try again.');
+                return response;
             }
+
+            toast.success('Image uploaded successfully!');
+            return response;
         } catch (error) {
             console.error('Upload error:', error);
             toast.error(error.response?.data?.message || 'Failed to upload image');
@@ -64,8 +64,11 @@ const uploadService = {
      */
     async listImages(storeId) {
         try {
+            if (!storeId) {
+                return { success: true, data: [] };
+            }
             const response = await api.get(`/stores/${storeId}/uploads`);
-            return response.data;
+            return response;
         } catch (error) {
             console.error('Error fetching uploads:', error);
             toast.error('Failed to load images');
@@ -83,13 +86,13 @@ const uploadService = {
         try {
             const response = await api.delete(`/stores/${storeId}/uploads/${imageId}`);
 
-            if (response.data.success) {
-                toast.success('Image deleted successfully');
-                return response.data;
-            } else {
-                toast.error('Failed to delete image');
-                return { success: false };
+            if (!response.success) {
+                toast.error(response.error || 'Failed to delete image');
+                return response;
             }
+
+            toast.success('Image deleted successfully');
+            return response;
         } catch (error) {
             console.error('Delete error:', error);
             toast.error(error.response?.data?.message || 'Failed to delete image');

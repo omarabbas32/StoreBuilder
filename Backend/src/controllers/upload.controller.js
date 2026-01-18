@@ -55,14 +55,17 @@ exports.uploadImage = async (req, res) => {
         const { storeId } = req.params;
         const userId = req.user?.id;
 
-        // Verify store ownership
-        const store = await db.query(
-            'SELECT * FROM stores WHERE id = $1 AND owner_id = $2',
-            [storeId, userId]
-        );
+        // Verify store exists and ownership (allow if owner_id is null)
+        const store = await db.query('SELECT id, owner_id FROM stores WHERE id = $1', [storeId]);
 
         if (store.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Store not found' });
+        }
+
+        const ownerId = store.rows[0].owner_id;
+        if (ownerId && ownerId !== userId) {
+            console.log(`[UPLOAD_AUTH_FAILURE] User ${userId} is not owner of store ${storeId} (owner ${ownerId})`);
+            return res.status(403).json({ success: false, message: 'Permission denied. You do not own this store.' });
         }
 
         if (!req.file) {
@@ -112,14 +115,17 @@ exports.listUploads = async (req, res) => {
         const { storeId } = req.params;
         const userId = req.user?.id;
 
-        // Verify store ownership
-        const store = await db.query(
-            'SELECT * FROM stores WHERE id = $1 AND owner_id = $2',
-            [storeId, userId]
-        );
+        // Verify store exists and ownership (allow if owner_id is null)
+        const store = await db.query('SELECT id, owner_id FROM stores WHERE id = $1', [storeId]);
 
         if (store.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Store not found' });
+        }
+
+        const ownerId = store.rows[0].owner_id;
+        if (ownerId && ownerId !== userId) {
+            console.log(`[LIST_UPLOAD_AUTH_FAILURE] User ${userId} is not owner of store ${storeId} (owner ${ownerId})`);
+            return res.status(403).json({ success: false, message: 'Permission denied. You do not own this store.' });
         }
 
         const result = await db.query(
@@ -156,14 +162,17 @@ exports.deleteUpload = async (req, res) => {
         const { storeId, uploadId } = req.params;
         const userId = req.user?.id;
 
-        // Verify store ownership
-        const store = await db.query(
-            'SELECT * FROM stores WHERE id = $1 AND owner_id = $2',
-            [storeId, userId]
-        );
+        // Verify store exists and ownership (allow if owner_id is null)
+        const store = await db.query('SELECT id, owner_id FROM stores WHERE id = $1', [storeId]);
 
         if (store.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Store not found' });
+        }
+
+        const ownerId = store.rows[0].owner_id;
+        if (ownerId && ownerId !== userId) {
+            console.log(`[DELETE_UPLOAD_AUTH_FAILURE] User ${userId} is not owner of store ${storeId} (owner ${ownerId})`);
+            return res.status(403).json({ success: false, message: 'Permission denied. You do not own this store.' });
         }
 
         // Get upload info

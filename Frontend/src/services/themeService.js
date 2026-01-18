@@ -3,54 +3,38 @@ import apiClient from './api';
 const themeService = {
     // Get all active themes (public)
     async getAll() {
-        try {
-            const response = await apiClient.get('/themes');
-            return { success: true, data: response.data };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.response?.data?.error || 'Failed to fetch themes',
-            };
+        const response = await apiClient.get('/themes');
+        if (!response.success) {
+            return response;
         }
+        return response;
     },
 
     // Get all themes including inactive (admin only)
     async adminGetAll() {
-        try {
-            const response = await apiClient.get('/themes/admin');
-            return { success: true, data: response.data };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.response?.data?.error || 'Failed to fetch themes',
-            };
+        const response = await apiClient.get('/themes/admin');
+        if (!response.success) {
+            return response;
         }
+        return response;
     },
 
     // Create new theme (admin only)
     async create(themeData) {
-        try {
-            const response = await apiClient.post('/themes/admin', themeData);
-            return { success: true, data: response.data };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.response?.data?.error || 'Failed to create theme',
-            };
+        const response = await apiClient.post('/themes/admin', themeData);
+        if (!response.success) {
+            return response;
         }
+        return response;
     },
 
     // Save current design as template (user)
     async saveAsTemplate(templateData) {
-        try {
-            const response = await apiClient.post('/themes', templateData);
-            return { success: true, data: response.data };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.response?.data?.error || 'Failed to save template',
-            };
+        const response = await apiClient.post('/themes', templateData);
+        if (!response.success) {
+            return response;
         }
+        return response;
     },
 };
 

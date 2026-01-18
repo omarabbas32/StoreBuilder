@@ -28,6 +28,7 @@ import CategoryProductsPage from './pages/CategoryProductsPage';
 import ProductsPage from './pages/ProductsPage';
 import CartPage from './pages/CartPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
+import MyTemplates from './pages/MyTemplates';
 
 // Placeholder components
 const ComponentManager = () => <div style={{ padding: '2rem' }}><h1>Component Manager</h1><p>Coming soon...</p></div>;
@@ -106,6 +107,7 @@ function App() {
                     <Route path="products" element={<ProductManager />} />
                     <Route path="categories" element={<CategoryManager />} />
                     <Route path="customize" element={<StoreCustomizer />} />
+                    <Route path="templates" element={<MyTemplates />} />
                     <Route path="orders" element={<OrderManagement />} />
                 </Route>
 

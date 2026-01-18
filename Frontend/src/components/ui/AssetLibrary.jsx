@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Trash2, Search, X, Image as ImageIcon } from 'lucide-react';
 import uploadService from '../../services/uploadService';
+import { ASSET_BASE_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 import './AssetLibrary.css';
+
+const buildAssetUrl = (path) => {
+    if (!path) return '';
+    return new URL(path, ASSET_BASE_URL).toString();
+};
 
 const AssetLibrary = ({ storeId, onSelectImage }) => {
     const [images, setImages] = useState([]);
@@ -19,11 +25,30 @@ const AssetLibrary = ({ storeId, onSelectImage }) => {
 
     const loadImages = async () => {
         setLoading(true);
-        const result = await uploadService.listImages(storeId);
-        if (result.success) {
-            setImages(result.data || []);
+        try {
+            if (!storeId) {
+                setImages([]);
+                setLoading(false);
+                return;
+            }
+            const result = await uploadService.listImages(storeId);
+            if (result?.success) {
+                setImages(result.data || []);
+            } else {
+                setImages([]);
+                if (result?.status === 404) {
+                    toast.error('Store not found or you do not own this store.');
+                } else if (result?.error) {
+                    toast.error(result.error);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load images:', error);
+            setImages([]);
+            toast.error('Failed to load images');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleFileSelect = async (files) => {
@@ -155,7 +180,7 @@ const AssetLibrary = ({ storeId, onSelectImage }) => {
                                 onClick={() => handleImageClick(image)}
                             >
                                 <img
-                                    src={`http://localhost:3000${image.url}`}
+                                    src={buildAssetUrl(image.url)}
                                     alt={image.originalName}
                                 />
                                 <div className="image-overlay">
@@ -200,7 +225,7 @@ const AssetLibrary = ({ storeId, onSelectImage }) => {
                             <X size={24} />
                         </button>
                         <img
-                            src={`http://localhost:3000${selectedImage.url}`}
+                            src={buildAssetUrl(selectedImage.url)}
                             alt={selectedImage.originalName}
                         />
                         <div className="preview-info">

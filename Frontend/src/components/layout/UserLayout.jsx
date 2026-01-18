@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Home, Package, FolderOpen, Palette, LogOut, ExternalLink, ShoppingBag } from 'lucide-react';
+import { Home, Package, FolderOpen, Palette, LogOut, ExternalLink, ShoppingBag, Layers } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import './UserLayout.css';
 
@@ -18,6 +18,7 @@ const UserLayout = () => {
         { icon: FolderOpen, label: 'Categories', path: '/dashboard/categories' },
         { icon: ShoppingBag, label: 'Orders', path: '/dashboard/orders' },
         { icon: Palette, label: 'Customize', path: '/dashboard/customize' },
+        { icon: Layers, label: 'Templates', path: '/dashboard/templates' },
     ];
 
     const layoutStyle = {

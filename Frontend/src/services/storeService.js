@@ -1,24 +1,56 @@
 import apiClient from "./api";
 
+const normalizeStore = (store) => {
+  if (!store || typeof store !== "object") return store;
+  if (typeof store.settings === "string") {
+    try {
+      return { ...store, settings: JSON.parse(store.settings) };
+    } catch (e) {
+      return store;
+    }
+  }
+  return store;
+};
+
 const storeService = {
   async getMyStores() {
-    return await apiClient.get("/stores");
+    const result = await apiClient.get("/stores");
+    if (result.success && Array.isArray(result.data)) {
+      return { ...result, data: result.data.map(normalizeStore) };
+    }
+    return result;
   },
 
   async getStoreBySlug(slug) {
-    return await apiClient.get(`/stores/${slug}`);
+    const result = await apiClient.get(`/stores/${slug}`);
+    if (result.success) {
+      return { ...result, data: normalizeStore(result.data) };
+    }
+    return result;
   },
 
   async getStoreById(id) {
-    return await apiClient.get(`/stores/${id}`);
+    const result = await apiClient.get(`/stores/${id}`);
+    if (result.success) {
+      return { ...result, data: normalizeStore(result.data) };
+    }
+    return result;
   },
 
   async createStore(storeData) {
-    return await apiClient.post("/stores", storeData);
+    const result = await apiClient.post("/stores", storeData);
+    if (result.success) {
+      return { ...result, data: normalizeStore(result.data) };
+    }
+    return result;
   },
 
   async updateStore(id, storeData) {
-    return await apiClient.put(`/stores/${id}`, storeData);
+    const result = await apiClient.put(`/stores/${id}`, storeData);
+    if (result.success) {
+      return { ...result, data: normalizeStore(result.data) };
+    }
+    return result;
   },
 
   async getThemes() {
@@ -75,7 +107,11 @@ const storeService = {
   },
 
   async completeOnboarding(storeId, answers) {
-    return await apiClient.post(`/stores/${storeId}/onboarding`, answers);
+    const result = await apiClient.post(`/stores/${storeId}/onboarding`, answers);
+    if (result.success) {
+      return { ...result, data: normalizeStore(result.data) };
+    }
+    return result;
   },
 };
 

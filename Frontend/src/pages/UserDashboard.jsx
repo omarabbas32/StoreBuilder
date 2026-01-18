@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, DollarSign, TrendingUp, Plus, Store as StoreIcon } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -20,6 +20,7 @@ const UserDashboard = () => {
         revenue: 0,
     });
     const [loading, setLoading] = useState(true);
+    const hasRedirectedRef = useRef(false);
 
     useEffect(() => {
         loadDashboard();
@@ -33,15 +34,22 @@ const UserDashboard = () => {
             setStores(storesResult.data);
 
             // Set the first store as active if none is selected
-            const activeStore = store || storesResult.data[0];
+            const storeId = store?.id || store?._id;
+            const storeFromApi = storeId
+                ? storesResult.data.find((s) => (s.id || s._id) === storeId)
+                : null;
+            const activeStore = storeFromApi || storesResult.data[0] || store;
             if (activeStore) {
                 setStore(activeStore);
 
                 // Check if onboarding is incomplete
                 const settings = activeStore.settings || {};
                 if (!settings.onboardingCompleted) {
-                    // Redirect to onboarding
-                    navigate(`/onboarding/${activeStore.id}`);
+                    // Redirect to onboarding once per mount to avoid double navigations
+                    if (!hasRedirectedRef.current) {
+                        hasRedirectedRef.current = true;
+                        navigate(`/onboarding/${activeStore.id}`, { replace: true });
+                    }
                     setLoading(false);
                     return;
                 }

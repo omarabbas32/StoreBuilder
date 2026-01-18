@@ -43,6 +43,12 @@ const OnboardingWizard = () => {
     }, [storeId]);
 
     useEffect(() => {
+        if (store?.settings?.onboardingCompleted) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [store?.settings?.onboardingCompleted, navigate]);
+
+    useEffect(() => {
         // Persist answers to localStorage
         localStorage.setItem('onboarding_answers', JSON.stringify(answers));
     }, [answers]);

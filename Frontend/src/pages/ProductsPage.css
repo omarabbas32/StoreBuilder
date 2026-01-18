@@ -1,7 +1,28 @@
+.products-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-family, inherit), sans-serif;
+    font-size: var(--base-font-size, 1rem);
+    font-weight: var(--font-weight, 400);
+    line-height: var(--line-height, 1.6);
+    letter-spacing: var(--letter-spacing, 0);
+    background-color: var(--color-bg, #ffffff);
+}
+
+.products-page h1,
+.products-page h2,
+.products-page h3,
+.products-page h4,
+.products-page h5,
+.products-page h6 {
+    font-family: var(--heading-font-family, var(--font-family, inherit)), serif;
+}
+
 .products-mini-hero {
     position: relative;
     padding: 6rem 0 4rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: linear-gradient(135deg, var(--color-bg, #f8fafc) 0%, var(--color-bg-alt, #f1f5f9) 100%);
     overflow: hidden;
     margin-bottom: 2rem;
 }
@@ -46,15 +67,15 @@
 }
 
 .page-header h1 {
-    font-size: 3.5rem;
+    font-size: clamp(2.25rem, 4vw, 3.5rem);
     font-weight: 800;
-    color: #1e293b;
+    color: var(--color-text, #1e293b);
     margin-bottom: 1rem;
     letter-spacing: -0.02em;
 }
 
 .page-header p {
-    color: #64748b;
+    color: var(--color-text-muted, #64748b);
     font-size: 1.25rem;
     max-width: 600px;
     margin: 0 auto;
@@ -102,12 +123,12 @@
 .no-products-glass h3 {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--color-text, #1e293b);
     margin-bottom: 1rem;
 }
 
 .no-products-glass p {
-    color: #64748b;
+    color: var(--color-text-muted, #64748b);
     font-size: 1.125rem;
     margin-bottom: 2rem;
 }

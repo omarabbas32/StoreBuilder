@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
+const path = require('path');
 const routes = require('./routes/index');
 const { port } = require('./config/env');
 const errorHandler = require('./middleware/errorHandler.middleware');
@@ -19,6 +20,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Global Multi-tenancy Isolation
 app.use(tenantMiddleware);
+
+// Serve uploaded assets
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api', routes);

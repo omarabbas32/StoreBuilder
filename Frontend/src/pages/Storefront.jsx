@@ -32,7 +32,6 @@ const Storefront = ({ slug: slugProp }) => {
             // Security: In production, you might want to check origin
             // For now, same-origin is implied or managed by the customizer
             if (event.data?.type === 'STORE_UPDATE') {
-                console.log('Received live update:', event.data.settings);
                 setStore(prev => ({
                     ...prev,
                     settings: event.data.settings

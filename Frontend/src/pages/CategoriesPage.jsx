@@ -24,7 +24,7 @@ const CategoriesPage = ({ slug: slugProp }) => {
 
     useEffect(() => {
         initializeSession();
-    }, []);
+    }, [initializeSession]);
 
     useEffect(() => {
         loadData();
@@ -33,7 +33,6 @@ const CategoriesPage = ({ slug: slugProp }) => {
     const loadData = async () => {
         setLoading(true);
 
-        // Load store first
         const storeResult = await storeService.getStoreBySlug(slug);
         if (!storeResult.success) {
             setError(storeResult.error);
@@ -42,7 +41,6 @@ const CategoriesPage = ({ slug: slugProp }) => {
         }
         setStore(storeResult.data);
 
-        // Load categories and components
         const [categoriesResult, componentsResult] = await Promise.all([
             categoryService.getAll(storeResult.data.id),
             storeService.getComponents()
@@ -61,57 +59,86 @@ const CategoriesPage = ({ slug: slugProp }) => {
     if (loading) return <div className="categories-loading">Loading categories...</div>;
     if (error) return <div className="categories-error"><h1>Error</h1><p>{error}</p></div>;
 
-    const brandColor = store?.settings?.primaryColor || '#2563eb';
-    const components = store?.settings?.components || [];
+    const brandColor = store?.settings?.colorPalette?.[0] || store?.settings?.primaryColor || '#2563eb';
+    const colorPalette = store?.settings?.colorPalette || [brandColor, brandColor, brandColor];
+    const typography = store?.settings?.typography || {
+        fontFamily: 'Inter',
+        headingSize: 'medium',
+        bodySize: 'medium',
+        fontWeight: 'normal'
+    };
+
+    const components = (store?.settings?.components && store.settings.components.length > 0)
+        ? store.settings.components
+        : availableComponents;
+
     const navbarComponent = components.find(c => c.type === 'navbar' || c.type === 'navigation');
     const footerComponent = components.find(c => c.type === 'footer');
+
     const navbarConfig = navbarComponent
         ? store?.settings?.componentContent?.[navbarComponent.id]
         : null;
     const footerConfig = footerComponent
-        ? store?.settings?.componentContent?.[footerComponent.id]
+        ? (store?.settings?.componentContent?.[footerComponent.id] || {})
         : null;
 
+    const fontSizeMap = {
+        small: '0.875rem',
+        medium: '1rem',
+        large: '1.25rem',
+        'extra-large': '1.5rem'
+    };
+
+    const headingSizeMap = {
+        small: '1.5rem',
+        medium: '2rem',
+        large: '2.5rem',
+        'extra-large': '3.5rem'
+    };
+
+    const cssVariables = {
+        '--brand-color': brandColor,
+        '--primary-color': brandColor,
+        '--color-palette-primary': colorPalette[0] || brandColor,
+        '--color-palette-secondary': colorPalette[1] || brandColor,
+        '--color-palette-accent': colorPalette[2] || brandColor,
+        '--font-family': typography.fontFamily,
+        '--heading-font-family': typography.headingFontFamily || typography.fontFamily,
+        '--font-weight': typography.fontWeight === 'bold' ? '700' : (typography.fontWeight === 'light' ? '300' : '400'),
+        '--base-font-size': fontSizeMap[typography.bodySize] || '1rem',
+        '--heading-font-size': headingSizeMap[typography.headingSize] || '2rem',
+        '--line-height': typography.lineHeight || '1.6',
+        '--letter-spacing': typography.letterSpacing || '0px'
+    };
+
     return (
-        <div className="categories-page" style={{ '--brand-color': brandColor }}>
-            {navbarConfig ? (
-                <StorefrontNavbar
-                    config={navbarConfig}
-                    brandColor={brandColor}
-                    storeName={store.name}
-                    onCartClick={() => setIsCartOpen(true)}
-                />
-            ) : (
-                <nav className="simple-navbar">
-                    <div className="container">
-                        <Link to={storePath} className="navbar-brand">{store.name}</Link>
-                        <div className="navbar-links">
-                            <Link to={storePath}>الرئيسية</Link>
-                            <Link to={`${storePath}/categories`} className="active">التصنيفات</Link>
-                            <Link to={`${storePath}/cart`}>السلة</Link>
-                        </div>
-                    </div>
-                </nav>
-            )}
+        <div className="categories-page" style={cssVariables}>
+            <StorefrontNavbar
+                config={navbarConfig}
+                brandColor={brandColor}
+                storeName={store.name}
+                logo={store.settings?.logo_url}
+                onCartClick={() => setIsCartOpen(true)}
+            />
 
             <main className="categories-main container">
                 <div className="page-header">
                     <Grid size={32} className="header-icon" style={{ color: brandColor }} />
-                    <h1>التصنيفات</h1>
-                    <p>تصفح منتجاتنا حسب التصنيف</p>
+                    <h1>Categories</h1>
+                    <p>Browse all the categories available in the store</p>
                 </div>
 
                 {categories.length === 0 ? (
                     <div className="no-categories">
                         <Package size={64} className="empty-icon" />
-                        <p>لا توجد تصنيفات متاحة حالياً</p>
+                        <p>No categories found yet. Please check back soon.</p>
                     </div>
                 ) : (
                     <div className="categories-grid">
                         {categories.map(category => (
                             <Link
-                                key={category.id}
-                                to={`${storePath}/category/${category.id}`}
+                                key={category._id || category.id}
+                                to={`${storePath}/category/${category._id || category.id}`}
                                 className="category-card"
                             >
                                 <div className="category-image">
@@ -129,7 +156,7 @@ const CategoriesPage = ({ slug: slugProp }) => {
                                         <p className="category-description">{category.description}</p>
                                     )}
                                     <span className="view-products" style={{ color: brandColor }}>
-                                        عرض المنتجات <ArrowRight size={16} />
+                                        View products <ArrowRight size={16} />
                                     </span>
                                 </div>
                             </Link>
@@ -138,18 +165,18 @@ const CategoriesPage = ({ slug: slugProp }) => {
                 )}
             </main>
 
-            <footer className="store-footer">
-                <div className="container">
-                    <p>&copy; {new Date().getFullYear()} {store.name}. Powered by Storely.</p>
-                </div>
-            </footer>
-
-            {footerConfig && (
+            {footerConfig !== null ? (
                 <StorefrontFooter
                     config={footerConfig}
                     brandColor={brandColor}
                     storeName={store.name}
                 />
+            ) : (
+                <footer className="store-footer">
+                    <div className="container">
+                        <p>&copy; {new Date().getFullYear()} {store.name}. Powered by Storely.</p>
+                    </div>
+                </footer>
             )}
 
             <CartDrawer

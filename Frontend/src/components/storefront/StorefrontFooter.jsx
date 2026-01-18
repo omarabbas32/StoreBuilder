@@ -2,22 +2,68 @@ import { Facebook, Instagram, Twitter, Mail, Phone } from 'lucide-react';
 import './StorefrontFooter.css';
 
 const StorefrontFooter = ({ config, brandColor, storeName }) => {
-    const copyrightText = config?.copyrightText || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`;
+    const copyrightText = config?.copyrightText || config?.copyright || `Ac ${new Date().getFullYear()} ${storeName}. All rights reserved.`;
     const aboutText = config?.aboutText;
+    const aboutLinksRaw = config?.aboutLinks;
     const facebookUrl = config?.facebookUrl;
     const instagramUrl = config?.instagramUrl;
     const twitterUrl = config?.twitterUrl;
     const email = config?.email;
     const phone = config?.phone;
+    const showSocial = config?.showSocial !== false;
+    const socialColor = config?.socialColor || brandColor;
+    const footerBg = config?.backgroundColor;
+
+    const parseLinks = (value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                return [];
+            }
+        }
+        return [];
+    };
+
+    const aboutLinks = parseLinks(aboutLinksRaw);
+    const safeAboutLinks = aboutLinks.filter((link) => link?.label && link?.url);
+    const hasAboutSection = Boolean(aboutText) || safeAboutLinks.length > 0;
+    const hasSocialLinks = showSocial && (facebookUrl || instagramUrl || twitterUrl);
 
     return (
-        <footer className="storefront-footer" style={{ '--brand-color': brandColor }}>
+        <footer
+            className="storefront-footer"
+            style={{
+                '--brand-color': brandColor,
+                '--footer-bg': footerBg,
+                '--footer-social-color': socialColor,
+            }}
+        >
             <div className="footer-container">
                 <div className="footer-content">
-                    {aboutText && (
+                    {hasAboutSection && (
                         <div className="footer-section">
                             <h3>About Us</h3>
-                            <p>{aboutText}</p>
+                            {aboutText && <p>{aboutText}</p>}
+                            {safeAboutLinks.length > 0 && (
+                                <ul className="footer-links">
+                                    {safeAboutLinks.map((link, index) => {
+                                        const isExternal = /^https?:\/\//i.test(link.url);
+                                        return (
+                                            <li key={`${link.label}-${index}`}>
+                                                <a
+                                                    className="footer-link"
+                                                    href={link.url}
+                                                    {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                                                >
+                                                    {link.label}
+                                                </a>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
                         </div>
                     )}
 
@@ -39,7 +85,7 @@ const StorefrontFooter = ({ config, brandColor, storeName }) => {
                         </div>
                     )}
 
-                    {(facebookUrl || instagramUrl || twitterUrl) && (
+                    {hasSocialLinks && (
                         <div className="footer-section">
                             <h3>Follow Us</h3>
                             <div className="footer-social">

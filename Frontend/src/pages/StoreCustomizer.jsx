@@ -32,6 +32,7 @@ import { useRef } from 'react';
 import storeService from '../services/storeService';
 import productService from '../services/productService';
 import themeService from '../services/themeService';
+import { ASSET_BASE_URL } from '../services/api';
 import useAuthStore from '../store/authStore';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -60,7 +61,7 @@ import './StoreCustomizer.css';
 
 const StoreCustomizer = () => {
     const { storeId: paramStoreId } = useParams();
-    const { store: authStore } = useAuthStore();
+    const { store: authStore, setStore: setAuthStore } = useAuthStore();
     const storeId = paramStoreId || authStore?.id || authStore?._id;
     const navigate = useNavigate();
     const [store, setStore] = useState(null);
@@ -136,17 +137,47 @@ const StoreCustomizer = () => {
         }
     }, [store?.settings, hasUnsavedChanges, storeId]);
 
+    const selectFallbackStore = async () => {
+        if (paramStoreId) {
+            toast.error('Store not found. Please check the URL or select another store.');
+            navigate('/dashboard');
+            return null;
+        }
+
+        const storesResult = await storeService.getMyStores();
+        if (storesResult.success && storesResult.data?.length > 0) {
+            const nextStore = storesResult.data[0];
+            setStore(nextStore);
+            setAuthStore(nextStore);
+            return nextStore;
+        }
+
+        setStore(null);
+        setAuthStore(null);
+        toast.error('No stores found. Please create a store first.');
+        navigate('/create-store');
+        return null;
+    };
+
     const fetchStoreData = async () => {
         try {
+            if (!storeId) {
+                await selectFallbackStore();
+                return;
+            }
+
             const result = await storeService.getStoreById(storeId);
             if (result.success) {
-                setStore(result.data);
+                const fetchedStore = result.data;
+                const activeStoreId = fetchedStore?.id || fetchedStore?._id || storeId;
+                setStore(fetchedStore);
+                setAuthStore(fetchedStore);
 
                 // Check for local draft
-                const savedDraft = localStorage.getItem(`store_draft_${storeId}`);
+                const savedDraft = localStorage.getItem(`store_draft_${activeStoreId}`);
                 if (savedDraft) {
                     const parsedDraft = JSON.parse(savedDraft);
-                    const serverUpdated = new Date(result.data.updated_at).getTime();
+                    const serverUpdated = new Date(fetchedStore.updated_at).getTime();
                     const draftUpdated = new Date(parsedDraft.timestamp).getTime();
 
                     if (draftUpdated > serverUpdated + 1000) { // If draft is newer than server
@@ -176,6 +207,10 @@ const StoreCustomizer = () => {
                         ), { duration: 10000 });
                     }
                 }
+            } else if (result?.status === 404) {
+                await selectFallbackStore();
+            } else if (!result.success) {
+                toast.error(result.error || 'Failed to load store');
             }
         } catch (error) {
             console.error('Error fetching store:', error);
@@ -414,7 +449,7 @@ const StoreCustomizer = () => {
 
     const handleAssetSelect = (image) => {
         if (assetCallback) {
-            assetCallback(`http://localhost:3000${image.url}`);
+            assetCallback(new URL(image.url, ASSET_BASE_URL).toString());
         }
         setShowAssetModal(false);
         setAssetCallback(null);
@@ -629,9 +664,17 @@ const StoreCustomizer = () => {
             toast.success('Navigation menu reset');
         } else if (type === 'footer' && footerComp) {
             const defaults = {
-                copyright: `© ${new Date().getFullYear()} ${store.name}. All rights reserved.`,
+                copyrightText: `Ac ${new Date().getFullYear()} ${store.name}. All rights reserved.`,
                 showSocial: true,
-                socialColor: '#64748b'
+                socialColor: store.settings?.primaryColor || '#2563eb',
+                backgroundColor: '#0f172a',
+                aboutText: '',
+                aboutLinks: [],
+                facebookUrl: '',
+                instagramUrl: '',
+                twitterUrl: '',
+                email: '',
+                phone: ''
             };
             Object.entries(defaults).forEach(([field, value]) => {
                 updateComponentContent(footerComp.id, field, value, 'footer');
@@ -679,9 +722,30 @@ const StoreCustomizer = () => {
 
     const footerComp = components.find(c => c.type === 'footer');
     const footerContent = settings.componentContent?.[footerComp?.id] || {
-        copyright: `© ${new Date().getFullYear()} ${store.name}. All rights reserved.`,
-        showSocial: true
+        copyrightText: `Ac ${new Date().getFullYear()} ${store.name}. All rights reserved.`,
+        showSocial: true,
+        socialColor: store.settings?.primaryColor || '#2563eb',
+        backgroundColor: '#0f172a',
+        aboutText: '',
+        aboutLinks: [],
+        facebookUrl: '',
+        instagramUrl: '',
+        twitterUrl: '',
+        email: '',
+        phone: ''
     };
+
+    let parsedFooterLinks = [];
+    if (Array.isArray(footerContent.aboutLinks)) {
+        parsedFooterLinks = footerContent.aboutLinks;
+    } else if (typeof footerContent.aboutLinks === 'string') {
+        try {
+            parsedFooterLinks = JSON.parse(footerContent.aboutLinks);
+        } catch (error) {
+            parsedFooterLinks = [];
+        }
+    }
+    const footerLinks = parsedFooterLinks;
 
     const addMenuItem = () => {
         if (!navbarComp) return;
@@ -712,6 +776,26 @@ const StoreCustomizer = () => {
         [newMenuItems[index], newMenuItems[newIndex]] = [newMenuItems[newIndex], newMenuItems[index]];
         updateComponentContent(navbarComp.id, 'menuItems', newMenuItems, 'navbar');
     };
+
+    const addFooterLink = () => {
+        if (!footerComp) return;
+        const newLinks = [...footerLinks, { label: 'New Link', url: '#' }];
+        updateComponentContent(footerComp.id, 'aboutLinks', newLinks, 'footer');
+    };
+
+    const removeFooterLink = (index) => {
+        if (!footerComp) return;
+        const newLinks = footerLinks.filter((_, i) => i !== index);
+        updateComponentContent(footerComp.id, 'aboutLinks', newLinks, 'footer');
+    };
+
+    const updateFooterLink = (index, field, value) => {
+        if (!footerComp) return;
+        const newLinks = [...footerLinks];
+        newLinks[index] = { ...newLinks[index], [field]: value };
+        updateComponentContent(footerComp.id, 'aboutLinks', newLinks, 'footer');
+    };
+
 
     const filteredProducts = allProducts.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -1102,9 +1186,57 @@ const StoreCustomizer = () => {
                                     <label>Copyright Text</label>
                                     <input
                                         type="text"
-                                        value={footerContent.copyright || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'copyright', e.target.value, 'footer')}
-                                        placeholder="e.g. © 2026 Your Store"
+                                        value={footerContent.copyrightText || footerContent.copyright || ''}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'copyrightText', e.target.value, 'footer')}
+                                        placeholder="e.g. Ac 2026 Your Store"
+                                        className="modern-input"
+                                    />
+                                </div>
+                                <div className="field-group-modern">
+                                    <label>Footer Background</label>
+                                    <input
+                                        type="color"
+                                        value={footerContent.backgroundColor || '#0f172a'}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'backgroundColor', e.target.value, 'footer')}
+                                        className="color-input-modern"
+                                    />
+                                </div>
+                                <div className="field-group-modern">
+                                    <label>Social Icon Color</label>
+                                    <input
+                                        type="color"
+                                        value={footerContent.socialColor || store.settings?.primaryColor || '#2563eb'}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'socialColor', e.target.value, 'footer')}
+                                        className="color-input-modern"
+                                    />
+                                </div>
+                                <div className="field-group-modern full-width">
+                                    <label>About Text</label>
+                                    <textarea
+                                        value={footerContent.aboutText || ''}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'aboutText', e.target.value, 'footer')}
+                                        placeholder="Tell customers about your store"
+                                        className="modern-input modern-textarea"
+                                        rows={3}
+                                    />
+                                </div>
+                                <div className="field-group-modern">
+                                    <label>Contact Email</label>
+                                    <input
+                                        type="email"
+                                        value={footerContent.email || ''}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'email', e.target.value, 'footer')}
+                                        placeholder="you@example.com"
+                                        className="modern-input"
+                                    />
+                                </div>
+                                <div className="field-group-modern">
+                                    <label>Contact Phone</label>
+                                    <input
+                                        type="tel"
+                                        value={footerContent.phone || ''}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'phone', e.target.value, 'footer')}
+                                        placeholder="+1 555 123 4567"
                                         className="modern-input"
                                     />
                                 </div>
@@ -1126,13 +1258,74 @@ const StoreCustomizer = () => {
                                     </div>
                                 </div>
                                 <div className="field-group-modern">
-                                    <label>Social Color</label>
+                                    <label>Facebook URL</label>
                                     <input
-                                        type="color"
-                                        value={footerContent.socialColor || '#64748b'}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'socialColor', e.target.value, 'footer')}
-                                        className="color-input-modern"
+                                        type="text"
+                                        value={footerContent.facebookUrl || ''}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'facebookUrl', e.target.value, 'footer')}
+                                        placeholder="https://facebook.com/yourpage"
+                                        className="modern-input"
                                     />
+                                </div>
+                                <div className="field-group-modern">
+                                    <label>Instagram URL</label>
+                                    <input
+                                        type="text"
+                                        value={footerContent.instagramUrl || ''}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'instagramUrl', e.target.value, 'footer')}
+                                        placeholder="https://instagram.com/yourpage"
+                                        className="modern-input"
+                                    />
+                                </div>
+                                <div className="field-group-modern">
+                                    <label>Twitter URL</label>
+                                    <input
+                                        type="text"
+                                        value={footerContent.twitterUrl || ''}
+                                        onChange={(e) => updateComponentContent(footerComp?.id, 'twitterUrl', e.target.value, 'footer')}
+                                        placeholder="https://twitter.com/yourpage"
+                                        className="modern-input"
+                                    />
+                                </div>
+                                <div className="field-group-modern full-width">
+                                    <div className="label-with-action">
+                                        <label>About Links</label>
+                                        <button
+                                            className="text-action-btn"
+                                            onClick={addFooterLink}
+                                        >
+                                            <Plus size={14} /> Add Link
+                                        </button>
+                                    </div>
+                                    <div className="menu-items-list">
+                                        {footerLinks.length === 0 ? (
+                                            <div className="empty-state-menu">No footer links yet.</div>
+                                        ) : (
+                                            footerLinks.map((item, index) => (
+                                                <div key={index} className="menu-item-row">
+                                                    <div className="menu-item-fields">
+                                                        <input
+                                                            type="text"
+                                                            value={item.label}
+                                                            onChange={(e) => updateFooterLink(index, 'label', e.target.value)}
+                                                            placeholder="Label"
+                                                            className="modern-input"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={item.url}
+                                                            onChange={(e) => updateFooterLink(index, 'url', e.target.value)}
+                                                            placeholder="URL (e.g. /about)"
+                                                            className="modern-input"
+                                                        />
+                                                    </div>
+                                                    <button className="delete-menu-item" onClick={() => removeFooterLink(index)}>
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </section>
