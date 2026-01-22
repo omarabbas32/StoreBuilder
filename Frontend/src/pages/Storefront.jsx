@@ -48,6 +48,11 @@ const Storefront = ({ slug: slugProp }) => {
     }, [slug]);
 
     const loadStore = async () => {
+        if (!slug) {
+            setLoading(false);
+            setStore({ name: 'Your Store', settings: { primaryColor: '#2563eb', components: [] } });
+            return;
+        }
         setLoading(true);
         const [storeResult, componentsResult] = await Promise.all([
             storeService.getStoreBySlug(slug),

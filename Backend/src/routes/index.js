@@ -22,8 +22,10 @@ const adminRoutes = require('./admin.routes');
 const mediaRoutes = require('./media.routes');
 const cartRoutes = require('./cart.routes');
 const uploadRoutes = require('./upload.routes');
+const onboardingRoutes = require('./onboarding.routes');
 
 router.use('/auth', authRoutes);
+router.use('/onboarding', onboardingRoutes);
 router.use('/stores', storeRoutes);
 router.use('/products', productRoutes);
 router.use('/customers', customerRoutes);

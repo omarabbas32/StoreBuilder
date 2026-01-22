@@ -261,6 +261,12 @@ const OnboardingWizard = () => {
             <div className="wizard-container">
                 <div className="wizard-header">
                     <h1>Set up your store</h1>
+                    <button
+                        className="ai-assistant-link"
+                        onClick={() => navigate(`/onboarding/ai${storeId ? `/${storeId}` : ''}`)}
+                    >
+                        ✨ Use AI Assistant
+                    </button>
                     <p className="wizard-subtitle">Let's customize your store in just a few steps</p>
                 </div>
 

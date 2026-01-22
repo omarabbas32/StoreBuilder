@@ -22,6 +22,7 @@ import DemoPage from './pages/DemoPage';
 import Checkout from './pages/Checkout';
 import OrderManagement from './pages/OrderManagement';
 import OnboardingWizard from './pages/OnboardingWizard';
+import AIOnboardingChat from './pages/AIOnboardingChat';
 import StoreCreationWizard from './pages/StoreCreationWizard';
 import CategoriesPage from './pages/CategoriesPage';
 import CategoryProductsPage from './pages/CategoryProductsPage';
@@ -116,7 +117,7 @@ function App() {
                     path="/create-store"
                     element={
                         <ProtectedRoute>
-                            <StoreCreationWizard />
+                            <AIOnboardingChat />
                         </ProtectedRoute>
                     }
                 />
@@ -128,9 +129,20 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+                <Route
+                    path="/onboarding/ai/:storeId?"
+                    element={
+                        <ProtectedRoute>
+                            <AIOnboardingChat />
+                        </ProtectedRoute>
+                    }
+                />
 
                 {/* Demo Page */}
                 <Route path="/demo" element={<DemoPage />} />
+
+                {/* AI Onboarding Preview */}
+                <Route path="/onboarding/preview" element={<Storefront />} />
 
                 {/* Checkout Page */}
                 <Route path="/checkout" element={<Checkout />} />

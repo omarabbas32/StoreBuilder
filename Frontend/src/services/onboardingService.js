@@ -38,7 +38,54 @@ const onboardingService = {
             };
         }
     },
+
+    /**
+     * Get the onboarding question schema for AI agents
+     */
+    async getSchema() {
+        try {
+            const response = await apiClient.get('/onboarding/schema');
+            return response;
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to fetch schema',
+            };
+        }
+    },
+
+    /**
+     * Create a store via AI agent with structured answers
+     */
+    async aiCreateStore(answers) {
+        try {
+            const response = await apiClient.post('/onboarding/ai-create', { answers });
+            if (!response.success) {
+                return response;
+            }
+            return { ...response, data: normalizeStore(response.data) };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to create store via AI',
+            };
+        }
+    },
+
+    /**
+     * Send chat messages to AI agent
+     */
+    async aiChat(messages) {
+        try {
+            const response = await apiClient.post('/onboarding/ai-chat', { messages });
+            return response;
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to chat with AI',
+            };
+        }
+    },
 };
 
 export default onboardingService;
-
