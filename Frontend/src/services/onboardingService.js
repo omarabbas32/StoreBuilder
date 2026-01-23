@@ -75,9 +75,9 @@ const onboardingService = {
     /**
      * Send chat messages to AI agent
      */
-    async aiChat(messages) {
+    async aiChat(messages, provider = null) {
         try {
-            const response = await apiClient.post('/onboarding/ai-chat', { messages });
+            const response = await apiClient.post('/onboarding/ai-chat', { messages, provider });
             return response;
         } catch (error) {
             return {

@@ -140,14 +140,28 @@ class OnboardingController {
                 return response.error(res, 'Missing answers in request body', 400);
             }
 
+            // Apply sensible defaults if fields are missing
+            const finalAnswers = {
+                brandColor: '#2563eb',
+                style_preference: 'modern-minimal',
+                enabledSections: ['hero', 'product-grid'],
+                productDisplayStyle: 'grid-4',
+                categoryStructure: 'flat',
+                storeCategory: 'general',
+                ...answers
+            };
+
             // Validate required fields
-            const validationErrors = this.validateAnswers(answers);
+            const validationErrors = this.validateAnswers(finalAnswers);
             if (validationErrors.length > 0) {
                 return response.error(res, `Validation errors: ${validationErrors.join(', ')}`, 400);
             }
 
+            // Use finalAnswers for the rest of the process
+            const answersToUse = finalAnswers;
+
             // Generate slug from name if not provided
-            const slug = answers.slug || this.generateSlug(answers.name);
+            const slug = answersToUse.slug || this.generateSlug(answersToUse.name);
 
             // Check if slug already exists
             const existingStore = await StoreService.getStoreBySlug(slug);
@@ -158,9 +172,9 @@ class OnboardingController {
             // Create the store first
             const storeData = {
                 owner_id: ownerId,
-                name: answers.name,
+                name: answersToUse.name,
                 slug: slug,
-                description: answers.description || `${answers.name} - Created via AI`,
+                description: answersToUse.description || `${answersToUse.name} - Created via AI`,
                 settings: {}
             };
 
@@ -168,7 +182,7 @@ class OnboardingController {
 
             // Generate configuration from answers using OnboardingService
             const config = await OnboardingService.generateStoreConfig({
-                ...answers,
+                ...answersToUse,
                 slug: slug
             });
 
@@ -228,7 +242,7 @@ class OnboardingController {
      */
     aiChat = async (req, res, next) => {
         try {
-            const { messages } = req.body;
+            const { messages, provider } = req.body;
             if (!messages || !Array.isArray(messages)) {
                 return response.error(res, 'Messages array is required', 400);
             }
@@ -246,7 +260,7 @@ class OnboardingController {
                 ]
             };
 
-            const result = await AIService.chat(messages, schema);
+            const result = await AIService.chat(messages, schema, provider);
             if (!result.success) {
                 return response.error(res, result.error, 500);
             }
