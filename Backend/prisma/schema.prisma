@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model cart_items {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cart_id    String?   @db.Uuid
+  product_id String?   @db.Uuid
+  quantity   Int       @default(1)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  carts      carts?    @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products? @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model carts {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String?      @db.Uuid
+  session_id  String?      @db.VarChar(255)
+  created_at  DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at  DateTime?    @default(now()) @db.Timestamp(6)
+  store_id    String?      @db.Uuid
+  cart_items  cart_items[]
+  customers   customers?   @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stores      stores?      @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([customer_id, store_id], map: "unique_customer_store_cart")
+  @@unique([session_id, store_id], map: "unique_session_store_cart")
+  @@index([store_id], map: "idx_carts_store")
+}
+
+model categories {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  store_id         String?      @db.Uuid
+  name             String       @db.VarChar(255)
+  description      String?
+  created_at       DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?    @default(now()) @db.Timestamp(6)
+  slug             String       @db.VarChar(255)
+  parent_id        String?      @db.Uuid
+  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onUpdate: NoAction)
+  other_categories categories[] @relation("categoriesTocategories")
+  stores           stores?      @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products         products[]
+
+  @@unique([slug, store_id])
+}
+
+model components {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String    @db.VarChar(255)
+  type           String    @db.VarChar(50)
+  content_schema Json?     @default("{}")
+  screenshot_url String?
+  is_active      Boolean?  @default(true)
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+  description    String?
+}
+
+model customers {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String?                @db.Uuid
+  phone                String?                @db.VarChar(50)
+  address              String?
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
+  carts                carts[]
+  users                users?                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders               orders[]
+  product_reviews      product_reviews[]
+  review_helpful_votes review_helpful_votes[]
+}
+
+model migrations {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(255)
+  executed_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model order_items {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id   String?   @db.Uuid
+  product_id String?   @db.Uuid
+  quantity   Int
+  unit_price Decimal   @db.Decimal(10, 2)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  orders     orders?   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products? @relation(fields: [product_id], references: [id], onUpdate: NoAction)
+}
+
+model orders {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  store_id         String?           @db.Uuid
+  customer_id      String?           @db.Uuid
+  total_amount     Decimal           @db.Decimal(10, 2)
+  status           String?           @default("pending") @db.VarChar(50)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  customer_name    String?           @db.VarChar(255)
+  customer_email   String?           @db.VarChar(255)
+  customer_phone   String?           @db.VarChar(50)
+  shipping_address String?
+  notes            String?
+  order_items      order_items[]
+  customers        customers?        @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  stores           stores?           @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_reviews  product_reviews[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model product_reviews {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id           String?                @db.Uuid
+  store_id             String?                @db.Uuid
+  customer_id          String?                @db.Uuid
+  order_id             String?                @db.Uuid
+  rating               Int
+  title                String?                @db.VarChar(255)
+  comment              String?
+  images               Json?                  @default("[]")
+  status               String?                @default("pending") @db.VarChar(20)
+  is_verified_purchase Boolean?               @default(false)
+  owner_response       String?
+  owner_response_at    DateTime?              @db.Timestamp(6)
+  helpful_count        Int?                   @default(0)
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
+  customers            customers?             @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  orders               orders?                @relation(fields: [order_id], references: [id], onUpdate: NoAction)
+  products             products?              @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stores               stores?                @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  review_helpful_votes review_helpful_votes[]
+
+  @@index([customer_id], map: "idx_reviews_customer")
+  @@index([product_id, status], map: "idx_reviews_product")
+  @@index([rating], map: "idx_reviews_rating")
+  @@index([status], map: "idx_reviews_status")
+  @@index([store_id], map: "idx_reviews_store")
+}
+
+model products {
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  store_id             String?           @db.Uuid
+  category_id          String?           @db.Uuid
+  name                 String            @db.VarChar(255)
+  description          String?
+  price                Decimal           @db.Decimal(10, 2)
+  stock                Int?              @default(0)
+  images               Json?             @default("[]")
+  created_at           DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?         @default(now()) @db.Timestamp(6)
+  average_rating       Decimal?          @default(0) @db.Decimal(2, 1)
+  reviews_count        Int?              @default(0)
+  ratings_distribution Json?             @default("{\"1\": 0, \"2\": 0, \"3\": 0, \"4\": 0, \"5\": 0}")
+  sort_order           Int?              @default(0)
+  cart_items           cart_items[]
+  order_items          order_items[]
+  product_reviews      product_reviews[]
+  categories           categories?       @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  stores               stores?           @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model review_helpful_votes {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  review_id       String?          @db.Uuid
+  customer_id     String?          @db.Uuid
+  created_at      DateTime?        @default(now()) @db.Timestamp(6)
+  customers       customers?       @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_reviews product_reviews? @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([review_id, customer_id])
+}
+
+model store_settings {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  store_id                 String?   @db.Uuid
+  created_at               DateTime? @default(now()) @db.Timestamp(6)
+  updated_at               DateTime? @default(now()) @db.Timestamp(6)
+  reviews_enabled          Boolean?  @default(false)
+  reviews_require_approval Boolean?  @default(true)
+  reviews_verified_only    Boolean?  @default(false)
+  stores                   stores?   @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model stores {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id        String?           @db.Uuid
+  name            String            @db.VarChar(255)
+  slug            String            @unique @db.VarChar(255)
+  description     String?
+  settings        Json?             @default("{}")
+  created_at      DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamp(6)
+  carts           carts[]
+  categories      categories[]
+  orders          orders[]
+  product_reviews product_reviews[]
+  products        products[]
+  store_settings  store_settings[]
+  users           users?            @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  uploads         uploads[]
+}
+
+model themes {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String    @db.VarChar(255)
+  description    String?
+  screenshot_url String?
+  config         Json?     @default("{}")
+  is_active      Boolean?  @default(true)
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+  user_id        String?   @db.Uuid
+  users          users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_themes_user_id")
+}
+
+model uploads {
+  id            String    @id @db.Uuid
+  store_id      String    @db.Uuid
+  filename      String    @db.VarChar(255)
+  original_name String    @db.VarChar(255)
+  file_path     String    @db.VarChar(500)
+  file_size     Int
+  mime_type     String    @db.VarChar(100)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  stores        stores    @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_uploads_created_at")
+  @@index([store_id], map: "idx_uploads_store_id")
+}
+
+model users {
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String      @db.VarChar(255)
+  email              String      @unique @db.VarChar(255)
+  password           String      @db.VarChar(255)
+  role               String?     @default("customer") @db.VarChar(50)
+  created_at         DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?   @default(now()) @db.Timestamp(6)
+  is_verified        Boolean?    @default(false)
+  verification_token String?     @db.VarChar(255)
+  reset_token        String?     @db.VarChar(255)
+  reset_expires      DateTime?   @db.Timestamp(6)
+  customers          customers[]
+  stores             stores[]
+  themes             themes[]
+}

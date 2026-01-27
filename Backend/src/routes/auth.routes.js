@@ -1,15 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const AuthController = require('../controllers/auth.controller');
-const validate = require('../middleware/validate.middleware');
-const schemas = require('../utils/schemas');
+const validate = require('../middleware/validate');
+const { registerSchema, loginSchema, resetPasswordSchema } = require('../validators/auth.validator');
+const { authController } = require('../container');
 
-router.post('/register', validate(schemas.register), AuthController.register);
-router.post('/login', validate(schemas.login), AuthController.login);
-router.get('/verify-email', AuthController.verifyEmail);
-router.post('/forgot-password', AuthController.forgotPassword);
-router.post('/reset-password', AuthController.resetPassword);
-router.post('/logout', AuthController.logout);
-router.get('/me', AuthController.getMe);
+/**
+ * Auth Routes
+ */
+
+router.post('/register',
+    validate(registerSchema),
+    authController.register
+);
+
+router.post('/login',
+    validate(loginSchema),
+    authController.login
+);
+
+router.post('/verify-email', authController.verifyEmail);
+
+router.post('/forgot-password', authController.forgotPassword);
+
+router.post('/reset-password',
+    validate(resetPasswordSchema),
+    authController.resetPassword
+);
 
 module.exports = router;

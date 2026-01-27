@@ -1,96 +1,130 @@
-const CartService = require('../services/cart.service');
+const { asyncHandler } = require('../middleware/errorHandler');
+const AddItemRequestDTO = require('../dtos/cart/AddItemRequest.dto');
+const UpdateQuantityRequestDTO = require('../dtos/cart/UpdateQuantityRequest.dto');
+const RemoveItemRequestDTO = require('../dtos/cart/RemoveItemRequest.dto');
 
+/**
+ * CartController - Thin HTTP layer
+ * 
+ * RULES:
+ * - Parse request
+ * - Call service
+ * - Return response
+ * - NO business logic
+ */
 class CartController {
-    async getCart(req, res) {
-        try {
-            const sessionId = req.headers['x-session-id'];
-            const storeId = req.headers['x-store-id'];
-            const customerId = req.user?.id;
-
-            if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
-
-            const cart = await CartService.getOrCreateCart(sessionId, customerId, storeId);
-            const cartWithItems = await CartService.getCartWithItems(cart.id);
-
-            res.json(cartWithItems);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
+    constructor(cartService) {
+        this.cartService = cartService;
     }
 
-    async addItem(req, res) {
-        try {
-            const { productId, quantity = 1 } = req.body;
-            const sessionId = req.headers['x-session-id'];
-            const storeId = req.headers['x-store-id'];
-            const customerId = req.user?.id;
+    /**
+     * Add item to cart
+     * POST /api/cart/add
+     */
+    addItem = asyncHandler(async (req, res) => {
+        const dto = AddItemRequestDTO.fromRequest(req.validatedData);
+        const customerId = req.user?.customerId || null;
+        const sessionId = req.sessionID || req.session?.id;
 
-            if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
+        const result = await this.cartService.addItem(dto, customerId, sessionId);
 
-            const cart = await CartService.getOrCreateCart(sessionId, customerId, storeId);
-            await CartService.addToCart(cart.id, productId, quantity);
+        res.status(200).json({
+            success: true,
+            message: 'Item added to cart',
+            data: result
+        });
+    });
 
-            const updatedCart = await CartService.getCartWithItems(cart.id);
-            res.json(updatedCart);
-        } catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
+    /**
+     * Update cart item quantity
+     * PUT /api/cart/update
+     */
+    updateQuantity = asyncHandler(async (req, res) => {
+        const dto = UpdateQuantityRequestDTO.fromRequest(req.validatedData);
+        const customerId = req.user?.customerId || null;
+        const sessionId = req.sessionID || req.session?.id;
+        const { storeId } = req.params;
 
-    async updateItem(req, res) {
-        try {
-            const { productId, quantity } = req.body;
-            const sessionId = req.headers['x-session-id'];
-            const storeId = req.headers['x-store-id'];
-            const customerId = req.user?.id;
+        const result = await this.cartService.updateQuantity(
+            dto,
+            customerId,
+            sessionId,
+            storeId
+        );
 
-            if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
+        res.status(200).json({
+            success: true,
+            message: 'Quantity updated',
+            data: result
+        });
+    });
 
-            const cart = await CartService.getOrCreateCart(sessionId, customerId, storeId);
-            await CartService.updateQuantity(cart.id, productId, quantity);
+    /**
+     * Remove item from cart
+     * DELETE /api/cart/remove/:productId
+     */
+    removeItem = asyncHandler(async (req, res) => {
+        const dto = RemoveItemRequestDTO.fromRequest(req.params, req.query);
+        const customerId = req.user?.customerId || null;
+        const sessionId = req.sessionID || req.session?.id;
+        const { storeId } = req.params;
 
-            const updatedCart = await CartService.getCartWithItems(cart.id);
-            res.json(updatedCart);
-        } catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
+        const result = await this.cartService.removeItem(
+            dto,
+            customerId,
+            sessionId,
+            storeId
+        );
 
-    async removeItem(req, res) {
-        try {
-            const { productId } = req.params;
-            const sessionId = req.headers['x-session-id'];
-            const storeId = req.headers['x-store-id'];
-            const customerId = req.user?.id;
+        res.status(200).json({
+            success: true,
+            message: 'Item removed from cart',
+            data: result
+        });
+    });
 
-            if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
+    /**
+     * Get current cart
+     * GET /api/cart/:storeId
+     */
+    getCart = asyncHandler(async (req, res) => {
+        const customerId = req.user?.customerId || null;
+        const sessionId = req.sessionID || req.session?.id;
+        const { storeId } = req.params;
 
-            const cart = await CartService.getOrCreateCart(sessionId, customerId, storeId);
-            await CartService.removeFromCart(cart.id, productId);
+        const result = await this.cartService.getCart(
+            customerId,
+            sessionId,
+            storeId
+        );
 
-            const updatedCart = await CartService.getCartWithItems(cart.id);
-            res.json(updatedCart);
-        } catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    });
 
-    async clearCart(req, res) {
-        try {
-            const sessionId = req.headers['x-session-id'];
-            const storeId = req.headers['x-store-id'];
-            const customerId = req.user?.id;
+    /**
+     * Clear cart
+     * DELETE /api/cart/:storeId/clear
+     */
+    clearCart = asyncHandler(async (req, res) => {
+        const customerId = req.user?.customerId || null;
+        const sessionId = req.sessionID || req.session?.id;
+        const { storeId } = req.params;
 
-            if (!storeId) return res.status(400).json({ error: 'Store ID is required' });
+        const result = await this.cartService.clearCart(
+            customerId,
+            sessionId,
+            storeId
+        );
 
-            const cart = await CartService.getOrCreateCart(sessionId, customerId, storeId);
-            await CartService.clearCart(cart.id);
-
-            res.json({ success: true });
-        } catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
+        res.status(200).json({
+            success: true,
+            message: 'Cart cleared',
+            data: result
+        });
+    });
 }
 
-module.exports = new CartController();
+module.exports = CartController;

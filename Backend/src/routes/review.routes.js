@@ -1,17 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const ReviewController = require('../controllers/review.controller');
-const validate = require('../middleware/validate.middleware');
-const schemas = require('../utils/schemas');
-// const authMiddleware = require('../middleware/auth.middleware'); // Uncomment when creating auth
-// const upload = require('../middleware/upload.middleware'); // Uncomment when creating upload
+const validate = require('../middleware/validate');
+const { createReviewSchema } = require('../validators/review.validator');
+const { reviewController } = require('../container');
+const { auth } = require('../middleware/auth');
 
-// Placeholder middlewares if not exists yet
-const authMiddleware = (req, res, next) => next();
-const upload = { array: () => (req, res, next) => next() };
+/**
+ * Review Routes
+ */
 
-router.post('/', authMiddleware, upload.array('images', 5), validate(schemas.createReview), ReviewController.create);
-router.get('/product/:productId', ReviewController.getProductReviews);
-router.post('/:id/helpful', authMiddleware, ReviewController.markHelpful);
+router.get('/product/:productId', reviewController.getByProduct);
+
+router.post('/',
+    auth,
+    validate(createReviewSchema),
+    reviewController.create
+);
+
+router.post('/:id/helpful',
+    auth,
+    reviewController.markHelpful
+);
+
+router.delete('/:id',
+    auth,
+    reviewController.delete
+);
 
 module.exports = router;

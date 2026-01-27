@@ -1,12 +1,12 @@
+const { port } = require('./config/env');
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
 const path = require('path');
 const routes = require('./routes/index');
-const { port } = require('./config/env');
-const errorHandler = require('./middleware/errorHandler.middleware');
-const tenantMiddleware = require('./middleware/tenant.middleware');
+const { errorHandler } = require('./middleware/errorHandler');
+const tenantMiddleware = require('./middleware/tenant');
 
 // Create Express app
 const app = express();

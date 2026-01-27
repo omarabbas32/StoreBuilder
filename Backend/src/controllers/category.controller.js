@@ -1,55 +1,37 @@
-const CategoryService = require('../services/category.service');
-const StoreService = require('../services/store.service');
+const { asyncHandler } = require('../middleware/errorHandler');
+const CreateCategoryRequestDTO = require('../dtos/category/CreateCategoryRequest.dto');
+const CategoryResponseDTO = require('../dtos/category/CategoryResponse.dto');
 
 class CategoryController {
-    async create(req, res, next) {
-        try {
-            const { store_id } = req.body;
-            const ownerId = req.user?.id;
-
-            // Verify store ownership
-            const store = await StoreService.getStoreById(store_id);
-            if (!store || store.owner_id !== ownerId) {
-                return res.status(403).json({ error: 'Forbidden: You do not own this store' });
-            }
-
-            const category = await CategoryService.createCategory(req.body);
-            res.status(201).json(category);
-        } catch (error) {
-            next(error);
-        }
+    constructor(categoryService) {
+        this.categoryService = categoryService;
     }
 
-    async getAll(req, res, next) {
-        try {
-            let { store_id } = req.query;
+    create = asyncHandler(async (req, res) => {
+        const dto = CreateCategoryRequestDTO.fromRequest(req.validatedData);
+        const result = await this.categoryService.createCategory(dto, req.user.id);
+        res.status(201).json({ success: true, data: new CategoryResponseDTO(result) });
+    });
 
-            // Multi-tenancy support: use tenant ID if store_id is not provided in query
-            if (!store_id && req.tenant) {
-                store_id = req.tenant;
-            }
+    getByStore = asyncHandler(async (req, res) => {
+        const results = await this.categoryService.getCategoriesByStore(req.params.storeId, req.query);
+        res.status(200).json({ success: true, data: CategoryResponseDTO.fromArray(results) });
+    });
 
-            let categories;
-            if (store_id) {
-                categories = await CategoryService.getCategoriesByStore(store_id);
-            } else {
-                categories = await CategoryService.getAllCategories();
-            }
-            res.json(categories);
-        } catch (error) {
-            next(error);
-        }
-    }
+    getById = asyncHandler(async (req, res) => {
+        const result = await this.categoryService.getCategory(req.params.id);
+        res.status(200).json({ success: true, data: new CategoryResponseDTO(result) });
+    });
 
-    async getById(req, res, next) {
-        try {
-            const category = await CategoryService.getCategoryById(req.params.id);
-            if (!category) return res.status(404).json({ error: 'Category not found' });
-            res.json(category);
-        } catch (error) {
-            next(error);
-        }
-    }
+    update = asyncHandler(async (req, res) => {
+        const result = await this.categoryService.updateCategory(req.params.id, req.validatedData, req.user.id);
+        res.status(200).json({ success: true, data: new CategoryResponseDTO(result) });
+    });
+
+    delete = asyncHandler(async (req, res) => {
+        await this.categoryService.deleteCategory(req.params.id, req.user.id);
+        res.status(200).json({ success: true, message: 'Category deleted successfully' });
+    });
 }
 
-module.exports = new CategoryController();
+module.exports = CategoryController;

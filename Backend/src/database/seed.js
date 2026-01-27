@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const User = require('../models/User');
+const userModel = require('../models/user.model');
 
 const seed = async () => {
     console.log('Starting seeding...');
@@ -7,11 +7,11 @@ const seed = async () => {
     try {
         // Create Admin
         const adminEmail = 'admin@storely.com';
-        const existingAdmin = await User.findByEmail(adminEmail);
+        const existingAdmin = await userModel.findByEmail(adminEmail);
 
         if (!existingAdmin) {
             console.log('Creating admin user...');
-            await User.create({
+            await userModel.create({
                 name: 'System Admin',
                 email: adminEmail,
                 password: 'adminpassword123',
@@ -24,11 +24,11 @@ const seed = async () => {
 
         // Create Store Owner
         const ownerEmail = 'owner@storely.com';
-        let owner = await User.findByEmail(ownerEmail);
+        let owner = await userModel.findByEmail(ownerEmail);
 
         if (!owner) {
             console.log('Creating store owner user...');
-            owner = await User.create({
+            owner = await userModel.create({
                 name: 'John Store Owner',
                 email: ownerEmail,
                 password: 'ownerpassword123',
@@ -40,12 +40,12 @@ const seed = async () => {
         }
 
         // Create a Store for the owner
-        const Store = require('../models/Store');
-        const existingStore = await Store.findBySlug('sample-store');
+        const storeModel = require('../models/store.model');
+        const existingStore = await storeModel.findBySlug('sample-store');
 
         if (!existingStore) {
             console.log('Creating sample store...');
-            await Store.create({
+            await storeModel.create({
                 owner_id: owner.id,
                 name: 'Sample Store',
                 slug: 'sample-store',

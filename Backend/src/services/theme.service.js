@@ -1,34 +1,122 @@
-const Theme = require('../models/Theme');
+const AppError = require('../utils/AppError');
 
+/**
+ * ThemeService - Contains ALL theme business logic
+ * 
+ * Business Rules:
+ * - Themes can be global or user-specific
+ * - Only active themes are shown to users
+ * - Users can create custom templates
+ */
 class ThemeService {
-    async getAllThemes(userId = null) {
-        return Theme.findActive(userId);
+    constructor({ themeModel, userModel }) {
+        this.themeModel = themeModel;
+        this.userModel = userModel;
     }
 
-    async adminGetAllThemes() {
-        return Theme.findAll();
+    /**
+     * Get all active themes
+     * For user theme selection
+     */
+    async getActiveThemes(userId = null) {
+        // Implementation depends on Theme model's findActive method
+        // This would need to be implemented in theme.model.js
+        return await this.themeModel.findMany(
+            { is_active: true },
+            { orderBy: { name: 'asc' } }
+        );
     }
 
-    async createTheme(data) {
-        return Theme.create(data);
+    /**
+     * Get all themes (admin)
+     */
+    async getAllThemes(options = {}) {
+        return await this.themeModel.findMany({}, options);
     }
 
-    async createTemplate(userId, data) {
-        return Theme.create({
-            ...data,
-            user_id: userId,
-            is_active: true
+    /**
+     * Create theme (admin)
+     */
+    async createTheme(dto) {
+        const theme = await this.themeModel.create({
+            name: dto.name,
+            description: dto.description || null,
+            config: dto.config || {},
+            preview_url: dto.previewUrl || null,
+            is_active: dto.isActive ?? true,
+            user_id: null // Global theme
         });
+
+        return theme;
     }
 
-    async updateTheme(id, data) {
-        // Basic implementation, for now just create logic
-        return Theme.update(id, data);
+    /**
+     * Create custom template (user)
+     * Business Rule: User can create their own themes
+     */
+    async createUserTemplate(dto, userId) {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new AppError('User not found', 404);
+        }
+
+        const theme = await this.themeModel.create({
+            name: dto.name,
+            description: dto.description || null,
+            config: dto.config || {},
+            preview_url: dto.previewUrl || null,
+            is_active: true,
+            user_id: userId
+        });
+
+        return theme;
     }
 
-    async deleteTheme(id) {
-        return Theme.delete(id);
+    /**
+     * Update theme
+     */
+    async updateTheme(themeId, dto, userId = null, isAdmin = false) {
+        const theme = await this.themeModel.findById(themeId);
+        if (!theme) {
+            throw new AppError('Theme not found', 404);
+        }
+
+        // Business Rule: Users can only edit their own themes, admins can edit all
+        if (!isAdmin && theme.user_id !== userId) {
+            throw new AppError('You do not have permission to edit this theme', 403);
+        }
+
+        const updated = await this.themeModel.update(themeId, dto);
+        return updated;
+    }
+
+    /**
+     * Delete theme
+     */
+    async deleteTheme(themeId, userId = null, isAdmin = false) {
+        const theme = await this.themeModel.findById(themeId);
+        if (!theme) {
+            throw new AppError('Theme not found', 404);
+        }
+
+        if (!isAdmin && theme.user_id !== userId) {
+            throw new AppError('You do not have permission to delete this theme', 403);
+        }
+
+        await this.themeModel.delete(themeId);
+        return { success: true, message: 'Theme deleted successfully' };
+    }
+
+    /**
+     * Get theme by ID
+     */
+    async getTheme(themeId) {
+        const theme = await this.themeModel.findById(themeId);
+        if (!theme) {
+            throw new AppError('Theme not found', 404);
+        }
+        return theme;
     }
 }
 
-module.exports = new ThemeService();
+module.exports = ThemeService;

@@ -1,22 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const OnboardingController = require('../controllers/onboarding.controller');
-const authMiddleware = require('../middleware/auth.middleware');
+const { onboardingController } = require('../container');
+const { auth } = require('../middleware/auth');
 
 /**
- * Onboarding Routes for AI Agent Integration
+ * Onboarding Routes
  */
 
-// GET /api/onboarding/schema - Get the question schema (public)
-router.get('/schema', OnboardingController.getSchema.bind(OnboardingController));
-
-// POST /api/onboarding/ai-create - Create store via AI agent (requires auth)
-router.post('/ai-create', authMiddleware, OnboardingController.aiCreateStore.bind(OnboardingController));
-
-// POST /api/onboarding/:storeId/complete - Complete onboarding for existing store (requires auth)
-router.post('/:storeId/complete', authMiddleware, OnboardingController.completeOnboarding.bind(OnboardingController));
-
-// POST /api/onboarding/ai-chat - Chat with AI for onboarding (requires auth)
-router.post('/ai-chat', authMiddleware, OnboardingController.aiChat.bind(OnboardingController));
+router.get('/schema', onboardingController.getSchema);
+router.post('/ai-create', auth, onboardingController.aiCreateStore);
+router.post('/:storeId/complete', auth, onboardingController.completeOnboarding);
+router.post('/ai-chat', auth, onboardingController.aiChat);
 
 module.exports = router;

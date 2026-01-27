@@ -5,7 +5,7 @@ const {
   upload,
   uploadMultipleImages,
 } = require("../middleware/upload.middleware");
-const authMiddleware = require("../middleware/auth.middleware");
+const authMiddleware = require("../middleware/auth");
 
 // Upload a single image
 router.post(

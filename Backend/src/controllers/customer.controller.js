@@ -1,24 +1,34 @@
-const CustomerService = require('../services/customer.service');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 class CustomerController {
-    async create(req, res) {
-        try {
-            const customer = await CustomerService.createCustomer(req.body);
-            res.status(201).json(customer);
-        } catch (error) {
-            res.status(400).json({ error: error.message });
-        }
+    constructor(customerService) {
+        this.customerService = customerService;
     }
 
-    async getById(req, res) {
-        try {
-            const customer = await CustomerService.getCustomerById(req.params.id);
-            if (!customer) return res.status(404).json({ error: 'Customer not found' });
-            res.json(customer);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
+    create = asyncHandler(async (req, res) => {
+        const result = await this.customerService.createCustomer(req.body, req.user.id);
+        res.status(201).json({ success: true, data: result });
+    });
+
+    getById = asyncHandler(async (req, res) => {
+        const result = await this.customerService.getCustomer(req.params.id);
+        res.status(200).json({ success: true, data: result });
+    });
+
+    getByUserId = asyncHandler(async (req, res) => {
+        const result = await this.customerService.getCustomerByUserId(req.user.id);
+        res.status(200).json({ success: true, data: result });
+    });
+
+    update = asyncHandler(async (req, res) => {
+        const result = await this.customerService.updateCustomer(req.params.id, req.body, req.user.id);
+        res.status(200).json({ success: true, data: result });
+    });
+
+    delete = asyncHandler(async (req, res) => {
+        await this.customerService.deleteCustomer(req.params.id, req.user.id);
+        res.status(200).json({ success: true, message: 'Customer profile deleted' });
+    });
 }
 
-module.exports = new CustomerController();
+module.exports = CustomerController;

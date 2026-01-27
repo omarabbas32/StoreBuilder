@@ -1,57 +1,37 @@
-const ReviewService = require('../services/review.service');
+const { asyncHandler } = require('../middleware/errorHandler');
+const CreateReviewRequestDTO = require('../dtos/review/CreateReviewRequest.dto');
+const ReviewResponseDTO = require('../dtos/review/ReviewResponse.dto');
 
 class ReviewController {
-    async create(req, res) {
-        try {
-            // Assuming user is attached to req by auth middleware
-            const customer_id = req.user ? req.user.id : null;
-
-            // If images uploaded via multer
-            const images = req.files ? req.files.map(file => ({
-                url: file.path, // or cloud URL
-                alt: file.originalname
-            })) : [];
-
-            const reviewData = {
-                ...req.body,
-                customer_id,
-                images: images.length > 0 ? images : req.body.images // allow sending direct JSON if no file upload
-            };
-
-            const review = await ReviewService.createReview(reviewData);
-            res.status(201).json(review);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Failed to create review' });
-        }
+    constructor(reviewService) {
+        this.reviewService = reviewService;
     }
 
-    async getProductReviews(req, res) {
-        try {
-            const { productId } = req.params;
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 20;
-            const result = await ReviewService.getProductReviews(productId, page, limit);
-            res.json(result);
-        } catch (error) {
-            console.error('Fetch reviews error:', error);
-            res.status(500).json({ error: 'Failed to fetch reviews' });
-        }
-    }
+    create = asyncHandler(async (req, res) => {
+        const dto = CreateReviewRequestDTO.fromRequest(req.validatedData);
+        // Assuming req.user contains customer context or we fetch it
+        // For simplicity, using req.user.id as customerId (needs mapping if separate)
+        const result = await this.reviewService.createReview(dto, req.user.id);
+        res.status(201).json({ success: true, data: new ReviewResponseDTO(result) });
+    });
 
-    async markHelpful(req, res) {
-        try {
-            const { id } = req.params;
-            const customer_id = req.user ? req.user.id : null;
-            if (!customer_id) return res.status(401).json({ error: 'Unauthorized' });
+    getByProduct = asyncHandler(async (req, res) => {
+        const result = await this.reviewService.getProductReviews(req.params.productId, req.query);
+        // PaginationDTO wraps the data, we might need to map the internal data array
+        result.data = ReviewResponseDTO.fromArray(result.data);
+        res.status(200).json({ success: true, data: result });
+    });
 
-            await ReviewService.markHelpful(id, customer_id);
-            res.json({ message: 'Vote recorded' });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Failed to record vote' });
-        }
-    }
+    markHelpful = asyncHandler(async (req, res) => {
+        await this.reviewService.markHelpful(req.params.id, req.user.id);
+        res.status(200).json({ success: true, message: 'Review marked as helpful' });
+    });
+
+    delete = asyncHandler(async (req, res) => {
+        const isOwner = req.user.role === 'merchant' || req.user.role === 'admin';
+        await this.reviewService.deleteReview(req.params.id, req.user.id, isOwner);
+        res.status(200).json({ success: true, message: 'Review deleted successfully' });
+    });
 }
 
-module.exports = new ReviewController();
+module.exports = ReviewController;

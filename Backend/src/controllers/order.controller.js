@@ -1,68 +1,41 @@
-const OrderService = require('../services/order.service');
-const StoreService = require('../services/store.service');
-const response = require('../utils/response');
+const { asyncHandler } = require('../middleware/errorHandler');
+const CreateOrderRequestDTO = require('../dtos/order/CreateOrderRequest.dto');
+const OrderResponseDTO = require('../dtos/order/OrderResponse.dto');
 
 class OrderController {
-    async create(req, res, next) {
-        try {
-            const { orderData, items, cartId } = req.body;
-            const customerId = req.user?.id || null; // Get customer_id from auth if logged in
-
-            if (!items || items.length === 0) {
-                return response.error(res, 'Order must have items', 400);
-            }
-
-            if (!orderData.store_id) {
-                return response.error(res, 'Store ID is required', 400);
-            }
-
-            // Enrich orderData with customer_id from auth
-            const enrichedOrderData = {
-                ...orderData,
-                customer_id: customerId
-            };
-
-            const order = await OrderService.createOrder(enrichedOrderData, items, cartId);
-            return response.success(res, order, 'Order created successfully', 201);
-        } catch (error) {
-            next(error);
-        }
+    constructor(orderService) {
+        this.orderService = orderService;
     }
 
-    async getByStore(req, res, next) {
-        try {
-            const { storeId } = req.params;
-            const ownerId = req.user?.id;
+    createFromCart = asyncHandler(async (req, res) => {
+        const dto = CreateOrderRequestDTO.fromRequest(req.validatedData);
+        const customerId = req.user?.id;
+        const sessionId = req.sessionID || req.session?.id;
 
-            // Verify store ownership
-            const store = await StoreService.getStoreById(storeId);
-            if (!store || store.owner_id !== ownerId) {
-                return response.error(res, 'Forbidden: You do not own this store', 403);
-            }
+        const result = await this.orderService.createOrderFromCart(dto, customerId, sessionId);
+        res.status(201).json({ success: true, data: new OrderResponseDTO(result) });
+    });
 
-            const orders = await OrderService.getStoreOrders(storeId);
-            return response.success(res, orders);
-        } catch (error) {
-            next(error);
-        }
-    }
+    create = asyncHandler(async (req, res) => {
+        const dto = CreateOrderRequestDTO.fromRequest(req.validatedData);
+        const result = await this.orderService.createOrder(dto);
+        res.status(201).json({ success: true, data: new OrderResponseDTO(result) });
+    });
 
-    async getMyOrders(req, res, next) {
-        try {
-            const customerId = req.user?.id;
-            const storeId = req.headers['x-store-id'];
+    getById = asyncHandler(async (req, res) => {
+        const result = await this.orderService.getOrder(req.params.id);
+        res.status(200).json({ success: true, data: new OrderResponseDTO(result) });
+    });
 
-            if (!customerId) {
-                return response.error(res, 'Unauthorized', 401);
-            }
+    getByStore = asyncHandler(async (req, res) => {
+        const results = await this.orderService.getOrdersByStore(req.params.storeId, req.query);
+        res.status(200).json({ success: true, data: OrderResponseDTO.fromArray(results) });
+    });
 
-            const orders = await OrderService.getCustomerOrders(customerId, storeId);
-            return response.success(res, orders);
-        } catch (error) {
-            next(error);
-        }
-    }
+    updateStatus = asyncHandler(async (req, res) => {
+        const result = await this.orderService.updateOrderStatus(req.params.id, req.validatedData.status, req.user.id);
+        res.status(200).json({ success: true, data: new OrderResponseDTO(result) });
+    });
 }
 
-module.exports = new OrderController();
-
+module.exports = OrderController;

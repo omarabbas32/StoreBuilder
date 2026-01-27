@@ -1,100 +1,44 @@
-const StoreService = require('../services/store.service');
-const OnboardingService = require('../services/onboarding.service');
-const response = require('../utils/response');
+const { asyncHandler } = require('../middleware/errorHandler');
+const CreateStoreRequestDTO = require('../dtos/store/CreateStoreRequest.dto');
+const UpdateStoreRequestDTO = require('../dtos/store/UpdateStoreRequest.dto');
+const StoreResponseDTO = require('../dtos/store/StoreResponse.dto');
 
 class StoreController {
-    async create(req, res, next) {
-        try {
-            const ownerId = req.user?.id;
-            if (!ownerId) return response.error(res, 'Unauthorized', 401);
-
-            const storeData = { ...req.body, owner_id: ownerId };
-            const store = await StoreService.createStore(storeData);
-            return response.success(res, store, 'Store created successfully', 201);
-        } catch (error) {
-            next(error);
-        }
+    constructor(storeService) {
+        this.storeService = storeService;
     }
 
-    async getAll(req, res, next) {
-        try {
-            const ownerId = req.user?.id;
-            if (!ownerId) {
-                return response.error(res, 'Unauthorized', 401);
-            }
-            const stores = await StoreService.getStoresByOwner(ownerId);
-            return response.success(res, stores);
-        } catch (error) {
-            next(error);
-        }
-    }
+    create = asyncHandler(async (req, res) => {
+        const dto = CreateStoreRequestDTO.fromRequest(req.validatedData);
+        const result = await this.storeService.createStore(dto, req.user.id);
+        res.status(201).json({ success: true, data: new StoreResponseDTO(result) });
+    });
 
-    async getByIdOrSlug(req, res, next) {
-        try {
-            const { id } = req.params;
-            const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+    update = asyncHandler(async (req, res) => {
+        const dto = UpdateStoreRequestDTO.fromRequest(req.validatedData);
+        const result = await this.storeService.updateStore(req.params.id, dto, req.user.id);
+        res.status(200).json({ success: true, data: new StoreResponseDTO(result) });
+    });
 
-            let store;
-            if (isUuid) {
-                store = await StoreService.getStoreById(id);
-            } else {
-                store = await StoreService.getStoreBySlug(id);
-            }
+    getBySlug = asyncHandler(async (req, res) => {
+        const result = await this.storeService.getStoreBySlug(req.params.slug);
+        res.status(200).json({ success: true, data: new StoreResponseDTO(result) });
+    });
 
-            if (!store) return response.error(res, 'Store not found', 404);
-            return response.success(res, store);
-        } catch (error) {
-            next(error);
-        }
-    }
+    getById = asyncHandler(async (req, res) => {
+        const result = await this.storeService.getStore(req.params.id);
+        res.status(200).json({ success: true, data: new StoreResponseDTO(result) });
+    });
 
-    async update(req, res, next) {
-        try {
-            const ownerId = req.user?.id;
-            const storeId = req.params.id;
+    getAll = asyncHandler(async (req, res) => {
+        const results = await this.storeService.getAllStores(req.query);
+        res.status(200).json({ success: true, data: StoreResponseDTO.fromArray(results) });
+    });
 
-            // Verify ownership
-            const existingStore = await StoreService.getStoreById(storeId);
-            if (!existingStore || existingStore.owner_id !== ownerId) {
-                return response.error(res, 'Forbidden: You do not own this store', 403);
-            }
-
-            const store = await StoreService.updateStore(storeId, req.body);
-            return response.success(res, store, 'Store updated successfully');
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async completeOnboarding(req, res, next) {
-        try {
-            const ownerId = req.user?.id;
-            const storeId = req.params.id;
-            const answers = req.body;
-
-            if (!ownerId) {
-                return response.error(res, 'Unauthorized', 401);
-            }
-
-            // Verify ownership
-            const existingStore = await StoreService.getStoreById(storeId);
-            if (!existingStore || existingStore.owner_id !== ownerId) {
-                return response.error(res, 'Forbidden: You do not own this store', 403);
-            }
-
-            // Generate configuration from answers
-            const config = await OnboardingService.generateStoreConfig(answers);
-
-            // Update store with configuration
-            const updatedStore = await StoreService.updateStore(storeId, {
-                settings: config
-            });
-
-            return response.success(res, updatedStore, 'Onboarding completed successfully');
-        } catch (error) {
-            next(error);
-        }
-    }
+    delete = asyncHandler(async (req, res) => {
+        await this.storeService.deleteStore(req.params.id, req.user.id);
+        res.status(200).json({ success: true, message: 'Store deleted successfully' });
+    });
 }
 
-module.exports = new StoreController();
+module.exports = StoreController;

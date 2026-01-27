@@ -1,5 +1,5 @@
 class AppError extends Error {
-    constructor(message, statusCode) {
+    constructor(message, statusCode = 500) {
         super(message);
         this.statusCode = statusCode;
         this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
@@ -27,9 +27,23 @@ class UnauthorizedError extends AppError {
     }
 }
 
+class ForbiddenError extends AppError {
+    constructor(message) {
+        super(message || 'Forbidden', 403);
+    }
+}
+
+class ConflictError extends AppError {
+    constructor(message) {
+        super(message || 'Conflict', 409);
+    }
+}
+
 module.exports = {
     AppError,
     ValidationError,
     NotFoundError,
-    UnauthorizedError
+    UnauthorizedError,
+    ForbiddenError,
+    ConflictError
 };

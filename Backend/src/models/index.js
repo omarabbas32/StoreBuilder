@@ -1,25 +1,29 @@
-const User = require('./User');
-const Store = require('./Store');
-const Product = require('./Product');
-const Category = require('./Category');
-const Customer = require('./Customer');
-const Order = require('./Order');
-const OrderItem = require('./OrderItem');
-const Review = require('./Review');
-const Theme = require('./Theme');
-const PaymentProof = require('./PaymentProof');
-const Component = require('./Component');
+const userModel = require('./user.model');
+const storeModel = require('./store.model');
+const productModel = require('./product.model');
+const categoryModel = require('./category.model');
+const customerModel = require('./customer.model');
+const orderModel = require('./order.model');
+const orderItemModel = require('./orderItem.model');
+const reviewModel = require('./review.model');
+const reviewHelpfulVoteModel = require('./reviewHelpfulVote.model');
+const themeModel = require('./theme.model');
+const componentModel = require('./component.model');
+const cartModel = require('./cart.model');
+const cartItemModel = require('./cartItem.model');
 
 module.exports = {
-    User,
-    Store,
-    Product,
-    Category,
-    Customer,
-    Order,
-    OrderItem,
-    Review,
-    Theme,
-    PaymentProof,
-    Component
+    userModel,
+    storeModel,
+    productModel,
+    categoryModel,
+    customerModel,
+    orderModel,
+    orderItemModel,
+    reviewModel,
+    reviewHelpfulVoteModel,
+    themeModel,
+    componentModel,
+    cartModel,
+    cartItemModel
 };

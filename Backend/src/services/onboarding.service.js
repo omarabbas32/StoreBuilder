@@ -1,9 +1,128 @@
-const ThemeService = require('./theme.service');
-const ComponentService = require('./component.service');
+const AppError = require('../utils/AppError');
 
+/**
+ * OnboardingService - Store onboarding flow
+ * 
+ * Handles AI-powered store setup and configuration generation
+ */
 class OnboardingService {
+    constructor({ themeService, componentService, storeService, aiService }) {
+        this.themeService = themeService;
+        this.componentService = componentService;
+        this.storeService = storeService;
+        this.aiService = aiService;
+    }
+
     /**
-     * Maps style preference to theme slug/name
+     * Get the onboarding question schema
+     */
+    async getSchema() {
+        return {
+            version: '1.0',
+            description: 'Schema for creating a store via AI agent',
+            questions: [
+                {
+                    field: 'name',
+                    question: 'What would you like to name your store?',
+                    type: 'text',
+                    required: true,
+                    validation: { minLength: 1, maxLength: 100 }
+                },
+                {
+                    field: 'storeCategory',
+                    question: 'What type of store are you creating?',
+                    type: 'single-select',
+                    required: false,
+                    options: [
+                        { id: 'fashion', label: 'Fashion & Apparel' },
+                        { id: 'electronics', label: 'Electronics' },
+                        { id: 'food', label: 'Food & Beverage' },
+                        { id: 'services', label: 'Services' },
+                        { id: 'handmade', label: 'Handmade & Crafts' },
+                        { id: 'digital', label: 'Digital Products' },
+                        { id: 'general', label: 'General Store' }
+                    ]
+                },
+                {
+                    field: 'style_preference',
+                    question: 'What style best describes your brand?',
+                    type: 'single-select',
+                    required: true,
+                    options: [
+                        { id: 'modern-minimal', label: 'Modern & Minimal' },
+                        { id: 'classic-elegant', label: 'Classic & Elegant' },
+                        { id: 'bold-playful', label: 'Bold & Playful' },
+                        { id: 'professional-corporate', label: 'Professional & Corporate' }
+                    ]
+                },
+                {
+                    field: 'enabledSections',
+                    question: 'What sections do you want on your homepage?',
+                    type: 'multi-select',
+                    required: true,
+                    minSelections: 1,
+                    options: [
+                        { id: 'hero', label: 'Large Hero Banner' },
+                        { id: 'product-grid', label: 'Product Grid' },
+                        { id: 'highlight', label: 'Highlight Section' },
+                        { id: 'attributes', label: 'Trust Badges' }
+                    ]
+                },
+                {
+                    field: 'productDisplayStyle',
+                    question: 'How should products be displayed?',
+                    type: 'single-select',
+                    required: true,
+                    options: [
+                        { id: 'grid-4', label: 'Grid (4 columns)' },
+                        { id: 'grid-3', label: 'Grid (3 columns)' },
+                        { id: 'list', label: 'List View' },
+                        { id: 'minimal', label: 'Minimal Cards' }
+                    ]
+                }
+            ]
+        };
+    }
+
+    /**
+     * AI-Create store from answers
+     */
+    async aiCreateStore(answers, ownerId) {
+        // Validate required fields
+        if (!answers.name) throw new AppError('Store name is required', 400);
+
+        // Generate slug
+        const slug = answers.slug || answers.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+        // Check availability
+        const existing = await this.storeService.getStoreBySlug(slug).catch(() => null);
+        if (existing) throw new AppError(`Store with slug "${slug}" already exists`, 409);
+
+        // Create store
+        const store = await this.storeService.createStore({
+            name: answers.name,
+            slug,
+            description: answers.description || `${answers.name} - Created via AI`,
+            settings: {}
+        }, ownerId);
+
+        // Generate full config
+        const config = await this.generateStoreConfig(answers);
+
+        // Update store with config
+        return await this.storeService.updateStore(store.id, { settings: config }, ownerId);
+    }
+
+    /**
+     * Chat with AI for onboarding
+     */
+    async aiChat(messages, provider) {
+        const schema = await this.getSchema();
+        return await this.aiService.chat(messages, schema, provider);
+    }
+
+    /**
+     * Map style preference to theme ID
      */
     async getThemeIdByStyle(stylePreference) {
         const styleToKeywords = {
@@ -14,15 +133,10 @@ class OnboardingService {
         };
 
         const keywords = styleToKeywords[stylePreference] || ['modern', 'minimal'];
+        const themes = await this.themeService.getAllThemes();
 
-        // Get all active themes
-        const themes = await ThemeService.getAllThemes();
+        if (themes.length === 0) return null;
 
-        if (themes.length === 0) {
-            return null;
-        }
-
-        // Try to find theme by name matching keywords
         const themeName = stylePreference.replace('-', ' ');
         let theme = themes.find(t => {
             const nameLower = (t.name || '').toLowerCase();
@@ -30,21 +144,17 @@ class OnboardingService {
                 nameLower.includes(themeName);
         });
 
-        // Fallback to first available theme if no match
-        if (!theme) {
-            theme = themes[0];
-        }
-
+        if (!theme) theme = themes[0];
         return theme?.id || null;
     }
 
     /**
-     * Maps enabled sections to component IDs
+     * Map enabled sections to component IDs
      */
     async getComponentIdsBySections(enabledSections) {
         const sectionToTypeMap = {
             'hero': 'hero',
-            'categories': 'product-grid', // Categories can be shown in product grid
+            'categories': 'product-grid',
             'highlight': 'highlight',
             'product-grid': 'product-grid',
             'attributes': 'attributes'
@@ -54,169 +164,74 @@ class OnboardingService {
             .map(section => sectionToTypeMap[section])
             .filter(Boolean);
 
-        // Get all active components
-        const components = await ComponentService.getActiveComponents();
-
-        // Find components by type, in the order they were selected
+        const components = await this.componentService.getActiveComponents();
         const componentIds = [];
         const seenTypes = new Set();
 
         for (const type of componentTypes) {
             if (seenTypes.has(type)) continue;
-
             const component = components.find(c => c.type === type);
-            if (component && !componentIds.includes(component.id)) {
+            if (component) {
                 componentIds.push(component.id);
                 seenTypes.add(type);
             }
         }
 
-        // Always include navigation, footer, and hero if available to avoid "empty" look
-        const navbar = components.find(c => c.type === 'navigation');
-        const footer = components.find(c => c.type === 'footer');
-        const hero = components.find(c => c.type === 'hero');
-
-        if (navbar && !componentIds.includes(navbar.id)) {
-            componentIds.unshift(navbar.id); // Add at beginning
-        }
-        if (hero && !componentIds.includes(hero.id)) {
-            // Add hero after navbar or at beginning
-            const insertIndex = componentIds.includes(navbar?.id) ? 1 : 0;
-            componentIds.splice(insertIndex, 0, hero.id);
-        }
-        if (footer && !componentIds.includes(footer.id)) {
-            componentIds.push(footer.id); // Add at end
+        const defaults = ['navigation', 'footer', 'hero'];
+        for (const type of defaults) {
+            if (seenTypes.has(type)) continue;
+            const component = components.find(c => c.type === type);
+            if (component) {
+                if (type === 'navigation') componentIds.unshift(component.id);
+                else componentIds.push(component.id);
+            }
         }
 
         return componentIds;
     }
 
     /**
-     * Generate default content for components based on sections
+     * Generate default content for components
      */
-    generateDefaultContent(enabledSections, componentIds, availableComponents) {
+    generateDefaultContent(componentIds, availableComponents) {
         const content = {};
-
         availableComponents.forEach(component => {
             if (!componentIds.includes(component.id)) return;
-
             switch (component.type) {
                 case 'hero':
-                    content[component.id] = {
-                        title: 'Welcome to Our Store',
-                        subtitle: 'Discover amazing products',
-                        image: '',
-                        ctaText: 'Shop Now',
-                        ctaLink: '#products'
-                    };
-                    break;
-                case 'highlight':
-                    content[component.id] = {
-                        title: 'Special Offer',
-                        description: 'Check out our latest deals',
-                        image: ''
-                    };
+                    content[component.id] = { title: 'Welcome', subtitle: 'Our Store', ctaText: 'Shop Now' };
                     break;
                 case 'product-grid':
-                    content[component.id] = {
-                        title: 'Featured Products',
-                        limit: 8
-                    };
-                    break;
-                case 'attributes':
-                    content[component.id] = {
-                        items: [
-                            { icon: '🚚', title: 'Free Shipping', description: 'On orders over $50' },
-                            { icon: '↩️', title: 'Easy Returns', description: '30-day return policy' },
-                            { icon: '🔒', title: 'Secure Payment', description: '100% secure checkout' },
-                            { icon: '💬', title: '24/7 Support', description: 'We\'re here to help' }
-                        ]
-                    };
-                    break;
-                case 'navigation':
-                    content[component.id] = {
-                        showSearch: true,
-                        showCart: true
-                    };
-                    break;
-                case 'footer':
-                    content[component.id] = {
-                        showLinks: true,
-                        showSocial: false
-                    };
+                    content[component.id] = { title: 'Products', limit: 8 };
                     break;
                 default:
                     content[component.id] = {};
             }
         });
-
         return content;
     }
 
     /**
-     * Extract grid columns from product display style
-     */
-    extractColumns(productDisplayStyle) {
-        const styleToColumns = {
-            'grid-4': 4,
-            'grid-3': 3,
-            'list': 1,
-            'minimal': 3
-        };
-        return styleToColumns[productDisplayStyle] || 4;
-    }
-
-    /**
-     * Generate complete store configuration from onboarding answers
+     * Generate complete store configuration
      */
     async generateStoreConfig(answers) {
-        // Get available themes and components
         const [themes, components] = await Promise.all([
-            ThemeService.getAllThemes(),
-            ComponentService.getActiveComponents()
+            this.themeService.getAllThemes(),
+            this.componentService.getActiveComponents()
         ]);
 
-        // Map style preference to theme ID
         const themeId = await this.getThemeIdByStyle(answers.style_preference || 'modern-minimal');
+        const componentIds = await this.getComponentIdsBySections(answers.enabledSections || ['product-grid']);
+        const componentContent = this.generateDefaultContent(componentIds, components);
 
-        // Map enabled sections to component IDs
-        const componentIds = await this.getComponentIdsBySections(
-            answers.enabledSections || ['product-grid']
-        );
-
-        // Generate default content for components
-        const componentContent = this.generateDefaultContent(
-            answers.enabledSections || [],
+        return {
+            themeId,
+            primaryColor: answers.brandColor || '#2563eb',
             componentIds,
-            components
-        );
-
-        // Build configuration object
-        const brandColor = answers.brandColor || '#2563eb';
-        const config = {
-            themeId: themeId,
-            primaryColor: brandColor, // Backward compatibility
-            colorPalette: [brandColor], // New multi-color support
-            logo_url: answers.logo_url || null,
-            componentIds: componentIds,
-            componentContent: componentContent,
-            productCardStyle: answers.productDisplayStyle || 'grid-4',
-            layout: {
-                productGridColumns: this.extractColumns(answers.productDisplayStyle || 'grid-4'),
-                categoryLayout: answers.categoryStructure || 'flat'
-            },
-            onboardingCompleted: true,
-            onboardingAnswers: {
-                style_preference: answers.style_preference,
-                enabledSections: answers.enabledSections,
-                productDisplayStyle: answers.productDisplayStyle,
-                categoryStructure: answers.categoryStructure
-            }
+            componentContent,
+            onboardingCompleted: true
         };
-
-        return config;
     }
 }
 
-module.exports = new OnboardingService();
-
+module.exports = OnboardingService;

@@ -1,14 +1,40 @@
 const express = require('express');
 const router = express.Router();
-const StoreController = require('../controllers/store.controller');
-const authMiddleware = require('../middleware/auth.middleware');
-const validate = require('../middleware/validate.middleware');
-const schemas = require('../utils/schemas');
+const validate = require('../middleware/validate');
+const { createStoreSchema, updateStoreSchema } = require('../validators/store.validator');
+const container = require('../container');
+const { auth } = require('../middleware/auth');
 
-router.post('/', authMiddleware, validate(schemas.createStore), StoreController.create);
-router.get('/', authMiddleware, StoreController.getAll);
-router.get('/:id', StoreController.getByIdOrSlug);
-router.put('/:id', authMiddleware, validate(schemas.updateStore), StoreController.update);
-router.post('/:id/onboarding', authMiddleware, StoreController.completeOnboarding);
+const { storeController } = container;
+
+console.log('[DEBUG_STORE_ROUTES] storeController exists:', !!storeController);
+if (storeController) {
+    console.log('[DEBUG_STORE_ROUTES] storeController.getAll exists:', !!storeController.getAll);
+}
+
+/**
+ * Store Routes
+ */
+
+router.get('/', storeController.getAll);
+router.get('/slug/:slug', storeController.getBySlug);
+router.get('/:id', storeController.getById);
+
+router.post('/',
+    auth,
+    validate(createStoreSchema),
+    storeController.create
+);
+
+router.put('/:id',
+    auth,
+    validate(updateStoreSchema),
+    storeController.update
+);
+
+router.delete('/:id',
+    auth,
+    storeController.delete
+);
 
 module.exports = router;

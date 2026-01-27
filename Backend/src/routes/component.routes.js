@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const ComponentController = require('../controllers/component.controller');
-const auth = require('../middleware/auth.middleware');
-const { restrictTo } = require('../middleware/role.middleware');
+const { componentController } = require('../container');
+const { auth } = require('../middleware/auth');
 
-// Public route: get active components for stores
-router.get('/', ComponentController.getActive);
+/**
+ * Component Routes
+ */
 
-// Admin routes: manage component library
-router.get('/admin', auth, restrictTo('admin'), ComponentController.adminGetAll);
-router.post('/admin', auth, restrictTo('admin'), ComponentController.create);
+router.get('/active', componentController.getActive);
+router.get('/admin', auth, componentController.adminGetAll);
+router.post('/', auth, componentController.create);
+router.put('/:id', auth, componentController.update);
+router.delete('/:id', auth, componentController.delete);
+router.patch('/:id/toggle', auth, componentController.toggleActive);
 
 module.exports = router;

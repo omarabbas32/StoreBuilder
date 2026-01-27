@@ -1,109 +1,43 @@
-const ProductService = require('../services/product.service');
-const StoreService = require('../services/store.service');
-const response = require('../utils/response');
+const { asyncHandler } = require('../middleware/errorHandler');
+const CreateProductRequestDTO = require('../dtos/product/CreateProductRequest.dto');
+const ProductResponseDTO = require('../dtos/product/ProductResponse.dto');
 
 class ProductController {
-    async create(req, res, next) {
-        try {
-            const { store_id } = req.body;
-            const ownerId = req.user?.id;
-
-            // Verify store ownership
-            const store = await StoreService.getStoreById(store_id);
-            if (!store || store.owner_id !== ownerId) {
-                return response.error(res, 'Forbidden: You do not own this store', 403);
-            }
-
-            const product = await ProductService.createProduct(req.body);
-            return response.success(res, product, 'Product created successfully', 201);
-        } catch (error) {
-            next(error);
-        }
+    constructor(productService) {
+        this.productService = productService;
     }
 
-    async getAll(req, res, next) {
-        try {
-            let { limit, offset, store_id, category_id } = req.query;
+    create = asyncHandler(async (req, res) => {
+        const dto = CreateProductRequestDTO.fromRequest(req.validatedData);
+        const result = await this.productService.createProduct(dto, req.user.id);
+        res.status(201).json({ success: true, data: new ProductResponseDTO(result) });
+    });
 
-            // Multi-tenancy support: use tenant ID if store_id is not provided in query
-            if (!store_id && req.tenant) {
-                store_id = req.tenant;
-            }
+    update = asyncHandler(async (req, res) => {
+        // req.validatedData from updateProductSchema
+        const result = await this.productService.updateProduct(req.params.id, req.validatedData, req.user.id);
+        res.status(200).json({ success: true, data: new ProductResponseDTO(result) });
+    });
 
-            let products;
-            if (category_id) {
-                // Filter by category (and optionally by store)
-                products = await ProductService.getProductsByCategory(category_id, store_id, limit, offset);
-            } else if (store_id) {
-                products = await ProductService.getProductsByStore(store_id, limit, offset);
-            } else {
-                products = await ProductService.getAllProducts(limit, offset);
-            }
-            return response.success(res, products);
-        } catch (error) {
-            next(error);
-        }
-    }
+    getByStore = asyncHandler(async (req, res) => {
+        const results = await this.productService.getProductsByStore(req.params.storeId, req.query);
+        res.status(200).json({ success: true, data: ProductResponseDTO.fromArray(results) });
+    });
 
-    async getById(req, res, next) {
-        try {
-            const product = await ProductService.getProductById(req.params.id);
-            if (!product) return response.error(res, 'Product not found', 404);
-            return response.success(res, product);
-        } catch (error) {
-            next(error);
-        }
-    }
+    getById = asyncHandler(async (req, res) => {
+        const result = await this.productService.getProduct(req.params.id);
+        res.status(200).json({ success: true, data: new ProductResponseDTO(result) });
+    });
 
-    async reorder(req, res, next) {
-        try {
-            const { productIds } = req.body;
-            await ProductService.reorderProducts(productIds);
-            return response.success(res, null, 'Products reordered successfully');
-        } catch (error) {
-            next(error);
-        }
-    }
+    reorder = asyncHandler(async (req, res) => {
+        await this.productService.reorderProducts(req.validatedData, req.user.id);
+        res.status(200).json({ success: true, message: 'Products reordered successfully' });
+    });
 
-    async update(req, res, next) {
-        try {
-            const productId = req.params.id;
-            const ownerId = req.user?.id;
-
-            const product = await ProductService.getProductById(productId);
-            if (!product) return response.error(res, 'Product not found', 404);
-
-            const store = await StoreService.getStoreById(product.store_id);
-            if (!store || store.owner_id !== ownerId) {
-                return response.error(res, 'Forbidden: You do not own this store', 403);
-            }
-
-            const updatedProduct = await ProductService.updateProduct(productId, req.body);
-            return response.success(res, updatedProduct, 'Product updated successfully');
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async delete(req, res, next) {
-        try {
-            const productId = req.params.id;
-            const ownerId = req.user?.id;
-
-            const product = await ProductService.getProductById(productId);
-            if (!product) return response.error(res, 'Product not found', 404);
-
-            const store = await StoreService.getStoreById(product.store_id);
-            if (!store || store.owner_id !== ownerId) {
-                return response.error(res, 'Forbidden: You do not own this store', 403);
-            }
-
-            await ProductService.deleteProduct(productId);
-            return response.success(res, null, 'Product deleted successfully', 200);
-        } catch (error) {
-            next(error);
-        }
-    }
+    delete = asyncHandler(async (req, res) => {
+        await this.productService.deleteProduct(req.params.id, req.user.id);
+        res.status(200).json({ success: true, message: 'Product deleted successfully' });
+    });
 }
 
-module.exports = new ProductController();
+module.exports = ProductController;

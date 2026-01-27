@@ -1,33 +1,39 @@
-const ComponentService = require('../services/component.service');
-const response = require('../utils/response');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 class ComponentController {
-    async getActive(req, res, next) {
-        try {
-            const components = await ComponentService.getActiveComponents();
-            return response.success(res, components);
-        } catch (error) {
-            next(error);
-        }
+    constructor(componentService) {
+        this.componentService = componentService;
     }
 
-    async adminGetAll(req, res, next) {
-        try {
-            const components = await ComponentService.adminGetAllComponents();
-            return response.success(res, components);
-        } catch (error) {
-            next(error);
-        }
-    }
+    getActive = asyncHandler(async (req, res) => {
+        const result = await this.componentService.getActiveComponents();
+        res.status(200).json({ success: true, data: result });
+    });
 
-    async create(req, res, next) {
-        try {
-            const component = await ComponentService.createComponent(req.body);
-            return response.success(res, component, 'Component created successfully', 201);
-        } catch (error) {
-            next(error);
-        }
-    }
+    adminGetAll = asyncHandler(async (req, res) => {
+        const result = await this.componentService.getAllComponents(req.query);
+        res.status(200).json({ success: true, data: result });
+    });
+
+    create = asyncHandler(async (req, res) => {
+        const result = await this.componentService.createComponent(req.body);
+        res.status(201).json({ success: true, data: result });
+    });
+
+    update = asyncHandler(async (req, res) => {
+        const result = await this.componentService.updateComponent(req.params.id, req.body);
+        res.status(200).json({ success: true, data: result });
+    });
+
+    delete = asyncHandler(async (req, res) => {
+        await this.componentService.deleteComponent(req.params.id);
+        res.status(200).json({ success: true, message: 'Component deleted successfully' });
+    });
+
+    toggleActive = asyncHandler(async (req, res) => {
+        const result = await this.componentService.toggleActive(req.params.id);
+        res.status(200).json({ success: true, data: result });
+    });
 }
 
-module.exports = new ComponentController();
+module.exports = ComponentController;

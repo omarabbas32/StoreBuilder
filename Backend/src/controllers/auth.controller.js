@@ -1,68 +1,45 @@
-const AuthService = require('../services/auth.service');
-const response = require('../utils/response');
+const { asyncHandler } = require('../middleware/errorHandler');
+const RegisterRequestDTO = require('../dtos/user/RegisterRequest.dto');
+const LoginRequestDTO = require('../dtos/user/LoginRequest.dto');
+const UserResponseDTO = require('../dtos/user/UserResponse.dto');
 
 class AuthController {
-    async register(req, res, next) {
-        try {
-            const result = await AuthService.register(req.body);
-            return response.success(res, result, 'User registered successfully', 201);
-        } catch (error) {
-            next(error);
-        }
+    constructor(authService) {
+        this.authService = authService;
     }
 
-    async login(req, res, next) {
-        try {
-            const { email, password } = req.body;
-            const result = await AuthService.login(email, password);
-            return response.success(res, result, 'Logged in successfully');
-        } catch (error) {
-            next(error);
-        }
-    }
+    register = asyncHandler(async (req, res) => {
+        const dto = RegisterRequestDTO.fromRequest(req.validatedData);
+        const { user, token } = await this.authService.register(dto);
+        res.status(201).json({
+            success: true,
+            data: { user: new UserResponseDTO(user), token }
+        });
+    });
 
-    async verifyEmail(req, res, next) {
-        try {
-            const { token } = req.query;
-            await AuthService.verifyEmail(token);
-            return response.success(res, null, 'Email verified successfully');
-        } catch (error) {
-            next(error);
-        }
-    }
+    login = asyncHandler(async (req, res) => {
+        const dto = LoginRequestDTO.fromRequest(req.validatedData);
+        const { user, token } = await this.authService.login(dto.email, dto.password);
+        res.status(200).json({
+            success: true,
+            data: { user: new UserResponseDTO(user), token }
+        });
+    });
 
-    async forgotPassword(req, res, next) {
-        try {
-            const { email } = req.body;
-            await AuthService.forgotPassword(email);
-            return response.success(res, null, 'If that email exists, a reset link has been sent');
-        } catch (error) {
-            next(error);
-        }
-    }
+    verifyEmail = asyncHandler(async (req, res) => {
+        await this.authService.verifyEmail(req.query.token);
+        res.status(200).json({ success: true, message: 'Email verified successfully' });
+    });
 
-    async resetPassword(req, res, next) {
-        try {
-            const { token, password } = req.body;
-            await AuthService.resetPassword(token, password);
-            return response.success(res, null, 'Password has been reset successfully');
-        } catch (error) {
-            next(error);
-        }
-    }
+    forgotPassword = asyncHandler(async (req, res) => {
+        await this.authService.forgotPassword(req.body.email);
+        res.status(200).json({ success: true, message: 'If an account exists, a reset email has been sent' });
+    });
 
-    async logout(req, res) {
-        return response.success(res, null, 'Logged out');
-    }
-
-    async getMe(req, res, next) {
-        try {
-            const user = await AuthService.getMe(req.user.id);
-            return response.success(res, user);
-        } catch (error) {
-            next(error);
-        }
-    }
+    resetPassword = asyncHandler(async (req, res) => {
+        await this.authService.resetPassword(req.validatedData.token, req.validatedData.newPassword);
+        res.status(200).json({ success: true, message: 'Password reset successfully' });
+    });
 }
 
-module.exports = new AuthController();
+module.exports = AuthController;

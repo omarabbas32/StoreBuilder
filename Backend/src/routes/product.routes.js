@@ -1,15 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const ProductController = require('../controllers/product.controller');
-const authMiddleware = require('../middleware/auth.middleware');
-const validate = require('../middleware/validate.middleware');
-const schemas = require('../utils/schemas');
+const validate = require('../middleware/validate');
+const { createProductSchema, updateProductSchema, reorderProductsSchema } = require('../validators/product.validator');
+const { productController } = require('../container');
+const { auth } = require('../middleware/auth');
 
-router.post('/', authMiddleware, validate(schemas.createProduct), ProductController.create);
-router.get('/', validate(schemas.filterProducts, 'query'), ProductController.getAll);
-router.get('/:id', ProductController.getById);
-router.post('/reorder', authMiddleware, ProductController.reorder);
-router.put('/:id', authMiddleware, validate(schemas.updateProduct), ProductController.update);
-router.delete('/:id', authMiddleware, ProductController.delete);
+/**
+ * Product Routes
+ */
+
+router.get('/:storeId', productController.getByStore);
+router.get('/item/:id', productController.getById);
+
+router.post('/',
+    auth,
+    validate(createProductSchema),
+    productController.create
+);
+
+router.put('/:id',
+    auth,
+    validate(updateProductSchema),
+    productController.update
+);
+
+router.post('/reorder',
+    auth,
+    validate(reorderProductsSchema),
+    productController.reorder
+);
+
+router.delete('/:id',
+    auth,
+    productController.delete
+);
 
 module.exports = router;

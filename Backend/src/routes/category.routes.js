@@ -1,11 +1,32 @@
 const express = require('express');
 const router = express.Router();
-const CategoryController = require('../controllers/category.controller');
-const authMiddleware = require('../middleware/auth.middleware');
-const { restrictTo } = require('../middleware/role.middleware');
+const validate = require('../middleware/validate');
+const { createCategorySchema, updateCategorySchema } = require('../validators/category.validator');
+const { categoryController } = require('../container');
+const { auth } = require('../middleware/auth');
 
-router.post('/', authMiddleware, CategoryController.create);
-router.get('/', CategoryController.getAll);
-router.get('/:id', CategoryController.getById);
+/**
+ * Category Routes
+ */
+
+router.get('/store/:storeId', categoryController.getByStore);
+router.get('/:id', categoryController.getById);
+
+router.post('/',
+    auth,
+    validate(createCategorySchema),
+    categoryController.create
+);
+
+router.put('/:id',
+    auth,
+    validate(updateCategorySchema),
+    categoryController.update
+);
+
+router.delete('/:id',
+    auth,
+    categoryController.delete
+);
 
 module.exports = router;
