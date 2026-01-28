@@ -100,6 +100,7 @@
 .designer-sidebar.split {
     width: 450px;
     min-width: 450px;
+    max-width: 45vw;
     border-right: 1px solid var(--designer-border);
     background: #f1f5f9;
 }
@@ -1128,8 +1129,13 @@ select.modern-input {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* ============================================
@@ -1224,8 +1230,22 @@ select.modern-input {
     }
 
     .save-btn-modern span,
-    .btn-glass span {
+    .btn-glass span,
+    .back-btn span,
+    .preview-link span {
         display: none;
+    }
+
+    .save-btn-modern,
+    .btn-glass,
+    .back-btn,
+    .preview-link {
+        padding: 0.5rem !important;
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .designer-sidebar {

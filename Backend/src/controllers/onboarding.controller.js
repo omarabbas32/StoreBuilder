@@ -16,8 +16,9 @@ class OnboardingController {
         res.status(201).json({ success: true, data: result });
     });
 
-    completeOnboarding = asyncHandler(async (req, res) => {
-        const result = await this.onboardingService.aiCreateStore(req.body, req.user.id);
+    completeStoreOnboarding = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const result = await this.onboardingService.completeStoreOnboarding(id, req.body, req.user.id);
         res.status(200).json({ success: true, data: result });
     });
 

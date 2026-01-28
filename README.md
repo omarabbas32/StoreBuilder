@@ -1,343 +1,177 @@
-# Storely - Complete E-Commerce Platform
+# 🛒 Storely - AI-Powered Storefront Builder
 
-## 🎉 Project Status: COMPLETE
-
-A full-stack, production-ready e-commerce platform with multi-tenant support, admin CMS, and customizable storefronts.
+Storely is a cutting-edge, full-stack e-commerce platform designed for multi-tenancy and AI-driven store creation. It enables users to build, customize, and manage their own online stores with ease, powered by a robust Node.js backend and a dynamic React frontend.
 
 ---
 
-## 📊 What's Been Built
+## ✨ Features
 
-### Backend (Node.js + Express + PostgreSQL)
-- ✅ **RESTful API** with 50+ endpoints
-- ✅ **Authentication System** (JWT, Email Verification, Password Reset)
-- ✅ **Password Hashing** (bcryptjs implementation)
-- ✅ **JWT Verification Middleware** (Secure route protection)
-- ✅ **Multi-Tenant Architecture** (Store-specific data isolation)
-- ✅ **Subdomain Support** (Automatic storefront routing based on subdomain)
-- ✅ **Admin CMS** (Themes & Components Management)
-- ✅ **File Uploads** (Cloudinary Integration)
-- ✅ **Email Service** (Nodemailer with Gmail SMTP)
-- ✅ **Database Migrations** (Custom migration runner for SQL scripts)
-- ✅ **Security** (Helmet, CORS, Input Validation, Rate Limiting placeholder)
+### 🤖 AI-Powered Onboarding
+- **AI Chat Creation:** Build your store by simply chatting with an AI assistant (powered by Groq SDK).
+- **Automated Schema Generation:** AI generates store descriptions, categories, and initial structures based on user input.
 
-### Frontend (React + Vite + Zustand)
-- ✅ **Admin Dashboard** (Theme/Component CMS, Analytics)
-- ✅ **User Dashboard** (Store Management, Products, Customization)
-- ✅ **Authentication UI** (Login, Register, Password Reset)
-- ✅ **Design System** (CSS Variables, Responsive, Accessible)
-- ✅ **15+ Reusable Components**
-- ✅ **10+ Fully Functional Pages**
+### 🎨 Store Customization
+- **Drag-and-Drop Editor:** Real-time storefront customization using `@dnd-kit`.
+- **Theme Engine:** Manage global themes and UI components from an admin dashboard.
+- **Dynamic Storefronts:** Automatic routing and rendering based on store slugs or subdomains.
 
----
+### 📦 E-Commerce Essentials
+- **Product Management:** Full CRUD for products with multi-image support (Cloudinary).
+- **Category Hierarchy:** Parent-child category relationships for complex catalogs.
+- **Shopping Cart:** Persistent cart management for registered and session users.
+- **Order Flow:** Complete checkout process from cart to order success.
+- **Product Reviews:** Verified purchase reviews with helpful voting system.
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 12+
-- Gmail account (for email service)
-
-### 1. Backend Setup
-
-```bash
-cd Backend
-
-# Install dependencies
-npm install
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your database credentials
-
-# Run migrations
-npm run migrate
-
-# Start development server
-npm run dev
-```
-
-**Backend runs on:** `http://localhost:3000`
-
-### 2. Frontend Setup
-
-```bash
-cd Frontend
-
-# Install dependencies
-npm install
-
-# Configure environment
-cp .env.example .env
-# VITE_API_URL should be http://localhost:3000/api
-
-# Start development server
-npm run dev
-```
-
-**Frontend runs on:** `http://localhost:5173`
+### 🔐 Security & Infrastructure
+- **Authentication:** JWT-based auth with email verification and password reset flows.
+- **Role-Based Access:** Multi-level permissions (Admin, Store Owner, Customer).
+- **Multi-Tenant Isolation:** Secure data separation across different stores.
+- **Media Management:** integrated with Cloudinary for fast, optimized image delivery.
 
 ---
 
-## 🗄️ Database Schema
+## 🛠️ Tech Stack
 
-### Core Tables
-- `users` - User accounts (admin, store_owner, customer)
-- `stores` - Multi-tenant store instances
-- `products` - Product catalog
-- `categories` - Product categories
-- `orders` - Customer orders
-- `order_items` - Order line items
-- `themes` - Admin-managed themes
-- `components` - Admin-managed UI components
-- `product_reviews` - Customer reviews
-- `review_helpful_votes` - Review voting
+### Backend
+- **Framework:** Node.js / Express.js
+- **Database:** PostgreSQL with **Prisma ORM**
+- **AI Integration:** Groq SDK
+- **Media:** Cloudinary (via Multer)
+- **Email:** Nodemailer (SMTP)
+- **Security:** bcryptjs (Hashing), JWT (Auth), Helmet, CORS
+- **Validation:** Joi & Zod
+- **Logging:** Winston & Morgan
 
----
-
-## 🔐 Environment Variables
-
-### Backend (.env)
-```env
-# Database
-DB_USER=postgres
-DB_HOST=localhost
-DB_NAME=storely
-DB_PASSWORD=your_password
-DB_PORT=5432
-
-# JWT
-JWT_SECRET=your_secret_key
-
-# Email (Gmail SMTP)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_app_password
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
-
-### Frontend (.env)
-```env
-VITE_API_URL=http://localhost:3000/api
-```
+### Frontend
+- **Framework:** React 18 with Vite
+- **State Management:** Zustand
+- **Navigation:** React Router 6
+- **Forms:** React Hook Form with Zod validation
+- **Icons:** Lucide React
+- **Drag & Drop:** `@dnd-kit/core` & `@hello-pangea/dnd`
+- **Styling:** Vanilla CSS with a custom design system
 
 ---
 
 ## 📁 Project Structure
 
-```
+```text
 storely/
 ├── Backend/
+│   ├── prisma/             # Prisma Schema & Migrations
 │   ├── src/
-│   │   ├── config/          # Database, Cloudinary config
-│   │   ├── controllers/     # Request handlers
-│   │   ├── database/        # Migrations
-│   │   ├── middleware/      # Auth, validation, error handling
-│   │   ├── models/          # Database models
-│   │   ├── routes/          # API routes
-│   │   ├── services/        # Business logic
-│   │   └── utils/           # Helpers, logger
-│   ├── server.js
-│   └── package.json
+│   │   ├── config/          # Cloudinary, Database, SMTP Config
+│   │   ├── controllers/     # Business Logic Handlers
+│   │   ├── middleware/      # Auth, Error, Upload, Validation
+│   │   ├── models/          # (Legacy) Models - now handled by Prisma
+│   │   ├── routes/          # API Route Definitions
+│   │   ├── services/        # Third-party Integrations (AI, Media, Email)
+│   │   ├── utils/           # Helper Functions
+│   │   └── container.js     # Dependency Injection Container
+│   └── server.js            # Entry Point
 │
-└── Frontend/
-    ├── src/
-    │   ├── components/      # Reusable UI components
-    │   │   ├── ui/         # Button, Input, Card, Spinner
-    │   │   ├── layout/     # AdminLayout, UserLayout
-    │   │   └── common/     # ProtectedRoute
-    │   ├── pages/          # Page components
-    │   ├── services/       # API integration
-    │   ├── store/          # Zustand state
-    │   ├── utils/          # Helpers
-    │   ├── App.jsx         # Main router
-    │   └── index.css       # Design system
-    └── package.json
+├── Frontend/
+│   ├── src/
+│   │   ├── components/      # UI, Layout, & Feature Components
+│   │   ├── pages/           # Page Components (Customizer, Dashboards)
+│   │   ├── services/        # API Client Services (Axios)
+│   │   ├── store/           # Zustand State Stores
+│   │   ├── utils/           # Frontend Helpers
+│   │   └── App.jsx          # Routing & Providers
+│   └── index.css            # Global Styles & Tokens
+│
+└── MainTheme/               # Reference Gatsby E-commerce Theme
 ```
 
 ---
 
-## 🎨 Design System
+## 🚀 Getting Started
 
-### Colors
-- **Primary**: `#2563EB` (Blue 600)
-- **Accent**: `#F59E0B` (Amber 500)
-- **Success**: `#10B981` (Emerald 500)
-- **Error**: `#EF4444` (Red 500)
+### Prerequisites
+- Node.js 18.x or higher
+- PostgreSQL instance
+- Cloudinary Account (for media)
+- Gmail App Password (for email service)
 
-### Breakpoints
-- **Mobile**: 320px - 767px
-- **Tablet**: 768px - 1023px
-- **Desktop**: 1024px+
+### 1. Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd Backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Configure Environment (`.env`):
+   ```env
+   # Database
+   DATABASE_URL="postgresql://user:password@localhost:5432/storely"
+   
+   # JWT & Security
+   JWT_SECRET="your_very_secret_key"
+   
+   # External Services
+   GROQ_API_KEY="your_groq_api_key"
+   CLOUDINARY_CLOUD_NAME="your_name"
+   CLOUDINARY_API_KEY="your_key"
+   CLOUDINARY_API_SECRET="your_secret"
+   
+   # SMTP
+   SMTP_HOST="smtp.gmail.com"
+   SMTP_USER="your-email@gmail.com"
+   SMTP_PASS="your-app-password"
+   ```
+4. Run Migrations:
+   ```bash
+   npx prisma migrate dev
+   ```
+5. Start the server:
+   ```bash
+   npm run dev
+   ```
 
----
-
-## 🔑 Key Features
-
-### Admin Features
-- Dashboard with analytics
-- Theme library management (CRUD)
-- Component library management (CRUD)
-- Store overview and management
-- User management
-
-### Store Owner Features
-- Store dashboard with stats
-- Product management (CRUD)
-- Category management
-- Store customization (theme & component selection)
-- Order management (placeholder)
-
-### Customer Features (Planned)
-- Browse products
-- Add to cart
-- Checkout
-- Order tracking
-- Product reviews
-
----
-
-## 🛡️ Security Features
-
-- **JWT Authentication** with token verification and route protection
-- **Role-Based Access Control** (Admin, Store Owner, Customer)
-- **Input Validation** (Joi/Zod schemas)
-- **XSS Protection** (React escaping + Helmet)
-- **CSRF Protection** (CORS configuration)
-- **Password Hashing** (Secure bcryptjs implementation)
-- **Email Verification** (Token-based verification flow)
-- **Rate Limiting** (Middleware structure ready)
-
----
-
-## 📝 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/verify-email?token=` - Verify email
-- `POST /api/auth/forgot-password` - Request password reset
-- `POST /api/auth/reset-password` - Reset password
-
-### Admin
-- `GET /api/admin/dashboard` - Dashboard stats
-- `GET /api/admin/stores` - List all stores
-- `GET /api/admin/themes` - List all themes
-- `POST /api/themes/admin` - Create theme
-- `GET /api/admin/components` - List all components
-- `POST /api/components/admin` - Create component
-
-### Stores & Products
-- `GET /api/stores` - Get user's stores
-- `POST /api/stores` - Create store
-- `GET /api/products` - List products
-- `POST /api/products` - Create product
-- `PUT /api/products/:id` - Update product
-- `DELETE /api/products/:id` - Delete product
-
-### Public
-- `GET /api/themes` - Browse active themes
-- `GET /api/components` - Browse active components
+### 2. Frontend Setup
+1. Navigate to the frontend directory:
+   ```bash
+   cd Frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Configure Environment (`.env`):
+   ```env
+   VITE_API_URL="http://localhost:3000/api"
+   ```
+4. Start development server:
+   ```bash
+   npm run dev
+   ```
 
 ---
 
-## 🧪 Testing
+## 🔗 Key API Endpoints
 
-### Manual Testing
-1. **Register** a new user at `/register`
-2. **Check email** for verification link (check console logs)
-3. **Login** at `/login`
-4. **Create a store** from the dashboard
-5. **Add products** via Product Manager
-6. **Customize store** via Store Customizer
-
-### Admin Testing
-- Login with admin credentials
-- Access `/admin` dashboard
-- Create themes and components
+| Category | Endpoint | Method | Description |
+| :--- | :--- | :--- | :--- |
+| **Auth** | `/api/auth/register` | `POST` | Register a new user |
+| **Auth** | `/api/auth/login` | `POST` | Login & receive JWT |
+| **AI** | `/api/onboarding/ai-chat` | `POST` | Chat with AI for store setup |
+| **Stores** | `/api/stores` | `POST` | Create a new store |
+| **Products** | `/api/products` | `GET` | List products with filters |
+| **Cart** | `/api/cart` | `GET` | Retrieve current cart |
+| **Admin** | `/api/components/admin`| `POST` | Create global UI components |
 
 ---
 
-## 🚧 Next Steps for Production
+## 🛡️ License
 
-### High Priority
-1. **Order Processing** - Complete the order fulfillment workflow
-2. **Shopping Cart Persistence** - Save cart items to database for logged-in users
-3. **Advanced Filtering** - Search and filter products by category/price
-4. **Global Error Handling** - Refining error responses across all controllers
-5. **Testing** - Add unit and integration tests
-
-### Medium Priority
-6. **File upload validation** - Restrict file types and sizes
-7. **Rate limiting** - Implement actual rate limiting (Redis/Express-rate-limit)
-8. **Logging** - Enhance Winston logging for production
-9. **API documentation** - Add Swagger/OpenAPI
-10. **Performance** - Add caching (Redis)
-
-### Nice to Have
-11. **Payment integration** - Stripe/PayPal
-12. **Analytics** - Google Analytics, Mixpanel
-13. **SEO** - Meta tags, sitemap
-14. **PWA** - Service workers, offline support
-15. **Internationalization** - i18n support
-
----
-
-## 📚 Documentation
-
-- [Backend README](./Backend/README.md) - Backend setup and API docs
-- [Frontend README](./Frontend/README.md) - Frontend architecture
-- [Walkthrough](./walkthrough.md) - Development journey
-- [Implementation Plan](./implementation_plan.md) - Technical decisions
-
----
+This project is licensed under the MIT License.
 
 ## 🤝 Contributing
 
-This is a complete, production-ready foundation. To extend:
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement your feature
-4. Add tests
-5. Submit a pull request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-## 📄 License
-
-MIT License - Feel free to use this project as a foundation for your own e-commerce platform.
-
----
-
-## 🎓 Learning Resources
-
-This project demonstrates:
-- **Full-stack development** (React + Node.js)
-- **RESTful API design**
-- **Database modeling** (PostgreSQL)
-- **Authentication & Authorization**
-- **Multi-tenant architecture**
-- **Modern React patterns** (Hooks, Context, Zustand)
-- **Responsive design** (Mobile-first)
-- **Security best practices**
-
----
-
-## 💡 Tips
-
-- **Database**: Run migrations before starting the backend
-- **Email**: Use Gmail App Passwords, not your regular password
-- **Cloudinary**: Sign up for a free account at cloudinary.com
-- **Development**: Use separate terminals for backend and frontend
-- **Debugging**: Check browser console and backend logs
-
----
-
-**Built with ❤️ using modern web technologies**
-#   s t o r l y  
+**Built with ❤️ by the Storely Team**

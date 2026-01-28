@@ -15,6 +15,7 @@
 }
 
 .sidebar-title {
+    font-family: var(--heading-font-family, inherit);
     font-size: 1.125rem;
     font-weight: 700;
     margin-bottom: 1.25rem;
@@ -32,6 +33,7 @@
 }
 
 .search-box input {
+    font-family: var(--font-family, inherit);
     background: none;
     border: none;
     width: 100%;

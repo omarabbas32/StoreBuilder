@@ -4,6 +4,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import orderService from '../services/orderService';
 import useAuthStore from '../store/authStore';
+import '../styles/empty-states.css';
 import './OrderManagement.css';
 
 const OrderManagement = () => {
@@ -46,10 +47,22 @@ const OrderManagement = () => {
 
             <div className="orders-container">
                 {orders.length === 0 ? (
-                    <Card className="empty-orders">
-                        <ShoppingBag size={48} />
-                        <h3>No orders yet</h3>
-                        <p className="text-muted">When customers buy from your store, their orders will appear here.</p>
+                    <Card className="empty-state-card">
+                        <div className="empty-state-icon">🛒</div>
+                        <h3>No Orders Yet</h3>
+                        <p className="text-muted">
+                            When customers purchase from your store, orders will appear here.
+                            In the meantime, share your store link to start getting sales!
+                        </p>
+                        <Button
+                            onClick={() => {
+                                navigator.clipboard.writeText(window.location.origin + '/' + store.slug);
+                                alert('Store link copied to clipboard!');
+                            }}
+                            size="lg"
+                        >
+                            📋 Copy Store Link
+                        </Button>
                     </Card>
                 ) : (
                     <div className="orders-grid">

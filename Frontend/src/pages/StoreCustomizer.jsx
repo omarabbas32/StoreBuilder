@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Save,
@@ -54,6 +54,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
+import { debounce } from '../utils/debounce';
 import { safeSettingsUpdate } from '../utils/settingsMerge';
 import { validateStoreSettings } from '../utils/validation';
 import toast from 'react-hot-toast';
@@ -107,19 +108,25 @@ const StoreCustomizer = () => {
         init();
     }, [storeId]);
 
-    // Send updates to preview iframe
-    useEffect(() => {
-        if (iframeRef.current && store?.settings && previewMode === 'split') {
-            const sendUpdate = () => {
-                iframeRef.current.contentWindow?.postMessage({
+    // Debounced update to preview iframe
+    const debouncedSendUpdate = useMemo(
+        () => debounce((settings) => {
+            if (iframeRef.current?.contentWindow) {
+                iframeRef.current.contentWindow.postMessage({
                     type: 'STORE_UPDATE',
-                    settings: store.settings
+                    settings
                 }, window.location.origin);
-            };
+            }
+        }, 300),
+        []
+    );
 
-            sendUpdate();
+    useEffect(() => {
+        if (store?.settings && previewMode === 'split') {
+            debouncedSendUpdate(store.settings);
         }
-    }, [store?.settings, previewMode]);
+    }, [store?.settings, previewMode, debouncedSendUpdate]);
+
 
     // Auto-save to localStorage
     useEffect(() => {
@@ -222,6 +229,7 @@ const StoreCustomizer = () => {
             ...prev,
             settings: draft.settings
         }));
+        setAuthStore({ ...store, settings: draft.settings });
         setHasUnsavedChanges(true);
         toast.success('Draft restored!');
     };
@@ -237,11 +245,12 @@ const StoreCustomizer = () => {
             const prevIndex = historyIndex - 1;
             const prevSettings = history[prevIndex];
             setStore(prev => ({ ...prev, settings: prevSettings }));
+            setAuthStore({ ...store, settings: prevSettings });
             setHistoryIndex(prevIndex);
             setHasUnsavedChanges(true);
             toast.success('Undo', { id: 'undo-redo', duration: 1000 });
         }
-    }, [historyIndex, history]);
+    }, [historyIndex, history, store, setAuthStore]);
 
     const redo = useCallback(() => {
         if (historyIndex < history.length - 1) {
@@ -249,33 +258,41 @@ const StoreCustomizer = () => {
             const nextIndex = historyIndex + 1;
             const nextSettings = history[nextIndex];
             setStore(prev => ({ ...prev, settings: nextSettings }));
+            setAuthStore({ ...store, settings: nextSettings });
             setHistoryIndex(nextIndex);
             setHasUnsavedChanges(true);
             toast.success('Redo', { id: 'undo-redo', duration: 1000 });
         }
-    }, [historyIndex, history]);
+    }, [historyIndex, history, store, setAuthStore]);
 
-    // Track history for Undo/Redo
+    // Track history for Undo/Redo (Debounced)
+    const pushToHistory = useMemo(
+        () => debounce((newSettings) => {
+            setHistory(prev => {
+                const currentSettingsJSON = JSON.stringify(newSettings);
+                const lastSettingsJSON = prev.length > 0 ? JSON.stringify(prev[prev.length - 1]) : null;
+
+                if (currentSettingsJSON !== lastSettingsJSON) {
+                    const newHistory = [...prev.slice(0, historyIndex + 1), newSettings];
+                    if (newHistory.length > 50) newHistory.shift();
+                    return newHistory;
+                }
+                return prev;
+            });
+            setHistoryIndex(prev => Math.min(prev + 1, 49));
+        }, 500),
+        [historyIndex]
+    );
+
     useEffect(() => {
         if (store?.settings) {
             if (isUndoing.current) {
                 isUndoing.current = false;
                 return;
             }
-
-            const currentSettings = JSON.stringify(store.settings);
-            const lastSavedSettings = historyIndex >= 0 ? JSON.stringify(history[historyIndex]) : null;
-
-            if (currentSettings !== lastSavedSettings) {
-                const newHistory = history.slice(0, historyIndex + 1);
-                newHistory.push(JSON.parse(currentSettings));
-                if (newHistory.length > 50) newHistory.shift();
-
-                setHistory(newHistory);
-                setHistoryIndex(newHistory.length - 1);
-            }
+            pushToHistory(JSON.parse(JSON.stringify(store.settings)));
         }
-    }, [store?.settings, historyIndex, history]);
+    }, [store?.settings, pushToHistory]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -378,7 +395,7 @@ const StoreCustomizer = () => {
         }
 
         setSaving(true);
-        setSaveStatus(null);
+        setAutoSaveStatus(null);
         // Use merge utility to preserve metadata and merge settings safely
         const updates = {
             ...store.settings,
@@ -400,6 +417,7 @@ const StoreCustomizer = () => {
                 description: store.description
             });
             setStore(prev => ({ ...prev, settings: finalSettings }));
+            setAuthStore({ ...store, settings: finalSettings });
             setHasUnsavedChanges(false);
             clearDraft(); // Clear draft after successful save
             toast.success('Design saved successfully!');
@@ -455,14 +473,33 @@ const StoreCustomizer = () => {
         setAssetCallback(null);
     };
 
-    const updateSettingsField = (field, value) => {
-        setStore(prev => ({
-            ...prev,
-            settings: {
+    const updateSettingsField = (field, valueOrFn) => {
+        setStore(prev => {
+            const prevValue = prev.settings?.[field];
+            const newValue = typeof valueOrFn === 'function' ? valueOrFn(prevValue) : valueOrFn;
+            const newSettings = {
                 ...(prev.settings || {}),
-                [field]: value
-            }
-        }));
+                [field]: newValue
+            };
+            return {
+                ...prev,
+                settings: newSettings
+            };
+        });
+        setHasUnsavedChanges(true);
+    };
+
+    const updateSettingsFields = (fields) => {
+        setStore(prev => {
+            const newSettings = {
+                ...(prev.settings || {}),
+                ...fields
+            };
+            return {
+                ...prev,
+                settings: newSettings
+            };
+        });
         setHasUnsavedChanges(true);
     };
 
@@ -688,6 +725,7 @@ const StoreCustomizer = () => {
 
     // Use local variables based on LATEST store state for rendering
     const settings = store.settings || { components: [], componentContent: {} };
+
     const components = settings.components && settings.components.length > 0
         ? settings.components
         : availableComponents;
@@ -716,6 +754,7 @@ const StoreCustomizer = () => {
     const navbarContent = settings.componentContent?.[navbarComp?.id] || {
         menuItems: []
     };
+
     const menuItems = Array.isArray(navbarContent.menuItems)
         ? navbarContent.menuItems
         : (typeof navbarContent.menuItems === 'string' ? JSON.parse(navbarContent.menuItems) : []);
@@ -735,17 +774,16 @@ const StoreCustomizer = () => {
         phone: ''
     };
 
-    let parsedFooterLinks = [];
+    let footerLinks = [];
     if (Array.isArray(footerContent.aboutLinks)) {
-        parsedFooterLinks = footerContent.aboutLinks;
+        footerLinks = footerContent.aboutLinks;
     } else if (typeof footerContent.aboutLinks === 'string') {
         try {
-            parsedFooterLinks = JSON.parse(footerContent.aboutLinks);
+            footerLinks = JSON.parse(footerContent.aboutLinks);
         } catch (error) {
-            parsedFooterLinks = [];
+            footerLinks = [];
         }
     }
-    const footerLinks = parsedFooterLinks;
 
     const addMenuItem = () => {
         if (!navbarComp) return;
@@ -904,8 +942,10 @@ const StoreCustomizer = () => {
                                     <ColorPalettePicker
                                         value={settings.colorPalette || [settings.primaryColor || '#2563eb']}
                                         onChange={(colors) => {
-                                            updateSettingsField('colorPalette', colors);
-                                            updateSettingsField('primaryColor', colors[0]); // Keep backward compatible
+                                            updateSettingsFields({
+                                                colorPalette: colors,
+                                                primaryColor: colors[0] // Keep backward compatible
+                                            });
                                         }}
                                         themes={[
                                             { name: 'Modern', colors: ['#0f172a', '#3b82f6', '#f8fafc'] },
@@ -984,11 +1024,11 @@ const StoreCustomizer = () => {
                                             <button
                                                 key={pair.name}
                                                 className={`font-preset-item ${typography.fontFamily === pair.body && typography.headingFontFamily === pair.heading ? 'active' : ''}`}
-                                                onClick={() => updateSettingsField('typography', {
-                                                    ...typography,
+                                                onClick={() => updateSettingsField('typography', (prev) => ({
+                                                    ...(prev || {}),
                                                     fontFamily: pair.body,
                                                     headingFontFamily: pair.heading
-                                                })}
+                                                }))}
                                             >
                                                 <div className="preset-preview">
                                                     <span style={{ fontFamily: pair.heading }} className="h-preview">Aa</span>
@@ -1004,7 +1044,7 @@ const StoreCustomizer = () => {
                                     <select
                                         className="modern-input"
                                         value={typography.headingFontFamily || typography.fontFamily}
-                                        onChange={(e) => updateSettingsField('typography', { ...typography, headingFontFamily: e.target.value })}
+                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), headingFontFamily: e.target.value }))}
                                     >
                                         <option value="Inter">Inter (Sans-serif)</option>
                                         <option value="Roboto">Roboto (Clean)</option>
@@ -1018,7 +1058,7 @@ const StoreCustomizer = () => {
                                     <select
                                         className="modern-input"
                                         value={typography.fontFamily}
-                                        onChange={(e) => updateSettingsField('typography', { ...typography, fontFamily: e.target.value })}
+                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), fontFamily: e.target.value }))}
                                     >
                                         <option value="Inter">Inter (Sans-serif)</option>
                                         <option value="Roboto">Roboto (Clean)</option>
@@ -1032,7 +1072,7 @@ const StoreCustomizer = () => {
                                     <select
                                         className="modern-input"
                                         value={typography.headingSize}
-                                        onChange={(e) => updateSettingsField('typography', { ...typography, headingSize: e.target.value })}
+                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), headingSize: e.target.value }))}
                                     >
                                         <option value="small">Small</option>
                                         <option value="medium">Medium</option>
@@ -1045,7 +1085,7 @@ const StoreCustomizer = () => {
                                     <select
                                         className="modern-input"
                                         value={typography.bodySize}
-                                        onChange={(e) => updateSettingsField('typography', { ...typography, bodySize: e.target.value })}
+                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), bodySize: e.target.value }))}
                                     >
                                         <option value="small">Small</option>
                                         <option value="medium">Medium</option>
@@ -1057,7 +1097,7 @@ const StoreCustomizer = () => {
                                     <select
                                         className="modern-input"
                                         value={typography.fontWeight}
-                                        onChange={(e) => updateSettingsField('typography', { ...typography, fontWeight: e.target.value })}
+                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), fontWeight: e.target.value }))}
                                     >
                                         <option value="light">Light</option>
                                         <option value="normal">Normal</option>
@@ -1070,7 +1110,7 @@ const StoreCustomizer = () => {
                                     <select
                                         className="modern-input"
                                         value={typography.lineHeight || '1.6'}
-                                        onChange={(e) => updateSettingsField('typography', { ...typography, lineHeight: e.target.value })}
+                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), lineHeight: e.target.value }))}
                                     >
                                         <option value="1.2">Tight (1.2)</option>
                                         <option value="1.4">Normal (1.4)</option>
@@ -1083,7 +1123,7 @@ const StoreCustomizer = () => {
                                     <select
                                         className="modern-input"
                                         value={typography.letterSpacing || '0px'}
-                                        onChange={(e) => updateSettingsField('typography', { ...typography, letterSpacing: e.target.value })}
+                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), letterSpacing: e.target.value }))}
                                     >
                                         <option value="-0.5px">Tight (-0.5px)</option>
                                         <option value="0px">Normal (0px)</option>

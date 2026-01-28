@@ -22,7 +22,7 @@ const storeService = {
   },
 
   async getStoreBySlug(slug) {
-    const result = await apiClient.get(`/stores/${slug}`);
+    const result = await apiClient.get(`/stores/slug/${slug}`);
     if (result.success) {
       return { ...result, data: normalizeStore(result.data) };
     }

@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, DollarSign, TrendingUp, Plus, Store as StoreIcon } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
+import GettingStartedChecklist from '../components/dashboard/GettingStartedChecklist';
 import storeService from '../services/storeService';
 import productService from '../services/productService';
 import orderService from '../services/orderService';
+import categoryService from '../services/categoryService';
 import useAuthStore from '../store/authStore';
 import './UserDashboard.css';
 
@@ -19,6 +20,7 @@ const UserDashboard = () => {
         totalOrders: 0,
         revenue: 0,
     });
+    const [totalCategories, setTotalCategories] = useState(0);
     const [loading, setLoading] = useState(true);
     const hasRedirectedRef = useRef(false);
 
@@ -62,9 +64,10 @@ const UserDashboard = () => {
     };
 
     const loadStoreStats = async (storeId) => {
-        const [productsResult, ordersResult] = await Promise.all([
+        const [productsResult, ordersResult, categoriesResult] = await Promise.all([
             productService.getProducts(storeId),
-            orderService.getStoreOrders(storeId)
+            orderService.getStoreOrders(storeId),
+            categoryService.getAll(storeId)
         ]);
 
         let totalProducts = 0;
@@ -80,14 +83,16 @@ const UserDashboard = () => {
             revenue = ordersResult.data?.reduce((sum, order) => sum + parseFloat(order.total_amount), 0) || 0;
         }
 
+        if (categoriesResult.success) {
+            setTotalCategories(categoriesResult.data?.length || 0);
+        }
+
         setStats({
             totalProducts,
             totalOrders,
             revenue: revenue.toFixed(2),
         });
     };
-
-
 
     const handleStoreSwitch = async (selectedStore) => {
         setStore(selectedStore);
@@ -150,6 +155,14 @@ const UserDashboard = () => {
                 </Button>
             </div>
 
+            {/* Getting Started Checklist */}
+            {(stats.totalProducts === 0 || stats.totalOrders === 0) && (
+                <GettingStartedChecklist
+                    totalProducts={stats.totalProducts}
+                    totalCategories={totalCategories}
+                />
+            )}
+
             {/* Store Selector */}
             {stores.length > 1 && (
                 <Card className="store-selector">
@@ -171,8 +184,6 @@ const UserDashboard = () => {
                     </div>
                 </Card>
             )}
-
-
 
             <div className="stats-grid">
                 {statCards.map((stat) => (

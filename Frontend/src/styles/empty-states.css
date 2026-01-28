@@ -1,0 +1,32 @@
+/* Empty State Styles - Shared across ProductManager, OrderManagement, etc. */
+.empty-state-card {
+    text-align: center;
+    padding: var(--space-12) var(--space-8);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 2px dashed var(--color-border);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: var(--space-4);
+    opacity: 0.8;
+}
+
+.empty-state-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--space-3);
+    color: var(--color-text);
+}
+
+.empty-state-card .text-muted {
+    font-size: 1rem;
+    margin-bottom: var(--space-6);
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.empty-state-card button {
+    margin-top: var(--space-4);
+}

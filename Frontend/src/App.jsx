@@ -24,6 +24,7 @@ import OrderManagement from './pages/OrderManagement';
 import OnboardingWizard from './pages/OnboardingWizard';
 import AIOnboardingChat from './pages/AIOnboardingChat';
 import StoreCreationWizard from './pages/StoreCreationWizard';
+import StoreCreationMode from './pages/StoreCreationMode';
 import CategoriesPage from './pages/CategoriesPage';
 import CategoryProductsPage from './pages/CategoryProductsPage';
 import ProductsPage from './pages/ProductsPage';
@@ -117,7 +118,15 @@ function App() {
                     path="/create-store"
                     element={
                         <ProtectedRoute>
-                            <AIOnboardingChat />
+                            <StoreCreationMode />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/create-store/manual"
+                    element={
+                        <ProtectedRoute>
+                            <StoreCreationWizard />
                         </ProtectedRoute>
                     }
                 />

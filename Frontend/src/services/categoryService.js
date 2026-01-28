@@ -17,7 +17,7 @@ const categoryService = {
     // Get categories (can filter by store)
     async getAll(storeId = null) {
         try {
-            const url = storeId ? `/categories?store_id=${storeId}` : '/categories';
+            const url = storeId ? `/categories/store/${storeId}` : '/categories';
             const response = await apiClient.get(url);
             return { success: true, data: response.data };
         } catch (error) {

@@ -23,12 +23,19 @@ class StoreService {
      * - Slug must be valid format
      */
     async createStore(dto, ownerId) {
-        const { name, slug, description, settings } = dto;
+        const {
+            name, slug, description, tagline, business_hours,
+            contact_email, contact_phone, address,
+            facebook_url, instagram_url, twitter_url, linkedin_url, tiktok_url,
+            settings
+        } = dto;
 
-        // Business Rule 1: User must exist
-        const user = await this.userModel.findById(ownerId);
-        if (!user) {
-            throw new AppError('User not found', 404);
+        // Business Rule 1: User must exist (if ownerId is provided)
+        if (ownerId) {
+            const user = await this.userModel.findById(ownerId).catch(() => null);
+            if (!user) {
+                throw new AppError('Owner user not found', 404);
+            }
         }
 
         // Business Rule 2: Slug must be unique
@@ -49,6 +56,16 @@ class StoreService {
             name,
             slug,
             description: description || null,
+            tagline: tagline || null,
+            business_hours: business_hours || {},
+            contact_email: contact_email || null,
+            contact_phone: contact_phone || null,
+            address: address || null,
+            facebook_url: facebook_url || null,
+            instagram_url: instagram_url || null,
+            twitter_url: twitter_url || null,
+            linkedin_url: linkedin_url || null,
+            tiktok_url: tiktok_url || null,
             settings: settings || {}
         });
 

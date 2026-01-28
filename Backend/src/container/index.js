@@ -45,6 +45,7 @@ const CustomerController = require('../controllers/customer.controller');
 const ThemeController = require('../controllers/theme.controller');
 const ComponentController = require('../controllers/component.controller');
 const OnboardingController = require('../controllers/onboarding.controller');
+const MediaController = require('../controllers/media.controller');
 
 // Infrastructure
 const emailService = new EmailService();
@@ -78,6 +79,7 @@ const customerController = new CustomerController(customerService);
 const themeController = new ThemeController(themeService);
 const componentController = new ComponentController(componentService);
 const onboardingController = new OnboardingController(onboardingService);
+const mediaController = new MediaController(uploadService, prisma);
 
 const container = {
     cartService, productService, orderService, storeService, authService, categoryService,
@@ -85,7 +87,7 @@ const container = {
     uploadService, aiService, paymentService, analyticsService, onboardingService,
     cartController, productController, orderController, storeController, authController,
     categoryController, reviewController, customerController, themeController,
-    componentController, onboardingController,
+    componentController, onboardingController, mediaController,
     cartModel, cartItemModel, productModel, userModel, orderModel, orderItemModel,
     storeModel, categoryModel, customerModel, reviewModel, reviewHelpfulVoteModel,
     themeModel, componentModel, prisma

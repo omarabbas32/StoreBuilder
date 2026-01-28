@@ -26,6 +26,7 @@ const AIOnboardingChat = () => {
     });
     const [isCreating, setIsCreating] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
+    const [isCelebration, setIsCelebration] = useState(false);
     const [aiProvider, setAiProvider] = useState('openai');
 
     const scrollToBottom = () => {
@@ -57,6 +58,36 @@ const AIOnboardingChat = () => {
                 { id: 'professional-corporate', label: 'Professional & Corporate', emoji: '💼' },
             ]
         },
+        {
+            field: 'description',
+            message: "What does your store sell? Describe your business briefly.",
+            type: 'text',
+            required: false
+        },
+        {
+            field: 'tagline',
+            message: "Give us a catchy tagline for your store.",
+            type: 'text',
+            required: false
+        },
+        {
+            field: 'socialLinks',
+            message: "Share your social media links (Facebook, Instagram, etc.).",
+            type: 'social-links',
+            required: false
+        },
+        {
+            field: 'contactInfo',
+            message: "What is your business email and phone number?",
+            type: 'contact',
+            required: false
+        },
+        {
+            field: 'businessHours',
+            message: "What are your typical business hours?",
+            type: 'business-hours',
+            required: false
+        },
         { field: 'brandColor', message: "What's your brand color?", type: 'color', required: false },
         {
             field: 'enabledSections', message: "What sections do you want on your homepage?", type: 'multi-select', required: true, options: [
@@ -73,14 +104,33 @@ const AIOnboardingChat = () => {
                 { id: 'list', label: 'List View', emoji: '☰' },
                 { id: 'minimal', label: 'Minimal Cards', emoji: '▭' },
             ]
-        },
-        {
-            field: 'categoryStructure', message: "How do you want to organize your products?", type: 'select', required: true, options: [
-                { id: 'flat', label: 'Flat List', emoji: '📋' },
-                { id: 'hierarchical', label: 'Hierarchical', emoji: '🌳' },
-            ]
         }
     ];
+
+    // Session saving
+    useEffect(() => {
+        const saved = localStorage.getItem('onboarding_draft');
+        if (saved) {
+            try {
+                const { answers: savedAnswers, messages: savedMessages, currentQuestion: savedQ } = JSON.parse(saved);
+                if (savedAnswers && savedMessages) {
+                    setAnswers(savedAnswers);
+                    setMessages(savedMessages.map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
+                    setCurrentQuestion(savedQ);
+                }
+            } catch (e) {
+                console.error("Failed to restore onboarding draft", e);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            localStorage.setItem('onboarding_draft', JSON.stringify({ answers, messages, currentQuestion }));
+        }
+    }, [answers, messages, currentQuestion]);
+
+    const clearDraft = () => localStorage.removeItem('onboarding_draft');
 
     useEffect(() => {
         if (messages.length === 0) {
@@ -192,8 +242,9 @@ const AIOnboardingChat = () => {
         const result = await onboardingService.aiCreateStore(answers);
         if (result.success) {
             setStore(result.data);
-            addAIMessage("✨ Your store has been created successfully! Redirecting you to the dashboard...");
-            setTimeout(() => { success('Store created successfully!'); navigate('/dashboard'); }, 2000);
+            clearDraft();
+            setIsCelebration(true);
+            setIsCreating(false);
         } else {
             setIsCreating(false);
             addAIMessage(`❌ Oops! There was an error: ${result.error}`);
@@ -203,11 +254,150 @@ const AIOnboardingChat = () => {
 
     const getProgress = () => {
         const required = questions.filter(q => q.required).map(q => q.field);
-        const completed = required.filter(f => answers[f]).length;
-        return Math.round((completed / required.length) * 100);
+        const completed = required.filter(f => {
+            if (Array.isArray(answers[f])) return answers[f].length > 0;
+            return !!answers[f];
+        }).length;
+
+        const optional = questions.filter(q => !q.required).map(q => q.field);
+        const completedOptional = optional.filter(f => {
+            if (typeof answers[f] === 'object' && answers[f] !== null) return Object.values(answers[f]).some(v => !!v);
+            return !!answers[f];
+        }).length;
+
+        const reqBase = 70;
+        const optBase = 30;
+
+        const reqProgress = (completed / required.length) * reqBase;
+        const optProgress = optional.length > 0 ? (completedOptional / optional.length) * optBase : optBase;
+
+        return Math.round(reqProgress + optProgress);
     };
 
     const currentQ = questions[currentQuestion];
+
+    const renderConfirmationSummary = () => {
+        return (
+            <div className="confirmation-summary-card">
+                <div className="summary-header">
+                    <h3>🎉 Your Store is Ready!</h3>
+                    <p>Review your information before we build your storefront.</p>
+                </div>
+
+                <div className="summary-content">
+                    <div className="summary-section">
+                        <h4>General Info</h4>
+                        <p><strong>Name:</strong> {answers.name}</p>
+                        {answers.description && <p><strong>Description:</strong> {answers.description}</p>}
+                        {answers.tagline && <p><strong>Tagline:</strong> {answers.tagline}</p>}
+                    </div>
+
+                    <div className="summary-section">
+                        <h4>Brand Style</h4>
+                        <p><strong>Style:</strong> {answers.style_preference}</p>
+                        <p><strong>Color:</strong> <span className="color-preview-circle" style={{ backgroundColor: answers.brandColor }} /> {answers.brandColor}</p>
+                    </div>
+
+                    {(answers.contactInfo || answers.socialLinks) && (
+                        <div className="summary-section">
+                            <h4>Connect</h4>
+                            {answers.contactInfo?.contact_email && <p><strong>Email:</strong> {answers.contactInfo.contact_email}</p>}
+                            {answers.socialLinks && <p><strong>Socials:</strong> {Object.keys(answers.socialLinks).length} platforms linked</p>}
+                        </div>
+                    )}
+                </div>
+
+                <div className="summary-footer">
+                    <Button onClick={() => setIsComplete(false)} variant="secondary">Go Back</Button>
+                    <Button onClick={createStore} variant="primary" disabled={isCreating} className="launch-now-btn">
+                        {isCreating ? <><Loader2 className="animate-spin mr-2" size={18} /> Building...</> : 'Launch My Store 🚀'}
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderRichInput = () => {
+        if (isTyping || !currentQ || isComplete) return null;
+
+        if (currentQ.type === 'social-links') {
+            return (
+                <div className="rich-input-card social-links-card">
+                    <h4>Social Media Links</h4>
+                    {currentQ.options.map(opt => (
+                        <div key={opt.id} className="rich-input-row">
+                            <label>{opt.label}</label>
+                            <input
+                                type="text"
+                                placeholder={`Enter ${opt.label} URL`}
+                                value={answers.socialLinks?.[opt.id] || ''}
+                                onChange={(e) => setAnswers(prev => ({
+                                    ...prev,
+                                    socialLinks: { ...(prev.socialLinks || {}), [opt.id]: e.target.value }
+                                }))}
+                            />
+                        </div>
+                    ))}
+                    <Button onClick={() => addUserMessage("I've added my social links.")} disabled={isCreating}>Confirm Links</Button>
+                </div>
+            );
+        }
+
+        if (currentQ.type === 'contact') {
+            return (
+                <div className="rich-input-card contact-card">
+                    <h4>Contact Information</h4>
+                    {currentQ.options.map(opt => (
+                        <div key={opt.id} className="rich-input-row">
+                            <label>{opt.label}</label>
+                            <input
+                                type={opt.id === 'contact_email' ? 'email' : 'text'}
+                                placeholder={`Enter ${opt.label}`}
+                                value={answers.contactInfo?.[opt.id] || ''}
+                                onChange={(e) => setAnswers(prev => ({
+                                    ...prev,
+                                    contactInfo: { ...(prev.contactInfo || {}), [opt.id]: e.target.value }
+                                }))}
+                            />
+                        </div>
+                    ))}
+                    <Button onClick={() => addUserMessage("I've saved my contact information.")} disabled={isCreating}>Save Contact Info</Button>
+                </div>
+            );
+        }
+
+        if (currentQ.type === 'business-hours') {
+            return (
+                <div className="rich-input-card business-hours-card">
+                    <h4>Business Hours</h4>
+                    <p className="hint">e.g., Mon-Fri 9am-5pm</p>
+                    <textarea
+                        placeholder="Describe your opening hours..."
+                        value={answers.businessHours || ''}
+                        onChange={(e) => setAnswers(prev => ({ ...prev, businessHours: e.target.value }))}
+                        rows={3}
+                    />
+                    <Button onClick={() => addUserMessage(`My business hours are: ${answers.businessHours}`)} disabled={!answers.businessHours || isCreating}>Save Hours</Button>
+                </div>
+            );
+        }
+
+        if (currentQ.options) {
+            return (
+                <div className="quick-replies">
+                    {currentQ.options.map((option) => (
+                        <button key={option.id} className={`quick-reply ${currentQ.type === 'multi-select' && answers[currentQ.field]?.includes(option.id) ? 'selected' : ''}`} onClick={() => handleQuickReply(option.id, option.label)} disabled={isCreating}>
+                            {option.emoji && <span className="emoji">{option.emoji}</span>} {option.label}
+                            {currentQ.type === 'multi-select' && answers[currentQ.field]?.includes(option.id) && <CheckCircle size={16} className="check-icon" />}
+                        </button>
+                    ))}
+                    {currentQ.type === 'multi-select' && <button className="quick-reply done-button" onClick={handleDone} disabled={isCreating}>Done</button>}
+                </div>
+            );
+        }
+
+        return null;
+    };
 
     return (
         <div className="ai-onboarding-chat">
@@ -229,58 +419,97 @@ const AIOnboardingChat = () => {
                             <div className="progress-bar"><div className="progress-fill" style={{ width: `${getProgress()}%` }} /></div>
                             <span className="progress-text">{getProgress()}% Complete</span>
                         </div>
+                        {messages.length > 0 && <Button variant="secondary" size="sm" onClick={() => { clearDraft(); window.location.reload(); }} className="reset-btn">Reset</Button>}
                     </div>
 
                     <div className="chat-messages">
-                        {messages.map((msg, index) => (
-                            <div key={index} className={`message ${msg.type}`}>
-                                <div className="message-content"><p>{msg.text}</p></div>
+                        {isCelebration ? (
+                            <div className="celebration-state">
+                                <div className="celebration-content">
+                                    <div className="celebration-icon">🎉</div>
+                                    <h2>Your Store is Live!</h2>
+                                    <p>Congratulations! Your store <strong>{store?.name}</strong> has been successfully created and is ready for customers.</p>
+                                    <div className="celebration-actions">
+                                        <Button onClick={() => navigate('/dashboard')} size="lg">Go to Dashboard</Button>
+                                        <Button variant="secondary" onClick={() => window.open(`/${store?.slug}`, '_blank')} size="lg">Visit Store</Button>
+                                    </div>
+                                </div>
                             </div>
-                        ))}
-                        {isTyping && <div className="message ai typing"><div className="message-content"><div className="typing-indicator"><span></span><span></span><span></span></div></div></div>}
-                        {!isTyping && currentQ?.options && (
-                            <div className="quick-replies">
-                                {currentQ.options.map((option) => (
-                                    <button key={option.id} className={`quick-reply ${currentQ.type === 'multi-select' && answers[currentQ.field]?.includes(option.id) ? 'selected' : ''}`} onClick={() => handleQuickReply(option.id, option.label)} disabled={isCreating}>
-                                        {option.emoji && <span className="emoji">{option.emoji}</span>} {option.label}
-                                        {currentQ.type === 'multi-select' && answers[currentQ.field]?.includes(option.id) && <CheckCircle size={16} className="check-icon" />}
-                                    </button>
+                        ) : (
+                            <>
+                                {messages.map((msg, index) => (
+                                    <div key={index} className={`message ${msg.type}`}>
+                                        <div className="message-content"><p>{msg.text}</p></div>
+                                    </div>
                                 ))}
-                                {currentQ.type === 'multi-select' && <button className="quick-reply done-button" onClick={handleDone} disabled={isCreating}>Done</button>}
-                            </div>
+                                {isTyping && <div className="message ai typing"><div className="message-content"><div className="typing-indicator"><span></span><span></span><span></span></div></div></div>}
+                                {isComplete ? renderConfirmationSummary() : renderRichInput()}
+                            </>
                         )}
                         <div ref={messagesEndRef} />
                     </div>
 
                     <div className="chat-input-container">
-                        {!currentQ?.options && !isCreating && (
+                        {!isCreating && !isComplete && (
                             <form onSubmit={handleSubmit} className="chat-input-form">
-                                <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder={isComplete ? "Type 'launch' to start!" : "Type your answer..."} className="chat-input" disabled={isCreating} />
+                                <input
+                                    type="text"
+                                    value={userInput}
+                                    onChange={(e) => setUserInput(e.target.value)}
+                                    placeholder="Type your answer..."
+                                    className="chat-input"
+                                    disabled={isCreating}
+                                />
                                 <Button type="submit" disabled={!userInput.trim() || isCreating}><Send size={20} /></Button>
-                                {(isComplete || answers.name) && !isCreating && (
-                                    <Button onClick={createStore} variant="primary" className="launch-btn" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none', marginLeft: '0.5rem' }}>Launch Store 🚀</Button>
-                                )}
                             </form>
                         )}
-                        {!currentQ?.required && !isCreating && <button className="skip-button" onClick={handleSkip}>Skip this question</button>}
+                        {!currentQ?.required && !isCreating && !isComplete && <button className="skip-button" onClick={handleSkip}>Skip this question</button>}
                     </div>
                 </div>
 
                 <div className="chat-sidebar">
                     <div className="preview-pane">
-                        <div className="preview-header"><h3>Live Preview</h3><div className="device-indicator"><Circle size={12} fill="#ff5f56" stroke="none" /><Circle size={12} fill="#ffbd2e" stroke="none" /><Circle size={12} fill="#27c93f" stroke="none" /></div></div>
-                        <div className="preview-window"><iframe ref={iframeRef} src="/onboarding/preview?preview=true" title="Store Preview" /></div>
+                        <div className="preview-header">
+                            <h3>Live Preview</h3>
+                            <div className="device-indicator">
+                                <div className="device-dot"></div>
+                                <div className="device-dot"></div>
+                                <div className="device-dot"></div>
+                            </div>
+                        </div>
+                        <div className="preview-window">
+                            <iframe
+                                ref={iframeRef}
+                                src="/preview-store"
+                                title="Store Preview"
+                                onLoad={() => {
+                                    // Initial postMessage once iframe loads
+                                    if (answers) {
+                                        iframeRef.current.contentWindow?.postMessage({ type: 'STORE_UPDATE', settings: answers }, window.location.origin);
+                                    }
+                                }}
+                            />
+                        </div>
                     </div>
                     <div className="answer-summary">
                         <h3>Your Answers</h3>
                         <div className="answer-list">
-                            {questions.map((q) => (
-                                <div key={q.field} className={`answer-item ${answers[q.field] ? 'completed' : ''}`}>
-                                    {answers[q.field] ? <CheckCircle size={16} className="check-icon" /> : <Circle size={16} className="circle-icon" />}
-                                    <span className="answer-label">{q.field}</span>
-                                    {answers[q.field] && <span className="answer-value">{Array.isArray(answers[q.field]) ? answers[q.field].join(', ') : answers[q.field]}</span>}
-                                </div>
-                            ))}
+                            {questions.map((q) => {
+                                const hasValue = !!answers[q.field] || (typeof answers[q.field] === 'object' && answers[q.field] !== null && Object.values(answers[q.field]).some(v => !!v));
+                                return (
+                                    <div key={q.field} className={`answer-item ${hasValue ? 'completed' : ''}`}>
+                                        {hasValue ? <CheckCircle size={16} className="check-icon" /> : <Circle size={16} className="circle-icon" />}
+                                        <span className="answer-label">{q.field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                                        {hasValue && (
+                                            <span className="answer-value">
+                                                {typeof answers[q.field] === 'object'
+                                                    ? (Array.isArray(answers[q.field]) ? answers[q.field].join(', ') : 'Configured')
+                                                    : answers[q.field]}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

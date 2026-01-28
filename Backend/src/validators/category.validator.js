@@ -7,7 +7,7 @@ const { z } = require('zod');
 const createCategorySchema = z.object({
     name: z.string().min(1),
     slug: z.string().regex(/^[a-z0-9-]+$/),
-    description: z.string().optional(),
+    description: z.string().optional().nullable(),
     storeId: z.string().uuid(),
     parentId: z.string().uuid().optional().nullable()
 });

@@ -103,6 +103,25 @@ class ProductService {
     }
 
     /**
+     * Get all products with optional filters
+     */
+    async getAllProducts(options = {}) {
+        const { limit = 20, offset = 0, categoryId, storeId } = options;
+
+        const where = {};
+        if (categoryId) where.category_id = categoryId;
+        if (storeId) where.store_id = storeId;
+
+        const products = await this.productModel.findMany(where, {
+            orderBy: { created_at: 'desc' },
+            take: parseInt(limit),
+            skip: parseInt(offset)
+        });
+
+        return ProductResponseDTO.fromArray(products);
+    }
+
+    /**
      * Get products by store
      */
     async getProductsByStore(storeId, options = {}) {

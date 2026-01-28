@@ -10,6 +10,7 @@ import productService from "../services/productService";
 import categoryService from "../services/categoryService";
 import useAuthStore from "../store/authStore";
 import { useToast } from "../components/ui/Toast";
+import "../styles/empty-states.css";
 import "./ProductManager.css";
 
 const ProductManager = () => {
@@ -26,7 +27,7 @@ const ProductManager = () => {
     price: "",
     stock: "",
     images: [],
-    category_id: "",
+    categoryId: "",
   });
 
   useEffect(() => {
@@ -66,7 +67,7 @@ const ProductManager = () => {
       ...formData,
       price: parseFloat(formData.price) || 0,
       stock: parseInt(formData.stock, 10) || 0,
-      store_id: store?.id,
+      storeId: store?.id,
     };
 
     console.log("Submitting product data:", submissionData);
@@ -80,7 +81,7 @@ const ProductManager = () => {
         price: "",
         stock: "",
         images: [],
-        category_id: "",
+        categoryId: "",
       });
       success("Product created successfully!");
       loadProducts();
@@ -201,8 +202,8 @@ const ProductManager = () => {
               <label className="input-label" style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-color)' }}>Category</label>
               <select
                 className="category-select"
-                value={formData.category_id}
-                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -247,10 +248,16 @@ const ProductManager = () => {
         {loading ? (
           <p>Loading products...</p>
         ) : products.length === 0 ? (
-          <Card>
+          <Card className="empty-state-card">
+            <div className="empty-state-icon">📦</div>
+            <h3>Your Product Catalog is Empty</h3>
             <p className="text-muted">
-              No products yet. Create your first product!
+              Start building your inventory by adding your first product.
             </p>
+            <Button onClick={() => setShowForm(true)} size="lg">
+              <Plus size={20} />
+              Add Your First Product
+            </Button>
           </Card>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
