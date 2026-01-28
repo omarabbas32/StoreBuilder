@@ -34,6 +34,11 @@ class ProductController {
         res.status(200).json({ success: true, message: 'Products reordered successfully' });
     });
 
+    getAll = asyncHandler(async (req, res) => {
+        const results = await this.productService.getAllProducts(req.query);
+        res.status(200).json({ success: true, data: results });
+    });
+
     delete = asyncHandler(async (req, res) => {
         await this.productService.deleteProduct(req.params.id, req.user.id);
         res.status(200).json({ success: true, message: 'Product deleted successfully' });

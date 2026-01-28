@@ -2,7 +2,7 @@ import apiClient from './api';
 
 const productService = {
     async getProducts(storeId) {
-        return await apiClient.get(`/products?store_id=${storeId}`);
+        return await apiClient.get(`/products/store/${storeId}`);
     },
 
     async getProductsByCategory(storeId, categoryId) {

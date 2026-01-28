@@ -6,51 +6,55 @@ datasource db {
   provider = "postgresql"
 }
 
-model cart_items {
+model CartItem {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   cart_id    String?   @db.Uuid
   product_id String?   @db.Uuid
   quantity   Int       @default(1)
   created_at DateTime? @default(now()) @db.Timestamp(6)
   updated_at DateTime? @default(now()) @db.Timestamp(6)
-  carts      carts?    @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  products   products? @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  cart       Cart?     @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product    Product?  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("cart_items")
 }
 
-model carts {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id String?      @db.Uuid
-  session_id  String?      @db.VarChar(255)
-  created_at  DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at  DateTime?    @default(now()) @db.Timestamp(6)
-  store_id    String?      @db.Uuid
-  cart_items  cart_items[]
-  customers   customers?   @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  stores      stores?      @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model Cart {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String?    @db.Uuid
+  session_id  String?    @db.VarChar(255)
+  created_at  DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at  DateTime?  @default(now()) @db.Timestamp(6)
+  store_id    String?    @db.Uuid
+  cart_items  CartItem[]
+  customer    Customer?  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  store       Store?     @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([customer_id, store_id], map: "unique_customer_store_cart")
   @@unique([session_id, store_id], map: "unique_session_store_cart")
   @@index([store_id], map: "idx_carts_store")
+  @@map("carts")
 }
 
-model categories {
-  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  store_id         String?      @db.Uuid
-  name             String       @db.VarChar(255)
-  description      String?
-  created_at       DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?    @default(now()) @db.Timestamp(6)
-  slug             String       @db.VarChar(255)
-  parent_id        String?      @db.Uuid
-  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onUpdate: NoAction)
-  other_categories categories[] @relation("categoriesTocategories")
-  stores           stores?      @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  products         products[]
+model Category {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  store_id      String?    @db.Uuid
+  name          String     @db.VarChar(255)
+  description   String?
+  created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?  @default(now()) @db.Timestamp(6)
+  slug          String     @db.VarChar(255)
+  parent_id     String?    @db.Uuid
+  parent        Category?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onUpdate: NoAction)
+  subcategories Category[] @relation("categoriesTocategories")
+  store         Store?     @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products      Product[]
 
   @@unique([slug, store_id])
+  @@map("categories")
 }
 
-model components {
+model Component {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String    @db.VarChar(255)
   type           String    @db.VarChar(50)
@@ -60,123 +64,136 @@ model components {
   created_at     DateTime? @default(now()) @db.Timestamp(6)
   updated_at     DateTime? @default(now()) @db.Timestamp(6)
   description    String?
+
+  @@map("components")
 }
 
-model customers {
-  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id              String?                @db.Uuid
-  phone                String?                @db.VarChar(50)
+model Customer {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String?             @db.Uuid
+  phone                String?             @db.VarChar(50)
   address              String?
-  created_at           DateTime?              @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
-  carts                carts[]
-  users                users?                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  orders               orders[]
-  product_reviews      product_reviews[]
-  review_helpful_votes review_helpful_votes[]
+  created_at           DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?           @default(now()) @db.Timestamp(6)
+  carts                Cart[]
+  user                 User?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders               Order[]
+  product_reviews      ProductReview[]
+  review_helpful_votes ReviewHelpfulVote[]
+
+  @@map("customers")
 }
 
-model migrations {
+model Migration {
   id          Int       @id @default(autoincrement())
   name        String    @unique @db.VarChar(255)
   executed_at DateTime? @default(now()) @db.Timestamp(6)
+
+  @@map("migrations")
 }
 
-model order_items {
+model OrderItem {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   order_id   String?   @db.Uuid
   product_id String?   @db.Uuid
   quantity   Int
   unit_price Decimal   @db.Decimal(10, 2)
   created_at DateTime? @default(now()) @db.Timestamp(6)
-  orders     orders?   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  products   products? @relation(fields: [product_id], references: [id], onUpdate: NoAction)
+  order      Order?    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product    Product?  @relation(fields: [product_id], references: [id], onUpdate: NoAction)
+
+  @@map("order_items")
 }
 
-model orders {
-  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  store_id         String?           @db.Uuid
-  customer_id      String?           @db.Uuid
-  total_amount     Decimal           @db.Decimal(10, 2)
-  status           String?           @default("pending") @db.VarChar(50)
-  created_at       DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
-  customer_name    String?           @db.VarChar(255)
-  customer_email   String?           @db.VarChar(255)
-  customer_phone   String?           @db.VarChar(50)
+model Order {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  store_id         String?         @db.Uuid
+  customer_id      String?         @db.Uuid
+  total_amount     Decimal         @db.Decimal(10, 2)
+  status           String?         @default("pending") @db.VarChar(50)
+  created_at       DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?       @default(now()) @db.Timestamp(6)
+  customer_name    String?         @db.VarChar(255)
+  customer_email   String?         @db.VarChar(255)
+  customer_phone   String?         @db.VarChar(50)
   shipping_address String?
   notes            String?
-  order_items      order_items[]
-  customers        customers?        @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
-  stores           stores?           @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  product_reviews  product_reviews[]
+  order_items      OrderItem[]
+  customer         Customer?       @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  store            Store?          @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_reviews  ProductReview[]
+
+  @@map("orders")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model product_reviews {
-  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id           String?                @db.Uuid
-  store_id             String?                @db.Uuid
-  customer_id          String?                @db.Uuid
-  order_id             String?                @db.Uuid
+model ProductReview {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id           String?             @db.Uuid
+  store_id             String?             @db.Uuid
+  customer_id          String?             @db.Uuid
+  order_id             String?             @db.Uuid
   rating               Int
-  title                String?                @db.VarChar(255)
+  title                String?             @db.VarChar(255)
   comment              String?
-  images               Json?                  @default("[]")
-  status               String?                @default("pending") @db.VarChar(20)
-  is_verified_purchase Boolean?               @default(false)
+  images               Json?               @default("[]")
+  status               String?             @default("pending") @db.VarChar(20)
+  is_verified_purchase Boolean?            @default(false)
   owner_response       String?
-  owner_response_at    DateTime?              @db.Timestamp(6)
-  helpful_count        Int?                   @default(0)
-  created_at           DateTime?              @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
-  customers            customers?             @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
-  orders               orders?                @relation(fields: [order_id], references: [id], onUpdate: NoAction)
-  products             products?              @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  stores               stores?                @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  review_helpful_votes review_helpful_votes[]
+  owner_response_at    DateTime?           @db.Timestamp(6)
+  helpful_count        Int?                @default(0)
+  created_at           DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?           @default(now()) @db.Timestamp(6)
+  customer             Customer?           @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  order                Order?              @relation(fields: [order_id], references: [id], onUpdate: NoAction)
+  product              Product?            @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  store                Store?              @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  review_helpful_votes ReviewHelpfulVote[]
 
   @@index([customer_id], map: "idx_reviews_customer")
   @@index([product_id, status], map: "idx_reviews_product")
   @@index([rating], map: "idx_reviews_rating")
   @@index([status], map: "idx_reviews_status")
   @@index([store_id], map: "idx_reviews_store")
+  @@map("product_reviews")
 }
 
-model products {
-  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  store_id             String?           @db.Uuid
-  category_id          String?           @db.Uuid
-  name                 String            @db.VarChar(255)
+model Product {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  store_id             String?         @db.Uuid
+  category_id          String?         @db.Uuid
+  name                 String          @db.VarChar(255)
   description          String?
-  price                Decimal           @db.Decimal(10, 2)
-  stock                Int?              @default(0)
-  images               Json?             @default("[]")
-  created_at           DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?         @default(now()) @db.Timestamp(6)
-  average_rating       Decimal?          @default(0) @db.Decimal(2, 1)
-  reviews_count        Int?              @default(0)
-  ratings_distribution Json?             @default("{\"1\": 0, \"2\": 0, \"3\": 0, \"4\": 0, \"5\": 0}")
-  sort_order           Int?              @default(0)
-  cart_items           cart_items[]
-  order_items          order_items[]
-  product_reviews      product_reviews[]
-  categories           categories?       @relation(fields: [category_id], references: [id], onUpdate: NoAction)
-  stores               stores?           @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  price                Decimal         @db.Decimal(10, 2)
+  stock                Int?            @default(0)
+  images               Json?           @default("[]")
+  created_at           DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?       @default(now()) @db.Timestamp(6)
+  average_rating       Decimal?        @default(0) @db.Decimal(2, 1)
+  reviews_count        Int?            @default(0)
+  ratings_distribution Json?           @default("{\"1\": 0, \"2\": 0, \"3\": 0, \"4\": 0, \"5\": 0}")
+  sort_order           Int?            @default(0)
+  cart_items           CartItem[]
+  order_items          OrderItem[]
+  product_reviews      ProductReview[]
+  category             Category?       @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  store                Store?          @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("products")
 }
 
-model review_helpful_votes {
-  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  review_id       String?          @db.Uuid
-  customer_id     String?          @db.Uuid
-  created_at      DateTime?        @default(now()) @db.Timestamp(6)
-  customers       customers?       @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  product_reviews product_reviews? @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model ReviewHelpfulVote {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  review_id      String?        @db.Uuid
+  customer_id    String?        @db.Uuid
+  created_at     DateTime?      @default(now()) @db.Timestamp(6)
+  customer       Customer?      @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_review ProductReview? @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([review_id, customer_id])
+  @@map("review_helpful_votes")
 }
 
-model store_settings {
+model StoreSettings {
   id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   store_id                 String?   @db.Uuid
   created_at               DateTime? @default(now()) @db.Timestamp(6)
@@ -184,29 +201,43 @@ model store_settings {
   reviews_enabled          Boolean?  @default(false)
   reviews_require_approval Boolean?  @default(true)
   reviews_verified_only    Boolean?  @default(false)
-  stores                   stores?   @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  store                    Store?    @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("store_settings")
 }
 
-model stores {
-  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  owner_id        String?           @db.Uuid
-  name            String            @db.VarChar(255)
-  slug            String            @unique @db.VarChar(255)
+model Store {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id        String?         @db.Uuid
+  name            String          @db.VarChar(255)
+  slug            String          @unique @db.VarChar(255)
   description     String?
-  settings        Json?             @default("{}")
-  created_at      DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at      DateTime?         @default(now()) @db.Timestamp(6)
-  carts           carts[]
-  categories      categories[]
-  orders          orders[]
-  product_reviews product_reviews[]
-  products        products[]
-  store_settings  store_settings[]
-  users           users?            @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  uploads         uploads[]
+  settings        Json?           @default("{}")
+  created_at      DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?       @default(now()) @db.Timestamp(6)
+  tagline         String?         @db.VarChar(255)
+  business_hours  Json?           @default("{}")
+  contact_email   String?         @db.VarChar(255)
+  contact_phone   String?         @db.VarChar(50)
+  address         String?
+  facebook_url    String?         @db.VarChar(500)
+  instagram_url   String?         @db.VarChar(500)
+  twitter_url     String?         @db.VarChar(500)
+  linkedin_url    String?         @db.VarChar(500)
+  tiktok_url      String?         @db.VarChar(500)
+  carts           Cart[]
+  categories      Category[]
+  orders          Order[]
+  product_reviews ProductReview[]
+  products        Product[]
+  store_settings  StoreSettings[]
+  owner           User?           @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  uploads         Upload[]
+
+  @@map("stores")
 }
 
-model themes {
+model Theme {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String    @db.VarChar(255)
   description    String?
@@ -216,12 +247,13 @@ model themes {
   created_at     DateTime? @default(now()) @db.Timestamp(6)
   updated_at     DateTime? @default(now()) @db.Timestamp(6)
   user_id        String?   @db.Uuid
-  users          users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user           User?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([user_id], map: "idx_themes_user_id")
+  @@map("themes")
 }
 
-model uploads {
+model Upload {
   id            String    @id @db.Uuid
   store_id      String    @db.Uuid
   filename      String    @db.VarChar(255)
@@ -231,25 +263,28 @@ model uploads {
   mime_type     String    @db.VarChar(100)
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   updated_at    DateTime? @default(now()) @db.Timestamp(6)
-  stores        stores    @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  store         Store     @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([created_at(sort: Desc)], map: "idx_uploads_created_at")
   @@index([store_id], map: "idx_uploads_store_id")
+  @@map("uploads")
 }
 
-model users {
-  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name               String      @db.VarChar(255)
-  email              String      @unique @db.VarChar(255)
-  password           String      @db.VarChar(255)
-  role               String?     @default("customer") @db.VarChar(50)
-  created_at         DateTime?   @default(now()) @db.Timestamp(6)
-  updated_at         DateTime?   @default(now()) @db.Timestamp(6)
-  is_verified        Boolean?    @default(false)
-  verification_token String?     @db.VarChar(255)
-  reset_token        String?     @db.VarChar(255)
-  reset_expires      DateTime?   @db.Timestamp(6)
-  customers          customers[]
-  stores             stores[]
-  themes             themes[]
+model User {
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String     @db.VarChar(255)
+  email              String     @unique @db.VarChar(255)
+  password           String     @db.VarChar(255)
+  role               String?    @default("customer") @db.VarChar(50)
+  created_at         DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?  @default(now()) @db.Timestamp(6)
+  is_verified        Boolean?   @default(false)
+  verification_token String?    @db.VarChar(255)
+  reset_token        String?    @db.VarChar(255)
+  reset_expires      DateTime?  @db.Timestamp(6)
+  customers          Customer[]
+  stores             Store[]
+  themes             Theme[]
+
+  @@map("users")
 }

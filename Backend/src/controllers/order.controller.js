@@ -36,6 +36,11 @@ class OrderController {
         const result = await this.orderService.updateOrderStatus(req.params.id, req.validatedData.status, req.user.id);
         res.status(200).json({ success: true, data: new OrderResponseDTO(result) });
     });
+
+    getMyOrders = asyncHandler(async (req, res) => {
+        const results = await this.orderService.getOrdersByCustomer(req.user.id, req.query);
+        res.status(200).json({ success: true, data: OrderResponseDTO.fromArray(results) });
+    });
 }
 
 module.exports = OrderController;

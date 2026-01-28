@@ -6,6 +6,7 @@ import Input from '../components/ui/Input';
 import categoryService from '../services/categoryService';
 import useAuthStore from '../store/authStore';
 import { useToast } from '../components/ui/Toast';
+import '../styles/empty-states.css';
 import './CategoryManager.css';
 
 const CategoryManager = () => {
@@ -17,14 +18,14 @@ const CategoryManager = () => {
         name: '',
         slug: '',
         description: '',
-        store_id: store?.id || '',
+        storeId: store?.id || '',
     });
     const { success, error: showError } = useToast();
 
     useEffect(() => {
         if (store?.id) {
             loadCategories();
-            setFormData(prev => ({ ...prev, store_id: store.id }));
+            setFormData(prev => ({ ...prev, storeId: store.id }));
         }
     }, [store?.id]);
 
@@ -39,10 +40,10 @@ const CategoryManager = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const result = await categoryService.create({ ...formData, store_id: store.id });
+        const result = await categoryService.create({ ...formData, storeId: store.id });
         if (result.success) {
             success('Category created successfully!');
-            setFormData({ name: '', slug: '', description: '', store_id: store.id });
+            setFormData({ name: '', slug: '', description: '', storeId: store.id });
             setShowForm(false);
             loadCategories();
         } else {
@@ -102,8 +103,14 @@ const CategoryManager = () => {
                 {loading ? (
                     <p>Loading categories...</p>
                 ) : categories.length === 0 ? (
-                    <Card>
-                        <p className="text-muted">No categories yet. Create your first one!</p>
+                    <Card className="empty-state-card">
+                        <div className="empty-state-icon">🏷️</div>
+                        <h3>No Categories Yet</h3>
+                        <p className="text-muted">Categorize your products to help customers find what they need.</p>
+                        <Button onClick={() => setShowForm(true)} size="lg">
+                            <Plus size={20} />
+                            Add Your First Category
+                        </Button>
                     </Card>
                 ) : (
                     categories.map((category) => (

@@ -10,10 +10,10 @@ const createProductSchema = z.object({
         .min(1, { message: 'Product name is required' })
         .max(255, { message: 'Product name cannot exceed 255 characters' }),
     description: z.string().optional(),
-    price: z.number()
+    price: z.coerce.number()
         .positive({ message: 'Price must be positive' })
         .max(9999999.99, { message: 'Price is too large' }),
-    stock: z.number()
+    stock: z.coerce.number()
         .int({ message: 'Stock must be an integer' })
         .min(0, { message: 'Stock cannot be negative' })
         .default(0),

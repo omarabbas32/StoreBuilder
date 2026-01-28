@@ -35,6 +35,11 @@ class StoreController {
         res.status(200).json({ success: true, data: StoreResponseDTO.fromArray(results) });
     });
 
+    getMyStores = asyncHandler(async (req, res) => {
+        const results = await this.storeService.getStoresByOwner(req.user.id);
+        res.status(200).json({ success: true, data: StoreResponseDTO.fromArray(results) });
+    });
+
     delete = asyncHandler(async (req, res) => {
         await this.storeService.deleteStore(req.params.id, req.user.id);
         res.status(200).json({ success: true, message: 'Store deleted successfully' });

@@ -414,3 +414,253 @@
         border-right: none;
     }
 }
+
+/* Rich Input Cards */
+.rich-input-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 500px;
+    margin-top: 1rem;
+    animation: messageSlide 0.3s ease-out;
+}
+
+.rich-input-card h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.rich-input-row {
+    margin-bottom: 1rem;
+}
+
+.rich-input-row label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 0.375rem;
+}
+
+.rich-input-row input,
+.rich-input-card textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: #f8fafc;
+    transition: all 0.2s;
+}
+
+.rich-input-row input:focus,
+.rich-input-card textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.rich-input-card textarea {
+    resize: none;
+    margin-bottom: 1rem;
+}
+
+.rich-input-card .hint {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+}
+
+.reset-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    opacity: 0.8;
+    transition: all 0.2s;
+}
+
+.reset-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Confirmation Summary Card */
+.confirmation-summary-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    margin: 1rem 0;
+    animation: messageSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.summary-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.summary-header h3 {
+    font-size: 1.5rem;
+    color: #1e293b;
+    margin: 0 0 0.5rem 0;
+}
+
+.summary-header p {
+    color: #64748b;
+    font-size: 0.9375rem;
+}
+
+.summary-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-section {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 12px;
+}
+
+.summary-section h4 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin: 0 0 0.75rem 0;
+}
+
+.summary-section p {
+    font-size: 0.875rem;
+    color: #334155;
+    margin: 0.375rem 0;
+}
+
+.summary-section strong {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.color-preview-circle {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.summary-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.launch-now-btn {
+    flex: 2;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border: none !important;
+    transform: scale(1.05);
+}
+
+.launch-now-btn:hover {
+    transform: scale(1.08);
+}
+
+.device-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cbd5e1;
+}
+
+.device-dot:nth-child(1) {
+    background: #ff5f56;
+}
+
+.device-dot:nth-child(2) {
+    background: #ffbd2e;
+}
+
+.device-dot:nth-child(3) {
+    background: #27c93f;
+}
+
+/* Celebration State */
+.celebration-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.celebration-content {
+    max-width: 500px;
+    background: white;
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+.celebration-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+    animation: bounce 1s infinite;
+}
+
+.celebration-content h2 {
+    font-size: 2rem;
+    color: #1e293b;
+    margin-bottom: 1rem;
+}
+
+.celebration-content p {
+    color: #64748b;
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.celebration-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

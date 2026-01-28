@@ -35,9 +35,14 @@ class StoreModel {
     }
 
     async create(data) {
-        return prisma.store.create({
-            data
-        });
+        try {
+            return await prisma.store.create({
+                data
+            });
+        } catch (error) {
+            console.error('[StoreModel] Create error:', error);
+            throw error;
+        }
     }
 
     async update(id, data) {

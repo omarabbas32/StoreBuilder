@@ -97,9 +97,10 @@
 }
 
 .hero-title {
-    font-size: 4.5rem;
+    font-family: var(--heading-font-family, inherit);
+    font-size: var(--heading-font-size, 4.5rem);
     font-weight: 850;
-    color: #0f172a;
+    color: var(--color-text, #0f172a);
     margin-bottom: 1.5rem;
     line-height: 1.05;
     letter-spacing: -0.04em;
@@ -107,8 +108,9 @@
 }
 
 .hero-subtitle {
-    font-size: 1.25rem;
-    color: #475569;
+    font-family: var(--font-family, inherit);
+    font-size: var(--base-font-size, 1.25rem);
+    color: var(--color-text-muted, #475569);
     margin-bottom: 3rem;
     line-height: 1.6;
     max-width: 540px;
@@ -129,6 +131,7 @@
     border-radius: 12px;
     font-weight: 700;
     font-size: 1.1rem;
+    background-color: var(--primary-color, #2563eb);
     cursor: pointer;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -166,7 +169,8 @@
 
 .hero-secondary-cta {
     padding: 1.15rem 2.5rem;
-    color: #0f172a;
+    font-family: var(--font-family, inherit);
+    color: var(--color-text, #0f172a);
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
@@ -330,12 +334,14 @@
 }
 
 .storefront-hero.layout-full-cover .hero-title {
+    font-family: var(--heading-font-family, inherit);
     color: white;
     font-size: 5.5rem;
     text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .storefront-hero.layout-full-cover .hero-subtitle {
+    font-family: var(--font-family, inherit);
     color: rgba(255, 255, 255, 0.9);
     margin: 0 auto 3rem;
 }
