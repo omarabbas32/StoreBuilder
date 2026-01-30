@@ -1,4 +1,4 @@
-import React from 'react';
+import { formatImageUrl } from '../../utils/imageUtils';
 import './SydneyHero.css';
 
 const SydneyHero = ({
@@ -25,7 +25,7 @@ const SydneyHero = ({
         }
 
         return {
-            backgroundImage: `linear-gradient(${overlay}, ${overlay}), url(${image || defaultImage})`
+            backgroundImage: `linear-gradient(${overlay}, ${overlay}), url(${formatImageUrl(image) || defaultImage})`
         };
     };
 

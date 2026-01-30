@@ -1,4 +1,4 @@
-import React from 'react';
+import { formatImageUrl } from '../../utils/imageUtils';
 import './SydneyHighlight.css';
 
 const SydneyHighlight = ({ title, description, image, miniImage, brandColor }) => {
@@ -6,7 +6,7 @@ const SydneyHighlight = ({ title, description, image, miniImage, brandColor }) =
         <div className="sydney-highlight">
             <div className="sydney-highlight-image-wrapper">
                 <img
-                    src={image || 'https://images.unsplash.com/photo-1591085686350-798c0f9faa7f?auto=format&fit=crop&q=80&w=800'}
+                    src={formatImageUrl(image) || 'https://images.unsplash.com/photo-1591085686350-798c0f9faa7f?auto=format&fit=crop&q=80&w=800'}
                     alt={title}
                     className="sydney-highlight-main-img"
                 />
@@ -22,7 +22,7 @@ const SydneyHighlight = ({ title, description, image, miniImage, brandColor }) =
                     </button>
                     <div className="sydney-highlight-mini-wrapper">
                         <img
-                            src={miniImage || 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&q=80&w=200'}
+                            src={formatImageUrl(miniImage) || 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&q=80&w=200'}
                             alt="Preview"
                             className="sydney-highlight-mini-img"
                         />

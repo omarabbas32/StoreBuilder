@@ -8,6 +8,7 @@ import StorefrontFooter from '../components/storefront/StorefrontFooter';
 import CartDrawer from '../components/storefront/CartDrawer';
 import useCartStore from '../store/cartStore';
 import { useStorePath } from '../hooks/useStorePath';
+import { formatImageUrl } from '../utils/imageUtils';
 import './CategoriesPage.css';
 
 const CategoriesPage = ({ slug: slugProp }) => {
@@ -33,7 +34,7 @@ const CategoriesPage = ({ slug: slugProp }) => {
     const loadData = async () => {
         setLoading(true);
 
-        const storeResult = await storeService.getStoreBySlug(slug);
+        const storeResult = await storeService.getStoreBySlugOrId(slug);
         if (!storeResult.success) {
             setError(storeResult.error);
             setLoading(false);
@@ -117,15 +118,33 @@ const CategoriesPage = ({ slug: slugProp }) => {
                 config={navbarConfig}
                 brandColor={brandColor}
                 storeName={store.name}
-                logo={store.settings?.logo_url}
+                logo={store.settings?.logo_url ? formatImageUrl(store.settings.logo_url) : null}
                 onCartClick={() => setIsCartOpen(true)}
             />
 
-            <main className="categories-main container">
-                <div className="page-header">
-                    <Grid size={32} className="header-icon" style={{ color: brandColor }} />
-                    <h1>Categories</h1>
-                    <p>Browse all the categories available in the store</p>
+            <main className="categories-main">
+                <div className="categories-hero">
+                    <div className="hero-background">
+                        {store.settings?.globalHeaderAsset ? (
+                            <img src={formatImageUrl(store.settings.globalHeaderAsset)} alt="" className="header-library-asset" />
+                        ) : (
+                            <>
+                                <div className="glass-blob blob-1"></div>
+                                <div className="glass-blob blob-2"></div>
+                            </>
+                        )}
+                    </div>
+                    <div className="container">
+                        <nav className="breadcrumbs">
+                            <Link to={`${storePath}/`}>Home</Link>
+                            <ArrowRight size={12} />
+                            <span>Categories</span>
+                        </nav>
+                        <div className="page-header">
+                            <h1>Categories</h1>
+                            <p>Explore our curated collections and find exactly what you're looking for.</p>
+                        </div>
+                    </div>
                 </div>
 
                 {categories.length === 0 ? (

@@ -30,7 +30,7 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
     const loadStore = async () => {
         setLoading(true);
         const [storeResult, componentsResult] = await Promise.all([
-            storeService.getStoreBySlug(slug),
+            storeService.getStoreBySlugOrId(slug),
             storeService.getComponents()
         ]);
 

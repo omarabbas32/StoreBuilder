@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import storeService from '../services/storeService';
 import productService from '../services/productService';
 import Card from '../components/ui/Card';
+import categoryService from '../services/categoryService';
 import StorefrontHero from '../components/storefront/StorefrontHero';
 import StorefrontNavbar from '../components/storefront/StorefrontNavbar';
 import StorefrontFooter from '../components/storefront/StorefrontFooter';
@@ -11,7 +12,10 @@ import StorefrontSidebar from '../components/storefront/StorefrontSidebar';
 import CartDrawer from '../components/storefront/CartDrawer';
 import useCartStore from '../store/cartStore';
 import EditableText from '../components/storefront/EditableText';
+import { formatImageUrl } from '../utils/imageUtils';
 import './Storefront.css';
+import './ProductDetail.css'; // Added from instruction
+import './ProductsPage.css'; // Added from instruction
 
 const Storefront = ({ slug: slugProp }) => {
     const { slug: slugParam } = useParams();
@@ -20,6 +24,7 @@ const Storefront = ({ slug: slugProp }) => {
     const [products, setProducts] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const storePath = useStorePath();
@@ -55,22 +60,36 @@ const Storefront = ({ slug: slugProp }) => {
             return;
         }
         setLoading(true);
+
+        // Check if slug is a valid UUID or MongoID
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+        const isMongoID = /^[0-9a-fA-F]{24}$/.test(slug);
+        const isId = isUUID || isMongoID;
+
         const [storeResult, componentsResult] = await Promise.all([
-            storeService.getStoreBySlug(slug),
+            storeService.getStoreBySlugOrId(slug),
             storeService.getComponents()
         ]);
 
         if (storeResult.success) {
             setStore(storeResult.data);
+            const activeStoreId = storeResult.data._id || storeResult.data.id;
 
             if (componentsResult.success) {
                 setAvailableComponents(componentsResult.data);
             }
 
-            // Load products for this store
-            const productsResult = await productService.getProducts(storeResult.data.id);
+            // Load products and categories for this store
+            const [productsResult, categoriesResult] = await Promise.all([
+                productService.getProducts(activeStoreId),
+                categoryService.getAll(activeStoreId)
+            ]);
+
             if (productsResult.success) {
                 setProducts(productsResult.data || []);
+            }
+            if (categoriesResult.success) {
+                setCategories(categoriesResult.data || []);
             }
         } else {
             setError(storeResult.error);
@@ -158,7 +177,7 @@ const Storefront = ({ slug: slugProp }) => {
                                         <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
                                             <div className="product-image-container">
                                                 {product.images?.[0] ? (
-                                                    <img src={product.images[0]} alt={product.name} className="product-img" />
+                                                    <img src={formatImageUrl(product.images[0])} alt={product.name} className="product-img" />
                                                 ) : (
                                                     <div className="product-image-placeholder">
                                                         <div className="image-icon">🛍️</div>
@@ -170,6 +189,15 @@ const Storefront = ({ slug: slugProp }) => {
                                                 <p className="product-price">${product.price}</p>
                                             </div>
                                         </Link>
+                                        {product.images && product.images.length > 1 && ( // Added from instruction
+                                            <div className="image-thumbnails">
+                                                {product.images.map((img, idx) => (
+                                                    <div key={idx} className="thumb">
+                                                        <img src={formatImageUrl(img)} alt="" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                         <button
                                             className="add-to-cart"
                                             style={{ backgroundColor: brandColor }}
@@ -227,7 +255,7 @@ const Storefront = ({ slug: slugProp }) => {
                     config={navbarConfig}
                     brandColor={brandColor}
                     storeName={store.name}
-                    logo={store.settings?.logo_url} // Global logo fallback
+                    logo={store.settings?.logo_url ? formatImageUrl(store.settings.logo_url) : null} // Standardized logo URL
                     onCartClick={() => setIsCartOpen(true)}
                 />
             )}
@@ -237,6 +265,7 @@ const Storefront = ({ slug: slugProp }) => {
                     <StorefrontSidebar
                         config={sidebarConfig}
                         brandColor={brandColor}
+                        categories={categories}
                     />
                 )}
                 <div className="storefront-content">

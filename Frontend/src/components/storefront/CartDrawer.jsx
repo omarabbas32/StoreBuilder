@@ -2,6 +2,7 @@ import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
 import Button from '../ui/Button';
+import { formatImageUrl } from '../../utils/imageUtils';
 import './CartDrawer.css';
 
 const CartDrawer = ({ isOpen, onClose, brandColor }) => {
@@ -37,7 +38,7 @@ const CartDrawer = ({ isOpen, onClose, brandColor }) => {
                             <div key={item.id} className="cart-item">
                                 <div className="item-image">
                                     {item.images && item.images[0] ? (
-                                        <img src={item.images[0]} alt={item.name} />
+                                        <img src={formatImageUrl(item.images[0])} alt={item.name} />
                                     ) : (
                                         <div className="image-placeholder">🛍️</div>
                                     )}

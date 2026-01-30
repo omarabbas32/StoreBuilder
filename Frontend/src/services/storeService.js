@@ -37,6 +37,20 @@ const storeService = {
     return result;
   },
 
+  async getStoreBySlugOrId(slugOrId) {
+    if (!slugOrId) return { success: false, error: 'No identifier provided' };
+
+    // Check if it's a UUID or MongoID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+    const isMongoID = /^[0-9a-fA-F]{24}$/.test(slugOrId);
+
+    if (isUUID || isMongoID) {
+      return await this.getStoreById(slugOrId);
+    } else {
+      return await this.getStoreBySlug(slugOrId);
+    }
+  },
+
   async createStore(storeData) {
     const result = await apiClient.post("/stores", storeData);
     if (result.success) {

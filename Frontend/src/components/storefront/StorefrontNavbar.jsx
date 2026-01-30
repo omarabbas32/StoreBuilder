@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
 import { useStorePath } from '../../hooks/useStorePath';
+import { formatImageUrl } from '../../utils/imageUtils';
 import './StorefrontNavbar.css';
 
 const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: propLogo }) => {
@@ -31,7 +32,7 @@ const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: pr
             <div className="navbar-container">
                 <Link to={`${storePath}/`} className="navbar-brand">
                     {logo ? (
-                        <img src={logo} alt={displayName} className="navbar-logo" />
+                        <img src={formatImageUrl(logo)} alt={displayName} className="navbar-logo" />
                     ) : (
                         <span className="navbar-name">{displayName}</span>
                     )}

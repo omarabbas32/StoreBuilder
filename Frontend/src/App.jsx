@@ -166,9 +166,19 @@ function App() {
                     }
                 />
 
-                {/* Store storefront (legacy path or for non-subdomain access) */}
+                {/* Store storefront routes */}
+                <Route path="/s/:slug" element={<Storefront />} />
+                <Route path="/s/:slug/products" element={<ProductsPage />} />
+                <Route path="/s/:slug/category/:categoryId" element={<CategoryProductsPage />} />
+                <Route path="/s/:slug/product/:productId" element={<ProductDetail />} />
+                <Route path="/preview/:slug" element={<Storefront />} />
+                <Route path="/preview/:slug/products" element={<ProductsPage />} />
+                <Route path="/preview/:slug/category/:categoryId" element={<CategoryProductsPage />} />
+                <Route path="/preview/:slug/product/:productId" element={<ProductDetail />} />
                 <Route path="/:slug" element={<Storefront />} />
                 <Route path="/:slug/products" element={<ProductsPage />} />
+                <Route path="/:slug/category/:categoryId" element={<CategoryProductsPage />} />
+                <Route path="/:slug/product/:productId" element={<ProductDetail />} />
                 <Route path="/product/:productId" element={<ProductDetail />} />
             </Routes>
             <Toaster position="top-right" />

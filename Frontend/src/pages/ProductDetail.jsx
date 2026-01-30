@@ -9,6 +9,7 @@ import Card from '../components/ui/Card';
 import ReviewList from '../components/review/ReviewList';
 import ReviewForm from '../components/review/ReviewForm';
 import { useStorePath } from '../hooks/useStorePath';
+import { formatImageUrl } from '../utils/imageUtils';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -35,7 +36,7 @@ const ProductDetail = () => {
             setProduct(productResult.data);
 
             // Load store info
-            const storeResult = await storeService.getStoreById(productResult.data.store_id);
+            const storeResult = await storeService.getStoreById(productResult.data.storeId || productResult.data.store_id);
             if (storeResult.success) {
                 setStore(storeResult.data);
             }
@@ -70,9 +71,25 @@ const ProductDetail = () => {
 
                 <div className="product-main">
                     <div className="product-gallery">
-                        <div className="main-image-placeholder">
-                            <span>🛍️</span>
-                        </div>
+                        {product.images && product.images.length > 0 ? (
+                            <div className="main-image">
+                                <img src={formatImageUrl(product.images[0])} alt={product.name} />
+                                {product.images.length > 1 && (
+                                    <div className="image-thumbnails">
+                                        {product.images.map((img, idx) => (
+                                            <div key={idx} className="thumb">
+                                                <img src={formatImageUrl(img)} alt="" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="main-image-placeholder">
+                                <span>🛍️</span>
+                                <p>No image available</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="product-info-panel">

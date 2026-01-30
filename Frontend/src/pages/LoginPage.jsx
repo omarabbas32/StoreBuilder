@@ -94,6 +94,26 @@ const LoginPage = () => {
                         Sign In
                     </Button>
 
+                    <div className="demo-login-divider">
+                        <span>OR</span>
+                    </div>
+
+                    <div className="demo-login-section">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            fullWidth
+                            onClick={() => {
+                                // You might want to adjust these credentials or use a specific demo account
+                                onSubmit({ email: 'customer@example.com', password: 'password123' });
+                            }}
+                            disabled={isLoading}
+                        >
+                            Log in as Demo Customer
+                        </Button>
+                        <p className="demo-tip">Perfect for reviewers to see the storefront immediately.</p>
+                    </div>
+
                     <p className="auth-footer">
                         Don't have an account?{' '}
                         <Link to="/register" className="link">

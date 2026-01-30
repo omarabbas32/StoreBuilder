@@ -9,6 +9,7 @@ import CartDrawer from '../components/storefront/CartDrawer';
 import Card from '../components/ui/Card';
 import useCartStore from '../store/cartStore';
 import { useStorePath } from '../hooks/useStorePath';
+import { formatImageUrl } from '../utils/imageUtils';
 import './ProductsPage.css';
 
 const ProductsPage = ({ slug: slugProp }) => {
@@ -36,7 +37,7 @@ const ProductsPage = ({ slug: slugProp }) => {
     const loadData = async () => {
         setLoading(true);
         const [storeResult, componentsResult] = await Promise.all([
-            storeService.getStoreBySlug(slug),
+            storeService.getStoreBySlugOrId(slug),
             storeService.getComponents()
         ]);
 
@@ -131,8 +132,14 @@ const ProductsPage = ({ slug: slugProp }) => {
             <main className="products-main">
                 <div className="products-mini-hero">
                     <div className="hero-background">
-                        <div className="glass-blob blob-1"></div>
-                        <div className="glass-blob blob-2"></div>
+                        {store.settings?.globalHeaderAsset ? (
+                            <img src={formatImageUrl(store.settings.globalHeaderAsset)} alt="" className="header-library-asset" />
+                        ) : (
+                            <>
+                                <div className="glass-blob blob-1"></div>
+                                <div className="glass-blob blob-2"></div>
+                            </>
+                        )}
                     </div>
                     <div className="container">
                         <div className="page-header">
@@ -162,7 +169,7 @@ const ProductsPage = ({ slug: slugProp }) => {
                                     <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
                                         <div className="product-image">
                                             {product.images?.[0] ? (
-                                                <img src={product.images[0]} alt={product.name} />
+                                                <img src={formatImageUrl(product.images[0])} alt={product.name} />
                                             ) : (
                                                 <div className="product-placeholder">
                                                     <Package size={48} />

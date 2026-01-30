@@ -6,6 +6,7 @@ import StorefrontNavbar from '../components/storefront/StorefrontNavbar';
 import useCartStore from '../store/cartStore';
 import Button from '../components/ui/Button';
 import { useStorePath } from '../hooks/useStorePath';
+import { formatImageUrl } from '../utils/imageUtils';
 import './CartPage.css';
 
 const CartPage = ({ slug: slugProp }) => {
@@ -30,7 +31,7 @@ const CartPage = ({ slug: slugProp }) => {
     const loadStore = async () => {
         setLoading(true);
         const [storeResult, componentsResult] = await Promise.all([
-            storeService.getStoreBySlug(slug),
+            storeService.getStoreBySlugOrId(slug),
             storeService.getComponents()
         ]);
 
@@ -100,7 +101,7 @@ const CartPage = ({ slug: slugProp }) => {
                                 <div key={item.id} className="cart-item">
                                     <div className="item-image">
                                         {item.images && item.images.length > 0 ? (
-                                            <img src={item.images[0]} alt={item.name} />
+                                            <img src={formatImageUrl(item.images[0])} alt={item.name} />
                                         ) : (
                                             <div className="image-placeholder">🛍️</div>
                                         )}

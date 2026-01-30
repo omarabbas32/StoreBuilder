@@ -61,6 +61,33 @@
     animation-delay: -5s;
 }
 
+.header-library-asset {
+    position: absolute;
+    top: 50%;
+    right: 5%;
+    transform: translateY(-50%);
+    height: 120%;
+    max-height: 400px;
+    width: auto;
+    object-fit: contain;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 0;
+    animation: float-illustration 6s infinite ease-in-out;
+}
+
+@keyframes float-illustration {
+
+    0%,
+    100% {
+        transform: translateY(-50%) translateX(0);
+    }
+
+    50% {
+        transform: translateY(-55%) translateX(-10px);
+    }
+}
+
 .products-mini-hero .container {
     position: relative;
     z-index: 1;
@@ -78,7 +105,6 @@
     color: var(--color-text-muted, #64748b);
     font-size: 1.25rem;
     max-width: 600px;
-    margin: 0 auto;
 }
 
 .no-products-glass {

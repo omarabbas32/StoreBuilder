@@ -15,18 +15,26 @@ const useCartStore = create(
 
             addItem: (product, quantity = 1) => {
                 const items = get().items;
-                const existingItem = items.find(item => item.id === product.id);
+                const productId = product.id || product._id;
+                const existingItem = items.find(item => (item.id || item._id) === productId);
 
                 if (existingItem) {
                     set({
                         items: items.map(item =>
-                            item.id === product.id
+                            (item.id || item._id) === productId
                                 ? { ...item, quantity: item.quantity + quantity }
                                 : item
                         )
                     });
                 } else {
-                    set({ items: [...items, { ...product, quantity }] });
+                    // Ensure the stored item has a consistent 'id' property
+                    set({
+                        items: [...items, {
+                            ...product,
+                            id: productId, // Normalize id
+                            quantity
+                        }]
+                    });
                 }
             },
 
@@ -36,14 +44,14 @@ const useCartStore = create(
                 } else {
                     set({
                         items: get().items.map(item =>
-                            item.id === productId ? { ...item, quantity } : item
+                            (item.id || item._id) === productId ? { ...item, quantity } : item
                         )
                     });
                 }
             },
 
             removeItem: (productId) => {
-                set({ items: get().items.filter(item => item.id !== productId) });
+                set({ items: get().items.filter(item => (item.id || item._id) !== productId) });
             },
 
             clearCart: () => {

@@ -17,6 +17,30 @@
 .categories-page h5,
 .categories-page h6 {
     font-family: var(--heading-font-family, var(--font-family, inherit)), serif;
+    font-weight: 700;
+}
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.breadcrumbs a {
+    color: var(--color-text-muted, #64748b);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.breadcrumbs a:hover {
+    color: var(--brand-color);
+}
+
+.breadcrumbs span {
+    color: var(--color-text, #1e293b);
 }
 
 .categories-loading,
@@ -33,19 +57,88 @@
     color: var(--color-error, #ef4444);
 }
 
-/* Main Content */
 .categories-main {
     flex: 1;
-    padding: 3rem 1rem;
+}
+
+.categories-hero {
+    position: relative;
+    padding: 8rem 0 6rem;
+    background: linear-gradient(135deg, var(--color-bg, #ffffff) 0%, var(--color-bg-alt, #f8fafc) 100%);
+    overflow: hidden;
+    margin-bottom: 4rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.categories-hero .hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.categories-hero .container {
+    position: relative;
+    z-index: 1;
+}
+
+.categories-hero .glass-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.15;
+    animation: blob-float 20s infinite alternate;
+}
+
+.categories-hero .blob-1 {
+    width: 300px;
+    height: 300px;
+    background: var(--brand-color);
+    top: -100px;
+    right: -50px;
+}
+
+.categories-hero .blob-2 {
+    width: 200px;
+    height: 200px;
+    background: #3b82f6;
+    bottom: -50px;
+    left: -50px;
+    animation-delay: -5s;
+}
+
+.header-library-asset {
+    position: absolute;
+    top: 50%;
+    right: 5%;
+    transform: translateY(-50%);
+    height: 140%;
+    max-height: 500px;
+    width: auto;
+    object-fit: contain;
+    opacity: 0.95;
+    pointer-events: none;
+    z-index: 0;
+    transition: all 0.5s ease;
+    animation: float-illustration 6s infinite ease-in-out;
+}
+
+@keyframes float-illustration {
+
+    0%,
+    100% {
+        transform: translateY(-50%) translateX(0);
+    }
+
+    50% {
+        transform: translateY(-55%) translateX(-10px);
+    }
 }
 
 .page-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.page-header .header-icon {
-    margin-bottom: 1rem;
+    text-align: left;
 }
 
 .page-header h1 {
@@ -60,7 +153,6 @@
     font-size: 1.1rem;
 }
 
-/* Empty State */
 .no-categories {
     display: flex;
     flex-direction: column;
@@ -82,11 +174,11 @@
     font-size: 1.1rem;
 }
 
-/* Categories Grid */
 .categories-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
+    padding: 0 1rem 3rem;
 }
 
 .category-card {
@@ -151,6 +243,7 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    line-clamp: 2;
 }
 
 .view-products {
@@ -166,30 +259,66 @@
     gap: 0.75rem;
 }
 
-/* Footer */
 .store-footer {
     background: var(--color-bg-dark, #1e293b);
     color: #ffffff;
     padding: 2rem 0;
     text-align: center;
+    margin-top: auto;
 }
 
 .store-footer p {
     opacity: 0.8;
 }
 
-/* Responsive */
+@keyframes blob-float {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    100% {
+        transform: translate(30px, 50px) scale(1.1);
+    }
+}
+
+@media (max-width: 1024px) {
+    .header-library-asset {
+        height: 100%;
+        max-height: 350px;
+        right: 0;
+        opacity: 0.6;
+    }
+}
+
 @media (max-width: 768px) {
+    .categories-hero {
+        padding: 4rem 0 3rem;
+        margin-bottom: 2rem;
+    }
+
     .page-header h1 {
-        font-size: 2rem;
+        font-size: 2.25rem;
+    }
+
+    .header-library-asset {
+        position: relative;
+        top: 0;
+        right: 0;
+        transform: none;
+        height: 200px;
+        width: 100%;
+        margin: 2rem auto 0;
+        opacity: 0.8;
+        display: block;
     }
 
     .categories-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 1rem;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 0 1.5rem 3rem;
     }
 
-    .simple-navbar .navbar-links {
-        gap: 1rem;
+    .breadcrumbs {
+        margin-bottom: 1.5rem;
     }
 }

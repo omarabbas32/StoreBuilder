@@ -26,7 +26,8 @@ import {
     X,
     Copy,
     Minimize2,
-    Maximize2
+    Maximize2,
+    ArrowRight
 } from 'lucide-react';
 import { useRef } from 'react';
 import storeService from '../services/storeService';
@@ -40,12 +41,194 @@ import ImageUpload from '../components/ui/ImageUpload';
 import ColorPalettePicker from '../components/ui/ColorPalettePicker';
 import AssetLibrary from '../components/ui/AssetLibrary';
 import SortableComponentItem from '../components/ui/SortableComponentItem';
+import ProductPicker from '../components/ui/ProductPicker';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { debounce } from '../utils/debounce';
 import { safeSettingsUpdate } from '../utils/settingsMerge';
 import { validateStoreSettings } from '../utils/validation';
 import toast from 'react-hot-toast';
 import './StoreCustomizer.css';
+
+const LIBRARY_ASSETS = [
+    { id: 'asset-1', url: '/assets/library/asset-1.png', name: 'Premium Abstract' },
+    { id: 'asset-2', url: '/assets/library/asset-2.png', name: 'Modern Shopping' },
+    { id: 'asset-3', url: '/assets/library/asset-3.png', name: 'Elegant Fashion' },
+    { id: 'asset-4', url: '/assets/library/asset-4.png', name: 'High-Tech Wave' }
+];
+
+// --- UI Components for the Shopify-Level Customizer ---
+
+const Separator = () => <div className="designer-separator" />;
+
+const AccordionSection = ({ id, title, description, icon, children, openSections, toggleSection, resetToDefaults }) => {
+    const isOpen = openSections[id];
+    return (
+        <section className={`accordion-card ${isOpen ? 'open' : ''}`}>
+            <button
+                className="accordion-header"
+                onClick={() => toggleSection(id)}
+                aria-expanded={isOpen}
+            >
+                <div className="icon-wrapper">{icon}</div>
+                <div className="accordion-header-text">
+                    <h3>{title}</h3>
+                    <p>{description}</p>
+                </div>
+                <ChevronDown size={20} className="accordion-chevron" />
+            </button>
+            {isOpen && (
+                <div className="accordion-content">
+                    {resetToDefaults && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                            <button className="reset-section-btn" onClick={() => resetToDefaults(id)}>Reset</button>
+                        </div>
+                    )}
+                    {children}
+                </div>
+            )}
+        </section>
+    );
+};
+
+const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, undo, redo, historyIndex, historyLength, onReset }) => (
+    <div className="sticky-editor-bar">
+        <div className="editor-title">
+            <h2>{storeName}</h2>
+            <div className={`save-status ${hasUnsavedChanges ? 'unsaved' : 'saved'}`}>
+                {hasUnsavedChanges ? '● Unsaved' : '✓ Saved'}
+            </div>
+        </div>
+        <div className="editor-actions">
+            <button className="toolbar-btn" onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)">
+                <Undo size={18} />
+            </button>
+            <button className="toolbar-btn" onClick={redo} disabled={historyIndex >= historyLength - 1} title="Redo (Ctrl+Y)">
+                <Redo size={18} />
+            </button>
+            <div className="toolbar-divider-v" />
+            <button className="toolbar-btn glass" onClick={onReset} title="Reset all to defaults">
+                <X size={18} />
+            </button>
+            <Button
+                onClick={handleSave}
+                className="save-btn-modern"
+                size="sm"
+                loading={saving}
+                disabled={saving || !hasUnsavedChanges}
+            >
+                Save Design
+            </Button>
+        </div>
+    </div>
+);
+
+const CustomizationProgress = ({ settings }) => {
+    // Basic logic to check "completeness"
+    const sections = [
+        { key: 'logo_url', weight: 1 },
+        { key: 'primaryColor', weight: 1 },
+        { key: 'typography', weight: 1 },
+        { key: 'navbar_config', weight: 1 },
+        { key: 'footer_config', weight: 1 }
+    ];
+
+    let score = 0;
+    sections.forEach(s => {
+        if (settings[s.key] || (typeof settings[s.key] === 'object' && Object.keys(settings[s.key] || {}).length > 0)) {
+            score++;
+        }
+    });
+
+    const percentage = Math.round((score / sections.length) * 100);
+
+    return (
+        <div className="progress-container">
+            <div className="progress-header">
+                <span>Customization Progress</span>
+                <span className="progress-percentage">{percentage}%</span>
+            </div>
+            <div className="progress-bar-bg">
+                <div className="progress-bar-fill" style={{ width: `${percentage}%` }} />
+            </div>
+        </div>
+    );
+};
+
+const DeviceFrame = ({ children, device, onDeviceChange, subdomain }) => (
+    <div className="designer-preview-pane">
+        <div className="preview-toolbar">
+            <button
+                className={`toolbar-btn ${device === 'mobile' ? 'active' : ''}`}
+                onClick={() => onDeviceChange('mobile')}
+                title="Mobile View"
+            >
+                <Smartphone size={18} />
+            </button>
+            <button
+                className={`toolbar-btn ${device === 'tablet' ? 'active' : ''}`}
+                onClick={() => onDeviceChange('tablet')}
+                title="Tablet View"
+            >
+                <Tablet size={18} />
+            </button>
+            <button
+                className={`toolbar-btn ${device === 'desktop' ? 'active' : ''}`}
+                onClick={() => onDeviceChange('desktop')}
+                title="Desktop View"
+            >
+                <Monitor size={18} />
+            </button>
+        </div>
+
+        <div className="preview-iframe-wrapper">
+            <div className={`preview-device-frame ${device}`}>
+                <div className={`device-top-bar ${device === 'desktop' ? 'desktop' : ''}`}>
+                    <div className="status-dot dot-red" />
+                    <div className="status-dot dot-yellow" />
+                    <div className="status-dot dot-green" />
+                    {device === 'desktop' && (
+                        <div className="device-address-bar desktop">
+                            {window.location.origin}/{subdomain || 'store-id'}
+                        </div>
+                    )}
+                </div>
+                <div className={`preview-iframe-container ${device}`}>
+                    {children}
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const CustomizerMainMenu = ({ onSelect, activeSection }) => {
+    const menuItems = [
+        { id: 'branding', title: 'Branding & Colors', icon: <Sparkles size={20} />, description: 'Logo, colors and identity' },
+        { id: 'sections', title: 'Page Sections', icon: <Eye size={20} />, description: 'Visibility and ordering' },
+        { id: 'typography', title: 'Typography', icon: <Type size={20} />, description: 'Fonts and text styles' },
+        { id: 'navbar', title: 'Header & Navigation', icon: <MenuIcon size={20} />, description: 'Menu links and layout' },
+        { id: 'homepage', title: 'Homepage Sections', icon: <Layout size={20} />, description: 'Hero and product grid' },
+        { id: 'footer', title: 'Footer & Social', icon: <ShoppingBag size={20} />, description: 'Basics and legal links' }
+    ];
+
+    return (
+        <div className="customizer-main-menu">
+            <div className="menu-group-label" style={{ padding: '0 0.5rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--designer-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site Structure</div>
+            {menuItems.map(item => (
+                <button
+                    key={item.id}
+                    className={`menu-nav-item ${activeSection === item.id ? 'active' : ''}`}
+                    onClick={() => onSelect(item.id)}
+                >
+                    <div className="menu-nav-icon">{item.icon}</div>
+                    <div className="menu-nav-text">
+                        <span className="menu-nav-title">{item.title}</span>
+                        <span className="menu-nav-desc">{item.description}</span>
+                    </div>
+                </button>
+            ))}
+        </div>
+    );
+};
 
 const StoreCustomizer = () => {
     const { storeId: paramStoreId } = useParams();
@@ -65,11 +248,28 @@ const StoreCustomizer = () => {
     const [history, setHistory] = useState([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [showAssetModal, setShowAssetModal] = useState(false);
+    const [showProductPicker, setShowProductPicker] = useState(false);
     const [assetCallback, setAssetCallback] = useState(null);
     const isUndoing = useRef(false);
     const iframeRef = useRef(null);
     const saveTimeoutRef = useRef(null);
     const [autoSaveStatus, setAutoSaveStatus] = useState(null); // 'saving', 'saved', null
+    const [activeSection, setActiveSection] = useState(null); // 'branding', 'sections', 'typography', 'navbar', 'homepage', 'footer'
+    const [openSections, setOpenSections] = useState({
+        branding: true,
+        sections: false,
+        typography: false,
+        navbar: false,
+        footer: false,
+        assets: false
+    });
+
+    const toggleSection = (section) => {
+        setOpenSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    };
 
 
     useEffect(() => {
@@ -105,6 +305,16 @@ const StoreCustomizer = () => {
             debouncedSendUpdate(store.settings);
         }
     }, [store?.settings, previewMode, debouncedSendUpdate]);
+
+    // Live section highlighting logic
+    useEffect(() => {
+        if (iframeRef.current?.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+                type: 'HIGHLIGHT_SECTION',
+                sectionId: activeSection
+            }, window.location.origin);
+        }
+    }, [activeSection]);
 
 
     // Auto-save to localStorage
@@ -720,6 +930,55 @@ const StoreCustomizer = () => {
         }
     };
 
+    const applyFooterPreset = (preset) => {
+        if (!footerComp) {
+            toast.error('Footer component not found');
+            return;
+        }
+
+        const presets = {
+            minimal: {
+                socialColor: '#64748b',
+                backgroundColor: '#ffffff',
+                copyrightText: `© ${new Date().getFullYear()} ${store.name}`
+            },
+            bold: {
+                socialColor: '#2563eb',
+                backgroundColor: '#0f172a',
+                copyrightText: `© ${new Date().getFullYear()} ${store.name}`
+            },
+            luxury: {
+                socialColor: '#d4af37',
+                backgroundColor: '#1a1a1a',
+                copyrightText: `EST. ${new Date().getFullYear()} | ${store.name.toUpperCase()}`
+            }
+        };
+
+        const selected = presets[preset];
+        if (selected) {
+            setStore(prev => {
+                const currentSettings = prev?.settings || {};
+                const currentContent = currentSettings.componentContent?.[footerComp.id] || {};
+
+                return {
+                    ...prev,
+                    settings: {
+                        ...currentSettings,
+                        componentContent: {
+                            ...(currentSettings.componentContent || {}),
+                            [footerComp.id]: {
+                                ...currentContent,
+                                ...selected
+                            }
+                        }
+                    }
+                };
+            });
+            setHasUnsavedChanges(true);
+            toast.success(`Applied ${preset.charAt(0).toUpperCase() + preset.slice(1)} footer preset!`);
+        }
+    };
+
     if (loading) return <div className="loading-state">Loading your designer...</div>;
     if (!store) return <div className="error-state">Store not found. Please try again from the dashboard.</div>;
 
@@ -842,822 +1101,634 @@ const StoreCustomizer = () => {
     const storePath = `/s/${store.subdomain || store._id}`;
 
     return (
-        <div className="store-customizer-modern" role="application" aria-label="Store Designer">
-            <header className="designer-header" role="banner">
-                <div className="header-left">
-                    <button className="back-btn" onClick={() => navigate('/dashboard')}>
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h1>Store Designer</h1>
-                        <p>Customize your storefront visually</p>
-                    </div>
-                </div>
-                <div className="header-actions">
-                    <div className="history-controls">
-                        <button
-                            onClick={undo}
-                            disabled={historyIndex <= 0}
-                            className="toolbar-btn dark"
-                            title="Undo (Ctrl+Z)"
-                        >
-                            <Undo size={18} />
-                        </button>
-                        <button
-                            onClick={redo}
-                            disabled={historyIndex >= history.length - 1}
-                            className="toolbar-btn dark"
-                            title="Redo (Ctrl+Y)"
-                        >
-                            <Redo size={18} />
-                        </button>
-                        {autoSaveStatus && (
-                            <span className={`auto-save-indicator ${autoSaveStatus}`}>
-                                {autoSaveStatus === 'saving' ? 'Saving...' : '✓ Saved'}
-                            </span>
-                        )}
-                    </div>
-                    <div className="toolbar-divider" />
-                    <Button
-                        onClick={() => setPreviewMode(previewMode === 'split' ? 'full' : 'split')}
-                        className="btn-glass"
-                    >
-                        {previewMode === 'split' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                        {previewMode === 'split' ? 'Full Editor' : 'Show Preview'}
-                    </Button>
-                    <Button
-                        onClick={handleSaveAsTemplate}
-                        className="btn-glass"
-                        title="Save this design as a template"
-                        disabled={saving}
-                    >
-                        <Sparkles size={18} />
-                        Save as Template
-                    </Button>
-                    <Button
-                        onClick={handleSave}
-                        className="save-btn-modern"
-                        loading={saving}
-                        disabled={saving || !hasUnsavedChanges}
-                    >
-                        {!saving && <Save size={18} />}
-                        Save Design
-                    </Button>
-                </div>
-            </header>
-
+        <div className="store-customizer-modern">
             <div className="designer-main-container">
                 <div className={`designer-sidebar ${previewMode === 'split' ? 'split' : ''}`} role="region" aria-label="Customization Options">
+                    <StickyToolbar
+                        storeName={store.name}
+                        hasUnsavedChanges={hasUnsavedChanges}
+                        saving={saving}
+                        handleSave={handleSave}
+                        undo={undo}
+                        redo={redo}
+                        historyIndex={historyIndex}
+                        historyLength={history.length}
+                        onReset={() => {
+                            if (window.confirm('Are you sure you want to reset ALL settings to defaults? This cannot be undone.')) {
+                                // Full reset logic
+                                setStore(prev => ({ ...prev, settings: { components: [], componentContent: {} } }));
+                                setHasUnsavedChanges(true);
+                            }
+                        }}
+                    />
+
+                    <CustomizationProgress settings={settings} />
+
                     <div className="designer-layout">
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <Sparkles size={24} />
-                                </div>
-                                <div>
-                                    <h2>Branding & Colors</h2>
-                                    <p>Set your brand identity and theme colors</p>
-                                </div>
-                                <button className="reset-section-btn" onClick={() => resetToDefaults('branding')}>Reset</button>
-                            </div>
-
-                            <div className="branding-grid">
-                                <div className="field-group-modern">
-                                    <div className="label-with-action">
-                                        <label>Store Logo</label>
-                                        <button
-                                            className="text-action-btn"
-                                            onClick={() => openAssetLibrary((url) => updateSettingsField('logo_url', url))}
-                                        >
-                                            <Sparkles size={14} /> Library
-                                        </button>
+                        {!activeSection ? (
+                            <CustomizerMainMenu onSelect={setActiveSection} activeSection={activeSection} />
+                        ) : (
+                            <div className="focused-section-editor">
+                                <div className="section-editor-header">
+                                    <button className="back-to-menu-btn" onClick={() => setActiveSection(null)}>
+                                        <ArrowLeft size={18} />
+                                        <span>Back</span>
+                                    </button>
+                                    <div className="breadcrumb-mini">
+                                        <span>Settings</span> / <span className="active">{activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}</span>
                                     </div>
-                                    <ImageUpload
-                                        value={settings.logo_url}
-                                        onChange={(url) => updateSettingsField('logo_url', url)}
-                                    />
                                 </div>
-                                <div className="field-group-modern">
-                                    <label>Brand Colors</label>
-                                    <ColorPalettePicker
-                                        value={settings.colorPalette || [settings.primaryColor || '#2563eb']}
-                                        onChange={(colors) => {
-                                            updateSettingsFields({
-                                                colorPalette: colors,
-                                                primaryColor: colors[0] // Keep backward compatible
-                                            });
-                                        }}
-                                        themes={[
-                                            { name: 'Modern', colors: ['#0f172a', '#3b82f6', '#f8fafc'] },
-                                            { name: 'Vibrant', colors: ['#7c3aed', '#ec4899', '#facc15'] },
-                                            { name: 'Pastel', colors: ['#fdf2f8', '#ecfdf5', '#eff6ff'] },
-                                            { name: 'Dark', colors: ['#1e1e1e', '#d4af37', '#ffffff'] }
-                                        ]}
-                                    />
-                                </div>
-                            </div>
-                        </section>
 
-                        {/* Section: Component Visibility */}
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <Eye size={24} />
-                                </div>
-                                <div>
-                                    <h2>Page Sections</h2>
-                                    <p>Enable or disable visible sections on your homepage</p>
-                                </div>
-                            </div>
-
-                            <div className="visibility-controls-grid">
-                                <DragDropContext onDragEnd={handleDragEnd}>
-                                    <Droppable droppableId="components-list">
-                                        {(provided) => (
-                                            <div
-                                                {...provided.droppableProps}
-                                                ref={provided.innerRef}
-                                            >
-                                                {components
-                                                    .filter(c => !['navigation', 'navbar', 'footer'].includes(c.type))
-                                                    .map((component, index) => (
-                                                        <SortableComponentItem
-                                                            key={component.id}
-                                                            component={component}
-                                                            index={index}
-                                                            onToggleVisibility={updateComponentVisibility}
-                                                            onDuplicate={duplicateComponent}
-                                                        />
-                                                    ))
-                                                }
-                                                {provided.placeholder}
-                                            </div>
-                                        )}
-                                    </Droppable>
-                                </DragDropContext>
-                            </div>
-                        </section>
-
-                        {/* Section: Typography */}
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <Type size={24} />
-                                </div>
-                                <div>
-                                    <h2>Typography</h2>
-                                    <p>Choose fonts and text styles for your store</p>
-                                </div>
-                                <button className="reset-section-btn" onClick={() => resetToDefaults('typography')}>Reset</button>
-                            </div>
-
-                            <div className="fields-grid-modern">
-                                <div className="field-group-modern full-width">
-                                    <label>Font Pairing Presets</label>
-                                    <div className="font-presets-grid">
-                                        {[
-                                            { name: 'Modern', heading: 'Inter', body: 'Inter' },
-                                            { name: 'Elegant', heading: 'Playfair Display', body: 'Roboto' },
-                                            { name: 'Professional', heading: 'Montserrat', body: 'Inter' },
-                                            { name: 'Clean', heading: 'Outfit', body: 'Outfit' }
-                                        ].map(pair => (
-                                            <button
-                                                key={pair.name}
-                                                className={`font-preset-item ${typography.fontFamily === pair.body && typography.headingFontFamily === pair.heading ? 'active' : ''}`}
-                                                onClick={() => updateSettingsField('typography', (prev) => ({
-                                                    ...(prev || {}),
-                                                    fontFamily: pair.body,
-                                                    headingFontFamily: pair.heading
-                                                }))}
-                                            >
-                                                <div className="preset-preview">
-                                                    <span style={{ fontFamily: pair.heading }} className="h-preview">Aa</span>
-                                                    <span style={{ fontFamily: pair.body }} className="b-preview">Aa</span>
+                                {/* Section: Branding */}
+                                {activeSection === 'branding' && (
+                                    <AccordionSection
+                                        id="branding"
+                                        title="Branding & Colors"
+                                        description="Set your brand identity and theme colors"
+                                        icon={<Sparkles size={24} />}
+                                        openSections={{ branding: true }}
+                                        toggleSection={() => { }} // Always open in focused view
+                                        resetToDefaults={resetToDefaults}
+                                    >
+                                        <div className="fields-grid-modern">
+                                            <div className="field-group-modern full-width">
+                                                <div className="label-with-action">
+                                                    <label>Store Logo</label>
+                                                    <button
+                                                        className="text-action-btn"
+                                                        onClick={() => openAssetLibrary((url) => updateSettingsField('logo_url', url))}
+                                                    >
+                                                        <Sparkles size={14} /> Library
+                                                    </button>
                                                 </div>
-                                                <span className="preset-name">{pair.name}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Heading Font</label>
-                                    <select
-                                        className="modern-input"
-                                        value={typography.headingFontFamily || typography.fontFamily}
-                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), headingFontFamily: e.target.value }))}
-                                    >
-                                        <option value="Inter">Inter (Sans-serif)</option>
-                                        <option value="Roboto">Roboto (Clean)</option>
-                                        <option value="Playfair Display">Playfair Display (Elegant)</option>
-                                        <option value="Outfit">Outfit (Modern)</option>
-                                        <option value="Montserrat">Montserrat (Bold)</option>
-                                    </select>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Body Font</label>
-                                    <select
-                                        className="modern-input"
-                                        value={typography.fontFamily}
-                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), fontFamily: e.target.value }))}
-                                    >
-                                        <option value="Inter">Inter (Sans-serif)</option>
-                                        <option value="Roboto">Roboto (Clean)</option>
-                                        <option value="Playfair Display">Playfair Display (Elegant)</option>
-                                        <option value="Outfit">Outfit (Modern)</option>
-                                        <option value="Montserrat">Montserrat (Bold)</option>
-                                    </select>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Heading Size</label>
-                                    <select
-                                        className="modern-input"
-                                        value={typography.headingSize}
-                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), headingSize: e.target.value }))}
-                                    >
-                                        <option value="small">Small</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="large">Large</option>
-                                        <option value="extra-large">Extra Large</option>
-                                    </select>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Body Text Size</label>
-                                    <select
-                                        className="modern-input"
-                                        value={typography.bodySize}
-                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), bodySize: e.target.value }))}
-                                    >
-                                        <option value="small">Small</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="large">Large</option>
-                                    </select>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Font Weight</label>
-                                    <select
-                                        className="modern-input"
-                                        value={typography.fontWeight}
-                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), fontWeight: e.target.value }))}
-                                    >
-                                        <option value="light">Light</option>
-                                        <option value="normal">Normal</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="bold">Bold</option>
-                                    </select>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Line Height</label>
-                                    <select
-                                        className="modern-input"
-                                        value={typography.lineHeight || '1.6'}
-                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), lineHeight: e.target.value }))}
-                                    >
-                                        <option value="1.2">Tight (1.2)</option>
-                                        <option value="1.4">Normal (1.4)</option>
-                                        <option value="1.6">Relaxed (1.6)</option>
-                                        <option value="2.0">Loose (2.0)</option>
-                                    </select>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Letter Spacing</label>
-                                    <select
-                                        className="modern-input"
-                                        value={typography.letterSpacing || '0px'}
-                                        onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), letterSpacing: e.target.value }))}
-                                    >
-                                        <option value="-0.5px">Tight (-0.5px)</option>
-                                        <option value="0px">Normal (0px)</option>
-                                        <option value="0.5px">Wide (0.5px)</option>
-                                        <option value="1px">Wider (1px)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Section: Navigation Menu */}
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <MenuIcon size={24} />
-                                </div>
-                                <div>
-                                    <h2>Navigation Menu</h2>
-                                    <p>Manage links in your store's header</p>
-                                </div>
-                                <div className="header-actions-inline">
-                                    <button className="reset-section-btn" onClick={() => resetToDefaults('navbar')}>Reset</button>
-                                    <Button variant="secondary" size="sm" onClick={addMenuItem} className="reset-section-btn">
-                                        <Plus size={16} /> Add Link
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="menu-items-list">
-                                {menuItems.length === 0 ? (
-                                    <div className="empty-state-menu">No custom links added yet.</div>
-                                ) : (
-                                    menuItems.map((item, index) => (
-                                        <div key={index} className="menu-item-row">
-                                            <div className="menu-item-drag-handles">
-                                                <button onClick={() => moveMenuItem(index, 'up')} disabled={index === 0}><ChevronUp size={16} /></button>
-                                                <button onClick={() => moveMenuItem(index, 'down')} disabled={index === menuItems.length - 1}><ChevronDown size={16} /></button>
-                                            </div>
-                                            <div className="menu-item-fields">
-                                                <input
-                                                    type="text"
-                                                    value={item.label}
-                                                    onChange={(e) => updateMenuItem(index, 'label', e.target.value)}
-                                                    placeholder="Label"
-                                                    className="modern-input"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={item.url}
-                                                    onChange={(e) => updateMenuItem(index, 'url', e.target.value)}
-                                                    placeholder="URL (e.g. /products)"
-                                                    className="modern-input"
+                                                <ImageUpload
+                                                    value={settings.logo_url}
+                                                    onChange={(url) => updateSettingsField('logo_url', url)}
                                                 />
                                             </div>
-                                            <button className="delete-menu-item" onClick={() => removeMenuItem(index)}>
-                                                <Trash2 size={18} />
-                                            </button>
+                                            <div className="field-group-modern full-width">
+                                                <label>Brand Design System</label>
+                                                <ColorPalettePicker
+                                                    value={settings.colorPalette || [settings.primaryColor || '#2563eb']}
+                                                    onChange={(colors) => {
+                                                        updateSettingsFields({
+                                                            colorPalette: colors,
+                                                            primaryColor: colors[0]
+                                                        });
+                                                    }}
+                                                    themes={[
+                                                        { name: 'Modern', colors: ['#0f172a', '#3b82f6', '#f8fafc'] },
+                                                        { name: 'Vibrant', colors: ['#7c3aed', '#ec4899', '#facc15'] },
+                                                        { name: 'Pastel', colors: ['#fdf2f8', '#ecfdf5', '#eff6ff'] },
+                                                        { name: 'Dark', colors: ['#1e1e1e', '#d4af37', '#ffffff'] }
+                                                    ]}
+                                                />
+                                            </div>
                                         </div>
-                                    ))
+                                    </AccordionSection>
                                 )}
-                            </div>
-                        </section>
 
-                        {/* Section: Assets Library (New) */}
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <ImageIcon size={24} />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <h2>Asset Library</h2>
-                                    <p>Manage and reuse your uploaded images</p>
-                                </div>
-                            </div>
-                            <div className="assets-sidebar-compact">
-                                <AssetLibrary
-                                    storeId={storeId}
-                                    onSelectImage={(img) => {
-                                        // Just view in sidebar, no auto-select for global view
-                                    }}
-                                />
-                            </div>
-                        </section>
+                                {/* Section: Page Sections */}
+                                {activeSection === 'sections' && (
+                                    <AccordionSection
+                                        id="sections"
+                                        title="Page Sections"
+                                        description="Enable or disable visible sections on your homepage"
+                                        icon={<Eye size={24} />}
+                                        openSections={{ sections: true }}
+                                        toggleSection={() => { }}
+                                    >
+                                        <div className="visibility-controls-grid">
+                                            <DragDropContext onDragEnd={handleDragEnd}>
+                                                <Droppable droppableId="components-list">
+                                                    {(provided) => (
+                                                        <div
+                                                            {...provided.droppableProps}
+                                                            ref={provided.innerRef}
+                                                        >
+                                                            {components
+                                                                .filter(c => !['navigation', 'navbar', 'footer'].includes(c.type))
+                                                                .map((component, index) => (
+                                                                    <SortableComponentItem
+                                                                        key={component.id}
+                                                                        component={component}
+                                                                        index={index}
+                                                                        onToggleVisibility={updateComponentVisibility}
+                                                                        onDuplicate={duplicateComponent}
+                                                                    />
+                                                                ))
+                                                            }
+                                                            {provided.placeholder}
+                                                        </div>
+                                                    )}
+                                                </Droppable>
+                                            </DragDropContext>
+                                        </div>
+                                    </AccordionSection>
+                                )}
 
-                        {/* Section: Footer Customization */}
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <ImageIcon size={24} />
-                                </div>
-                                <div>
-                                    <h2>Footer Customization</h2>
-                                    <p>Configure your storefront footer information</p>
-                                </div>
-                                <button className="reset-section-btn" onClick={() => resetToDefaults('footer')}>Reset</button>
-                            </div>
+                                {/* Section: Typography */}
+                                {activeSection === 'typography' && (
+                                    <AccordionSection
+                                        id="typography"
+                                        title="Typography"
+                                        description="Choose fonts and text styles for your store"
+                                        icon={<Type size={24} />}
+                                        openSections={{ typography: true }}
+                                        toggleSection={() => { }}
+                                        resetToDefaults={resetToDefaults}
+                                    >
+                                        <div className="fields-grid-modern">
+                                            <div className="field-group-modern full-width">
+                                                <label>Font Pairing Presets</label>
+                                                <div className="font-presets-grid">
+                                                    {[
+                                                        { name: 'Modern', heading: 'Inter', body: 'Inter' },
+                                                        { name: 'Elegant', heading: 'Playfair Display', body: 'Roboto' },
+                                                        { name: 'Professional', heading: 'Montserrat', body: 'Inter' },
+                                                        { name: 'Clean', heading: 'Outfit', body: 'Outfit' }
+                                                    ].map(pair => (
+                                                        <button
+                                                            key={pair.name}
+                                                            className={`font-preset-item ${typography.fontFamily === pair.body && typography.headingFontFamily === pair.heading ? 'active' : ''}`}
+                                                            onClick={() => updateSettingsField('typography', (prev) => ({
+                                                                ...(prev || {}),
+                                                                fontFamily: pair.body,
+                                                                headingFontFamily: pair.heading
+                                                            }))}
+                                                        >
+                                                            <div className="preset-preview">
+                                                                <span style={{ fontFamily: pair.heading }} className="h-preview">Aa</span>
+                                                                <span style={{ fontFamily: pair.body }} className="b-preview">Aa</span>
+                                                            </div>
+                                                            <span className="preset-name">{pair.name}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="field-group-modern">
+                                                <label>Heading Font</label>
+                                                <select
+                                                    className="modern-input"
+                                                    value={typography.headingFontFamily || typography.fontFamily}
+                                                    onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), headingFontFamily: e.target.value }))}
+                                                >
+                                                    <option value="Inter">Inter (Sans-serif)</option>
+                                                    <option value="Roboto">Roboto (Clean)</option>
+                                                    <option value="Playfair Display">Playfair Display (Elegant)</option>
+                                                    <option value="Outfit">Outfit (Modern)</option>
+                                                    <option value="Montserrat">Montserrat (Bold)</option>
+                                                </select>
+                                            </div>
+                                            <div className="field-group-modern">
+                                                <label>Body Font</label>
+                                                <select
+                                                    className="modern-input"
+                                                    value={typography.fontFamily}
+                                                    onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), fontFamily: e.target.value }))}
+                                                >
+                                                    <option value="Inter">Inter (Sans-serif)</option>
+                                                    <option value="Roboto">Roboto (Clean)</option>
+                                                    <option value="Playfair Display">Playfair Display (Elegant)</option>
+                                                    <option value="Outfit">Outfit (Modern)</option>
+                                                    <option value="Montserrat">Montserrat (Bold)</option>
+                                                </select>
+                                            </div>
+                                            <div className="field-group-modern">
+                                                <label>Heading Size</label>
+                                                <select
+                                                    className="modern-input"
+                                                    value={typography.headingSize}
+                                                    onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), headingSize: e.target.value }))}
+                                                >
+                                                    <option value="small">Small</option>
+                                                    <option value="medium">Medium</option>
+                                                    <option value="large">Large</option>
+                                                    <option value="extra-large">Extra Large</option>
+                                                </select>
+                                            </div>
+                                            <div className="field-group-modern">
+                                                <label>Body Text Size</label>
+                                                <select
+                                                    className="modern-input"
+                                                    value={typography.bodySize}
+                                                    onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), bodySize: e.target.value }))}
+                                                >
+                                                    <option value="small">Small</option>
+                                                    <option value="medium">Medium</option>
+                                                    <option value="large">Large</option>
+                                                </select>
+                                            </div>
+                                            <div className="field-group-modern">
+                                                <label>Line Height</label>
+                                                <input
+                                                    type="range"
+                                                    min="1" max="2" step="0.1"
+                                                    value={typography.lineHeight || 1.6}
+                                                    onChange={(e) => updateSettingsField('typography', (prev) => ({ ...(prev || {}), lineHeight: e.target.value }))}
+                                                    className="modern-range"
+                                                />
+                                            </div>
+                                        </div>
+                                    </AccordionSection>
+                                )}
 
-                            <div className="fields-grid-modern">
-                                <div className="field-group-modern full-width">
-                                    <label>Copyright Text</label>
-                                    <input
-                                        type="text"
-                                        value={footerContent.copyrightText || footerContent.copyright || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'copyrightText', e.target.value, 'footer')}
-                                        placeholder="e.g. Ac 2026 Your Store"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Footer Background</label>
-                                    <input
-                                        type="color"
-                                        value={footerContent.backgroundColor || '#0f172a'}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'backgroundColor', e.target.value, 'footer')}
-                                        className="color-input-modern"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Social Icon Color</label>
-                                    <input
-                                        type="color"
-                                        value={footerContent.socialColor || store.settings?.primaryColor || '#2563eb'}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'socialColor', e.target.value, 'footer')}
-                                        className="color-input-modern"
-                                    />
-                                </div>
-                                <div className="field-group-modern full-width">
-                                    <label>About Text</label>
-                                    <textarea
-                                        value={footerContent.aboutText || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'aboutText', e.target.value, 'footer')}
-                                        placeholder="Tell customers about your store"
-                                        className="modern-input modern-textarea"
-                                        rows={3}
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Contact Email</label>
-                                    <input
-                                        type="email"
-                                        value={footerContent.email || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'email', e.target.value, 'footer')}
-                                        placeholder="you@example.com"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Contact Phone</label>
-                                    <input
-                                        type="tel"
-                                        value={footerContent.phone || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'phone', e.target.value, 'footer')}
-                                        placeholder="+1 555 123 4567"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Social Icons</label>
-                                    <div className="toggle-container-modern">
-                                        <button
-                                            className={`toggle-btn ${footerContent.showSocial !== false ? 'active' : ''}`}
-                                            onClick={() => updateComponentContent(footerComp?.id, 'showSocial', true, 'footer')}
-                                        >
-                                            Show
-                                        </button>
-                                        <button
-                                            className={`toggle-btn ${footerContent.showSocial === false ? 'active' : ''}`}
-                                            onClick={() => updateComponentContent(footerComp?.id, 'showSocial', false, 'footer')}
-                                        >
-                                            Hide
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Facebook URL</label>
-                                    <input
-                                        type="text"
-                                        value={footerContent.facebookUrl || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'facebookUrl', e.target.value, 'footer')}
-                                        placeholder="https://facebook.com/yourpage"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Instagram URL</label>
-                                    <input
-                                        type="text"
-                                        value={footerContent.instagramUrl || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'instagramUrl', e.target.value, 'footer')}
-                                        placeholder="https://instagram.com/yourpage"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Twitter URL</label>
-                                    <input
-                                        type="text"
-                                        value={footerContent.twitterUrl || ''}
-                                        onChange={(e) => updateComponentContent(footerComp?.id, 'twitterUrl', e.target.value, 'footer')}
-                                        placeholder="https://twitter.com/yourpage"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern full-width">
-                                    <div className="label-with-action">
-                                        <label>About Links</label>
-                                        <button
-                                            className="text-action-btn"
-                                            onClick={addFooterLink}
-                                        >
-                                            <Plus size={14} /> Add Link
-                                        </button>
-                                    </div>
-                                    <div className="menu-items-list">
-                                        {footerLinks.length === 0 ? (
-                                            <div className="empty-state-menu">No footer links yet.</div>
-                                        ) : (
-                                            footerLinks.map((item, index) => (
-                                                <div key={index} className="menu-item-row">
-                                                    <div className="menu-item-fields">
+                                {/* Section: Navigation */}
+                                {activeSection === 'navbar' && (
+                                    <AccordionSection
+                                        id="navbar"
+                                        title="Header & Navigation"
+                                        description="Customize your site menu and header assets"
+                                        icon={<MenuIcon size={24} />}
+                                        openSections={{ navbar: true }}
+                                        toggleSection={() => { }}
+                                        resetToDefaults={resetToDefaults}
+                                    >
+                                        <div className="fields-grid-modern">
+                                            <div className="field-group-modern full-width">
+                                                <div className="label-with-action">
+                                                    <label>Menu Items</label>
+                                                    <button className="text-action-btn" onClick={addMenuItem}>
+                                                        <Plus size={14} /> Add Item
+                                                    </button>
+                                                </div>
+                                                <div className="menu-items-list">
+                                                    {menuItems.length === 0 ? (
+                                                        <div className="empty-state-menu">No menu items yet.</div>
+                                                    ) : (
+                                                        menuItems.map((item, index) => (
+                                                            <div key={index} className="menu-item-row">
+                                                                <div className="menu-item-fields">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.label}
+                                                                        onChange={(e) => updateMenuItem(index, 'label', e.target.value)}
+                                                                        placeholder="Label"
+                                                                        className="modern-input"
+                                                                    />
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.url}
+                                                                        onChange={(e) => updateMenuItem(index, 'url', e.target.value)}
+                                                                        placeholder="URL (e.g. /products)"
+                                                                        className="modern-input"
+                                                                    />
+                                                                </div>
+                                                                <button className="delete-menu-item" onClick={() => removeMenuItem(index)}>
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="field-group-modern full-width">
+                                                <label>Page Header Illustration</label>
+                                                <p className="field-description">Appears on categories and product listing pages</p>
+                                                <div className="asset-grid-preview">
+                                                    {LIBRARY_ASSETS.map(asset => (
+                                                        <button
+                                                            key={asset.id}
+                                                            className={`asset-preview-item ${settings.globalHeaderAsset === asset.url ? 'active' : ''}`}
+                                                            onClick={() => updateSettingsField('globalHeaderAsset', asset.url)}
+                                                        >
+                                                            <img src={asset.url} alt={asset.name} />
+                                                            <span className="asset-name">{asset.name}</span>
+                                                            {settings.globalHeaderAsset === asset.url && (
+                                                                <div className="asset-check">
+                                                                    <Check size={16} />
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                    <button
+                                                        className={`asset-preview-item ${!settings.globalHeaderAsset ? 'active' : ''}`}
+                                                        onClick={() => updateSettingsField('globalHeaderAsset', null)}
+                                                    >
+                                                        <div className="no-asset-preview">
+                                                            <X size={24} />
+                                                        </div>
+                                                        <span className="asset-name">None</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </AccordionSection>
+                                )}
+
+                                {/* Homepage Content Sections */}
+                                {activeSection === 'homepage' && (
+                                    <AccordionSection
+                                        id="homepage"
+                                        title="Homepage Sections"
+                                        description="Customize your hero cover and featured product grid"
+                                        icon={<Layout size={24} />}
+                                        openSections={{ homepage: true }}
+                                        toggleSection={() => { }}
+                                    >
+                                        <div className="sub-sections-grid">
+                                            {/* Hero Sub-section */}
+                                            <div className="sub-section-card">
+                                                <h4 className="sub-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--designer-text-muted)' }}>Hero / Cover</h4>
+                                                <div className="fields-grid-modern">
+                                                    <div className="field-group-modern">
+                                                        <label>Hero Layout</label>
+                                                        <div className="toggle-container-modern mini">
+                                                            <button
+                                                                className={`toggle-btn ${heroContent.layout === 'centered' ? 'active' : ''}`}
+                                                                onClick={() => updateComponentContent(heroComponent?.id, 'layout', 'centered')}
+                                                            >Centered</button>
+                                                            <button
+                                                                className={`toggle-btn ${heroContent.layout === 'full-cover' ? 'active' : ''}`}
+                                                                onClick={() => updateComponentContent(heroComponent?.id, 'layout', 'full-cover')}
+                                                            >Full</button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="field-group-modern">
+                                                        <label>Main Headline</label>
                                                         <input
                                                             type="text"
-                                                            value={item.label}
-                                                            onChange={(e) => updateFooterLink(index, 'label', e.target.value)}
-                                                            placeholder="Label"
+                                                            value={heroContent.title || ''}
+                                                            onChange={(e) => updateComponentContent(heroComponent?.id, 'title', e.target.value, 'hero')}
                                                             className="modern-input"
+                                                            placeholder="e.g. Welcome to Storely"
                                                         />
+                                                    </div>
+                                                    <div className="field-group-modern full-width">
+                                                        <label>Subheadline / Description</label>
+                                                        <textarea
+                                                            value={heroContent.subtitle || ''}
+                                                            onChange={(e) => updateComponentContent(heroComponent?.id, 'subtitle', e.target.value, 'hero')}
+                                                            className="modern-input modern-textarea"
+                                                            rows={2}
+                                                            placeholder="Tell your brand story..."
+                                                        />
+                                                    </div>
+                                                    <div className="field-group-modern">
+                                                        <label>Background Style</label>
+                                                        <div className="toggle-container-modern mini">
+                                                            <button
+                                                                className={`toggle-btn ${!heroContent.useGradient ? 'active' : ''}`}
+                                                                onClick={() => updateComponentContent(heroComponent?.id, 'useGradient', false, 'hero')}
+                                                            >Image</button>
+                                                            <button
+                                                                className={`toggle-btn ${heroContent.useGradient ? 'active' : ''}`}
+                                                                onClick={() => updateComponentContent(heroComponent?.id, 'useGradient', true, 'hero')}
+                                                            >Gradient</button>
+                                                        </div>
+                                                    </div>
+                                                    {!heroContent.useGradient ? (
+                                                        <div className="field-group-modern full-width">
+                                                            <div className="label-with-action">
+                                                                <label>Cover Image</label>
+                                                                <button
+                                                                    className="text-action-btn"
+                                                                    onClick={() => openAssetLibrary((url) => updateComponentContent(heroComponent?.id, 'image', url, 'hero'))}
+                                                                >
+                                                                    <Sparkles size={14} /> Library
+                                                                </button>
+                                                            </div>
+                                                            <ImageUpload
+                                                                value={heroContent.image}
+                                                                onChange={(url) => updateComponentContent(heroComponent?.id, 'image', url, 'hero')}
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="field-group-modern full-width">
+                                                            <div className="gradient-controls-mini">
+                                                                <input type="color" value={heroContent.gradientStart || '#2563eb'} onChange={(e) => updateComponentContent(heroComponent?.id, 'gradientStart', e.target.value, 'hero')} />
+                                                                <ArrowRight size={14} />
+                                                                <input type="color" value={heroContent.gradientEnd || '#7c3aed'} onChange={(e) => updateComponentContent(heroComponent?.id, 'gradientEnd', e.target.value, 'hero')} />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <Separator />
+
+                                            {/* Product Grid Sub-section */}
+                                            <div className="sub-section-card">
+                                                <h4 className="sub-header" style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--designer-text-muted)' }}>Product Collection</h4>
+                                                <div className="fields-grid-modern">
+                                                    <div className="field-group-modern">
+                                                        <label>Grid Title</label>
                                                         <input
                                                             type="text"
-                                                            value={item.url}
-                                                            onChange={(e) => updateFooterLink(index, 'url', e.target.value)}
-                                                            placeholder="URL (e.g. /about)"
+                                                            value={gridContent.title || ''}
+                                                            onChange={(e) => updateComponentContent(gridComponent?.id, 'title', e.target.value, 'product-grid')}
                                                             className="modern-input"
                                                         />
                                                     </div>
-                                                    <button className="delete-menu-item" onClick={() => removeFooterLink(index)}>
-                                                        <Trash2 size={18} />
+                                                    <div className="field-group-modern">
+                                                        <label>Show Items</label>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setShowProductPicker(true)}
+                                                            className="w-full h-10 rounded-[10px]"
+                                                        >
+                                                            Manage Products ({selectedProductIds.length})
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </AccordionSection>
+                                )}
+
+                                {/* Footer Section */}
+                                {activeSection === 'footer' && (
+                                    <AccordionSection
+                                        id="footer"
+                                        title="Footer & Social"
+                                        description="Configure your store's legal links and social presence"
+                                        icon={<ShoppingBag size={24} />}
+                                        openSections={{ footer: true }}
+                                        toggleSection={() => { }}
+                                        resetToDefaults={resetToDefaults}
+                                    >
+                                        <div className="fields-grid-modern">
+                                            <div className="field-group-modern full-width">
+                                                <label>Template Presets</label>
+                                                <div className="preset-selector-grid">
+                                                    <button className="preset-pill" onClick={() => applyFooterPreset('minimal')}>
+                                                        <span className="preset-pill-icon">✨</span>
+                                                        Minimal
+                                                    </button>
+                                                    <button className="preset-pill" onClick={() => applyFooterPreset('bold')}>
+                                                        <span className="preset-pill-icon">💪</span>
+                                                        Bold
+                                                    </button>
+                                                    <button className="preset-pill" onClick={() => applyFooterPreset('luxury')}>
+                                                        <span className="preset-pill-icon">👑</span>
+                                                        Luxury
                                                     </button>
                                                 </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Section 1: Hero Customization */}
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <Sparkles size={24} />
-                                </div>
-                                <div>
-                                    <h2>Header & Hero Section</h2>
-                                    <p>Make a great first impression with a beautiful cover</p>
-                                </div>
-                                <button className="reset-section-btn" onClick={() => resetToDefaults('hero')}>Reset to Defaults</button>
-                            </div>
-
-                            <div className="fields-grid-modern">
-                                <div className="field-group-modern">
-                                    <label>Hero Layout</label>
-                                    <div className="layout-toggle-modern">
-                                        <button
-                                            className={`layout-btn ${heroContent.layout === 'centered' ? 'active' : ''}`}
-                                            onClick={() => updateComponentContent(heroComponent?.id, 'layout', 'centered')}
-                                        >
-                                            <Layout size={18} />
-                                            Centered
-                                        </button>
-                                        <button
-                                            className={`layout-btn ${heroContent.layout === 'full-cover' ? 'active' : ''}`}
-                                            onClick={() => updateComponentContent(heroComponent?.id, 'layout', 'full-cover')}
-                                        >
-                                            <ImageIcon size={18} />
-                                            Full Cover
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Headline</label>
-                                    <input
-                                        type="text"
-                                        value={heroContent.title || ''}
-                                        onChange={(e) => updateComponentContent(heroComponent?.id, 'title', e.target.value, 'hero')}
-                                        placeholder="e.g. Welcome to Our Store"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Subheadline</label>
-                                    <input
-                                        type="text"
-                                        value={heroContent.subtitle || ''}
-                                        onChange={(e) => updateComponentContent(heroComponent?.id, 'subtitle', e.target.value, 'hero')}
-                                        placeholder="e.g. Discover amazing products"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Button Text (CTA)</label>
-                                    <input
-                                        type="text"
-                                        value={heroContent.ctaText || ''}
-                                        onChange={(e) => updateComponentContent(heroComponent?.id, 'ctaText', e.target.value, 'hero')}
-                                        placeholder="e.g. Shop Now"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern full-width">
-                                    <div className="bg-type-selector">
-                                        <label className="sub-label">Background Style</label>
-                                        <div className="toggle-container-modern mini">
-                                            <button
-                                                className={`toggle-btn ${!heroContent.useGradient ? 'active' : ''}`}
-                                                onClick={() => updateComponentContent(heroComponent?.id, 'useGradient', false, 'hero')}
-                                            >
-                                                Image
-                                            </button>
-                                            <button
-                                                className={`toggle-btn ${heroContent.useGradient ? 'active' : ''}`}
-                                                onClick={() => updateComponentContent(heroComponent?.id, 'useGradient', true, 'hero')}
-                                            >
-                                                Gradient
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {!heroContent.useGradient ? (
-                                        <div className="image-bg-controls">
-                                            <div className="label-with-action">
-                                                <label>Hero Cover Image</label>
-                                                <button
-                                                    className="text-action-btn"
-                                                    onClick={() => openAssetLibrary((url) => updateComponentContent(heroComponent?.id, 'image', url, 'hero'))}
-                                                >
-                                                    <Sparkles size={14} /> Library
-                                                </button>
                                             </div>
-                                            <ImageUpload
-                                                value={heroContent.image}
-                                                onChange={(url) => updateComponentContent(heroComponent?.id, 'image', url, 'hero')}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="gradient-controls-grid">
-                                            <div className="field-group-modern">
-                                                <label>Start Color</label>
+                                            <div className="field-group-modern full-width">
+                                                <label>Copyright Text</label>
                                                 <input
-                                                    type="color"
-                                                    value={heroContent.gradientStart || '#2563eb'}
-                                                    onChange={(e) => updateComponentContent(heroComponent?.id, 'gradientStart', e.target.value, 'hero')}
-                                                    className="color-input-modern"
-                                                />
-                                            </div>
-                                            <div className="field-group-modern">
-                                                <label>End Color</label>
-                                                <input
-                                                    type="color"
-                                                    value={heroContent.gradientEnd || '#7c3aed'}
-                                                    onChange={(e) => updateComponentContent(heroComponent?.id, 'gradientEnd', e.target.value, 'hero')}
-                                                    className="color-input-modern"
-                                                />
-                                            </div>
-                                            <div className="field-group-modern">
-                                                <label>Type</label>
-                                                <select
+                                                    type="text"
+                                                    value={footerContent.copyrightText || ''}
+                                                    onChange={(e) => updateComponentContent(footerComp?.id, 'copyrightText', e.target.value, 'footer')}
                                                     className="modern-input"
-                                                    value={heroContent.gradientType || 'linear'}
-                                                    onChange={(e) => updateComponentContent(heroComponent?.id, 'gradientType', e.target.value, 'hero')}
-                                                >
-                                                    <option value="linear">Linear</option>
-                                                    <option value="radial">Radial</option>
-                                                </select>
+                                                    placeholder="e.g. © 2026 Your Brand Name"
+                                                />
                                             </div>
-                                            {heroContent.gradientType !== 'radial' && (
+                                            <div className="field-group-modern full-width">
+                                                <label>About Us Text</label>
+                                                <textarea
+                                                    value={footerContent.aboutText || ''}
+                                                    onChange={(e) => updateComponentContent(footerComp?.id, 'aboutText', e.target.value, 'footer')}
+                                                    className="modern-input modern-textarea"
+                                                    rows={3}
+                                                    placeholder="Brief description about your store..."
+                                                />
+                                            </div>
+                                            <div className="field-group-modern full-width">
+                                                <label>Social Accent Color</label>
+                                                <div className="color-input-wrapper">
+                                                    <input
+                                                        type="color"
+                                                        value={footerContent.socialColor || '#2563eb'}
+                                                        onChange={(e) => updateComponentContent(footerComp?.id, 'socialColor', e.target.value, 'footer')}
+                                                        className="color-input-modern"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={footerContent.socialColor || '#2563eb'}
+                                                        onChange={(e) => updateComponentContent(footerComp?.id, 'socialColor', e.target.value, 'footer')}
+                                                        className="modern-input h-15"
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="field-group-modern full-width">
+                                                <label>Footer Background</label>
+                                                <div className="color-input-wrapper">
+                                                    <input
+                                                        type="color"
+                                                        value={footerContent.backgroundColor || '#0f172a'}
+                                                        onChange={(e) => updateComponentContent(footerComp?.id, 'backgroundColor', e.target.value, 'footer')}
+                                                        className="color-input-modern"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={footerContent.backgroundColor || '#0f172a'}
+                                                        onChange={(e) => updateComponentContent(footerComp?.id, 'backgroundColor', e.target.value, 'footer')}
+                                                        className="modern-input h-15"
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="field-group-modern full-width">
+                                                <label>Facebook URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={footerContent.facebookUrl || ''}
+                                                    onChange={(e) => updateComponentContent(footerComp?.id, 'facebookUrl', e.target.value, 'footer')}
+                                                    className="modern-input"
+                                                    placeholder="https://facebook.com/your-page"
+                                                />
+                                            </div>
+                                            <div className="field-group-modern full-width">
+                                                <label>Instagram URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={footerContent.instagramUrl || ''}
+                                                    onChange={(e) => updateComponentContent(footerComp?.id, 'instagramUrl', e.target.value, 'footer')}
+                                                    className="modern-input"
+                                                    placeholder="https://instagram.com/your-profile"
+                                                />
+                                            </div>
+                                            <div className="field-group-modern full-width">
+                                                <label>Twitter URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={footerContent.twitterUrl || ''}
+                                                    onChange={(e) => updateComponentContent(footerComp?.id, 'twitterUrl', e.target.value, 'footer')}
+                                                    className="modern-input"
+                                                    placeholder="https://twitter.com/your-handle"
+                                                />
+                                            </div>
+                                            <div className="field-grid-modern" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                                 <div className="field-group-modern">
-                                                    <label>Angle</label>
-                                                    <select
+                                                    <label>Contact Email</label>
+                                                    <input
+                                                        type="email"
+                                                        value={footerContent.email || ''}
+                                                        onChange={(e) => updateComponentContent(footerComp?.id, 'email', e.target.value, 'footer')}
                                                         className="modern-input"
-                                                        value={heroContent.gradientAngle || '135deg'}
-                                                        onChange={(e) => updateComponentContent(heroComponent?.id, 'gradientAngle', e.target.value, 'hero')}
-                                                    >
-                                                        <option value="0deg">To Top</option>
-                                                        <option value="90deg">To Right</option>
-                                                        <option value="180deg">To Bottom</option>
-                                                        <option value="270deg">To Left</option>
-                                                        <option value="135deg">Diagonal</option>
-                                                    </select>
+                                                        placeholder="hello@brand.com"
+                                                    />
                                                 </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Section 2: Featured Products */}
-                        <section className="customizer-card">
-                            <div className="card-header-modern">
-                                <div className="icon-wrapper">
-                                    <ShoppingBag size={24} />
-                                </div>
-                                <div>
-                                    <h2>Featured Products</h2>
-                                    <p>Hand-pick which products you want to show on the homepage</p>
-                                </div>
-                                <button className="reset-section-btn" onClick={() => resetToDefaults('grid')}>Reset to Defaults</button>
-                            </div>
-
-                            <div className="fields-grid-modern" style={{ marginBottom: '1.5rem' }}>
-                                <div className="field-group-modern">
-                                    <label>Grid Title</label>
-                                    <input
-                                        type="text"
-                                        value={gridContent.title || ''}
-                                        onChange={(e) => updateComponentContent(gridComponent?.id, 'title', e.target.value, 'product-grid')}
-                                        placeholder="e.g. Featured Collection"
-                                        className="modern-input"
-                                    />
-                                </div>
-                                <div className="field-group-modern">
-                                    <label>Grid Subtitle</label>
-                                    <input
-                                        type="text"
-                                        value={gridContent.subtitle || ''}
-                                        onChange={(e) => updateComponentContent(gridComponent?.id, 'subtitle', e.target.value, 'product-grid')}
-                                        placeholder="e.g. Hand-picked selections"
-                                        className="modern-input"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="search-modern">
-                                <Search size={20} />
-                                <input
-                                    type="text"
-                                    placeholder="Search your products..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                <div className="selection-counter">
-                                    {selectedProductIds.length} Selected
-                                </div>
-                            </div>
-
-                            <div className="product-picker-grid">
-                                {filteredProducts.map(product => (
-                                    <div
-                                        key={product._id || product.id}
-                                        className={`product-picker-item ${selectedProductIds.includes(String(product._id || product.id)) ? 'active' : ''}`}
-                                        onClick={() => toggleProductSelection(product._id || product.id)}
-                                    >
-                                        <div className="product-visual">
-                                            {product.images?.[0] || product.image ? (
-                                                <img src={product.images?.[0] || product.image} alt={product.name} />
-                                            ) : (
-                                                <div className="no-image"><Sparkles size={24} /></div>
-                                            )}
-                                            {selectedProductIds.includes(String(product._id || product.id)) && (
-                                                <div className="check-overlay">
-                                                    <Check size={32} />
+                                                <div className="field-group-modern">
+                                                    <label>Contact Phone</label>
+                                                    <input
+                                                        type="text"
+                                                        value={footerContent.phone || ''}
+                                                        onChange={(e) => updateComponentContent(footerComp?.id, 'phone', e.target.value, 'footer')}
+                                                        className="modern-input"
+                                                        placeholder="+1 (555) 000-0000"
+                                                    />
                                                 </div>
-                                            )}
+                                            </div>
+                                            <div className="field-group-modern full-width">
+                                                <div className="label-with-action">
+                                                    <label>Footer Links</label>
+                                                    <button className="text-action-btn" onClick={addFooterLink}>
+                                                        <Plus size={14} /> Add Link
+                                                    </button>
+                                                </div>
+                                                <div className="menu-items-list">
+                                                    {footerLinks.map((item, index) => (
+                                                        <div key={index} className="menu-item-row">
+                                                            <div className="menu-item-fields">
+                                                                <input
+                                                                    type="text"
+                                                                    value={item.label}
+                                                                    onChange={(e) => updateFooterLink(index, 'label', e.target.value)}
+                                                                    placeholder="Label"
+                                                                    className="modern-input"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    value={item.url}
+                                                                    onChange={(e) => updateFooterLink(index, 'url', e.target.value)}
+                                                                    placeholder="URL"
+                                                                    className="modern-input"
+                                                                />
+                                                            </div>
+                                                            <button className="delete-menu-item" onClick={() => removeFooterLink(index)}>
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="product-info-modern">
-                                            <span className="p-name">{product.name}</span>
-                                            <span className="p-price">${product.price}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    </AccordionSection>
+                                )}
                             </div>
-                        </section>
+                        )}
                     </div>
                 </div>
 
-                {previewMode === 'split' && (
-                    <div className="designer-preview" role="complementary" aria-label="Store Preview">
-                        <div className="preview-toolbar">
-                            <button
-                                className={`toolbar-btn ${previewDevice === 'mobile' ? 'active' : ''}`}
-                                onClick={() => setPreviewDevice('mobile')}
-                                title="Mobile Preview"
-                            >
-                                <Smartphone size={18} />
-                            </button>
-                            <button
-                                className={`toolbar-btn ${previewDevice === 'tablet' ? 'active' : ''}`}
-                                onClick={() => setPreviewDevice('tablet')}
-                                title="Tablet Preview"
-                            >
-                                <Tablet size={18} />
-                            </button>
-                            <button
-                                className={`toolbar-btn ${previewDevice === 'desktop' ? 'active' : ''}`}
-                                onClick={() => setPreviewDevice('desktop')}
-                                title="Desktop Preview"
-                            >
-                                <Monitor size={18} />
-                            </button>
-
-                            <div className="toolbar-divider" />
-
-                            <a
-                                href={`/${store?.slug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="toolbar-btn"
-                                title="Open in new tab"
-                            >
-                                <Eye size={18} />
-                            </a>
-                        </div>
-
-                        <div className="preview-iframe-wrapper">
-                            <div className={`preview-iframe-container ${previewDevice}`}>
-                                <iframe
-                                    ref={iframeRef}
-                                    src={previewMode === 'split' ? `/${store?.slug}?preview=true` : 'about:blank'}
-                                    title="Store Preview"
-                                    loading="lazy"
-                                    onLoad={() => {
-                                        if (iframeRef.current && store?.settings && previewMode === 'split') {
-                                            iframeRef.current.contentWindow.postMessage({
-                                                type: 'STORE_UPDATE',
-                                                settings: store.settings
-                                            }, window.location.origin);
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <DeviceFrame device={previewDevice} onDeviceChange={setPreviewDevice} subdomain={store?.subdomain}>
+                    <iframe
+                        ref={iframeRef}
+                        src={`${window.location.origin}/preview/${store?._id || store?.id || storeId}?preview=true`}
+                        title="Store Preview"
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        onLoad={() => {
+                            if (store?.settings) {
+                                debouncedSendUpdate(store.settings);
+                            }
+                        }}
+                    />
+                </DeviceFrame>
             </div>
 
             {hasUnsavedChanges && (
@@ -1667,6 +1738,16 @@ const StoreCustomizer = () => {
             )}
 
             {/* Asset Library Modal */}
+            {showProductPicker && (
+                <ProductPicker
+                    isOpen={showProductPicker}
+                    onClose={() => setShowProductPicker(false)}
+                    products={allProducts}
+                    selectedIds={selectedProductIds}
+                    onToggle={toggleProductSelection}
+                />
+            )}
+
             {showAssetModal && (
                 <div className="asset-modal-overlay" onClick={() => setShowAssetModal(false)}>
                     <div className="asset-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -1688,3 +1769,4 @@ const StoreCustomizer = () => {
 };
 
 export default StoreCustomizer;
+

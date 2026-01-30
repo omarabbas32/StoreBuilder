@@ -109,8 +109,11 @@ class ProductService {
         const { limit = 20, offset = 0, categoryId, storeId } = options;
 
         const where = {};
-        if (categoryId) where.category_id = categoryId;
-        if (storeId) where.store_id = storeId;
+        const activeCategoryId = categoryId || options.category_id;
+        const activeStoreId = storeId || options.store_id;
+
+        if (activeCategoryId) where.category_id = activeCategoryId;
+        if (activeStoreId) where.store_id = activeStoreId;
 
         const products = await this.productModel.findMany(where, {
             orderBy: { created_at: 'desc' },

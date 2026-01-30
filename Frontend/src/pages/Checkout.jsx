@@ -44,7 +44,7 @@ const Checkout = () => {
         setLoading(true);
 
         // Get store_id from the first item in the cart
-        const store_id = items[0].store_id;
+        const store_id = items[0].storeId || items[0].store_id;
 
         const orderData = {
             store_id: store_id,

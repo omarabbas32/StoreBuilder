@@ -1,5 +1,7 @@
 import React from 'react';
 import EditableText from './EditableText';
+import Button from '../ui/Button';
+import { formatImageUrl } from '../../utils/imageUtils';
 import './StorefrontHero.css';
 
 const StorefrontHero = ({
@@ -29,7 +31,7 @@ const StorefrontHero = ({
 
         if (image) {
             return {
-                backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${image})`,
+                backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${formatImageUrl(image)})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
             };
@@ -97,7 +99,7 @@ const StorefrontHero = ({
                     <div className="visual-card">
                         <div className="card-glass-effect"></div>
                         {image ? (
-                            <img src={image} alt="Hero Visual" className="hero-visual-img" />
+                            <img src={formatImageUrl(image)} alt="Hero Visual" className="hero-visual-img" />
                         ) : (
                             <div className="visual-icon">✨</div>
                         )}

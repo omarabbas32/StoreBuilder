@@ -44,18 +44,7 @@ const UserDashboard = () => {
             if (activeStore) {
                 setStore(activeStore);
 
-                // Check if onboarding is incomplete
-                const settings = activeStore.settings || {};
-                if (!settings.onboardingCompleted) {
-                    // Redirect to onboarding once per mount to avoid double navigations
-                    if (!hasRedirectedRef.current) {
-                        hasRedirectedRef.current = true;
-                        navigate(`/onboarding/${activeStore.id}`, { replace: true });
-                    }
-                    setLoading(false);
-                    return;
-                }
-
+                setLoading(false);
                 await loadStoreStats(activeStore.id);
             }
         }

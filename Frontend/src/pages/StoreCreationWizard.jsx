@@ -64,7 +64,7 @@ const StoreCreationWizard = () => {
                 description: `A ${answers.category} store`,
                 settings: {
                     category: answers.category,
-                    onboardingCompleted: false,
+                    onboardingCompleted: true,
                     primaryColor: '#2563eb',
                     logo_url: '',
                     components: [
@@ -94,8 +94,8 @@ const StoreCreationWizard = () => {
             if (result.success) {
                 const newStore = result.data;
                 setStore(newStore);
-                // Redirect to full onboarding wizard
-                navigate(`/onboarding/${newStore.id}`);
+                // Redirect directly to dashboard, bypassing onboarding
+                navigate(`/dashboard/${newStore.id}`);
             } else {
                 // Handle specific errors like duplicate slug
                 if (result.error?.includes('duplicate key value violates unique constraint') || result.error?.includes('already exists')) {

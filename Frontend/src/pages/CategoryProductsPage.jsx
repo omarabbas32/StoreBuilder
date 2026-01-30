@@ -9,6 +9,7 @@ import CartDrawer from '../components/storefront/CartDrawer';
 import Card from '../components/ui/Card';
 import useCartStore from '../store/cartStore';
 import { useStorePath } from '../hooks/useStorePath';
+import { formatImageUrl } from '../utils/imageUtils';
 import './CategoryProductsPage.css';
 
 const CategoryProductsPage = ({ slug: slugProp }) => {
@@ -37,7 +38,7 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
         setLoading(true);
 
         // Load store first
-        const storeResult = await storeService.getStoreBySlug(slug);
+        const storeResult = await storeService.getStoreBySlugOrId(slug);
         if (!storeResult.success) {
             setError(storeResult.error);
             setLoading(false);
@@ -108,25 +109,33 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
                 </nav>
             )}
 
-            <main className="category-products-main container">
-                <div className="breadcrumb">
-                    <Link to={`${storePath}/categories`} className="back-link">
-                        <ArrowLeft size={16} />
-                        العودة للتصنيفات
-                    </Link>
-                </div>
-
-                <div className="category-header">
-                    <div className="category-header-content">
-                        <Filter size={28} style={{ color: brandColor }} />
-                        <div>
+            <main className="category-products-main">
+                <div className="category-hero">
+                    <div className="hero-background">
+                        {store.settings?.globalHeaderAsset ? (
+                            <img src={formatImageUrl(store.settings.globalHeaderAsset)} alt="" className="header-library-asset" />
+                        ) : (
+                            <>
+                                <div className="glass-blob blob-1"></div>
+                                <div className="glass-blob blob-2"></div>
+                            </>
+                        )}
+                    </div>
+                    <div className="container">
+                        <div className="breadcrumb">
+                            <Link to={`${storePath}/categories`} className="back-link">
+                                <ArrowLeft size={16} />
+                                Back to Categories
+                            </Link>
+                        </div>
+                        <div className="page-header">
                             <h1>{category?.name}</h1>
                             {category?.description && (
                                 <p className="category-desc">{category.description}</p>
                             )}
+                            <p className="products-count">{products.length} products</p>
                         </div>
                     </div>
-                    <p className="products-count">{products.length} منتج</p>
                 </div>
 
                 {products.length === 0 ? (
@@ -144,7 +153,7 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
                                 <Link to={`${storePath}/product/${product.id}`} className="product-link">
                                     <div className="product-image">
                                         {product.images && product.images.length > 0 ? (
-                                            <img src={product.images[0]} alt={product.name} />
+                                            <img src={formatImageUrl(product.images[0])} alt={product.name} />
                                         ) : (
                                             <div className="product-placeholder">
                                                 <Package size={48} />
