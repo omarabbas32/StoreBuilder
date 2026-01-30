@@ -40,20 +40,7 @@ import ImageUpload from '../components/ui/ImageUpload';
 import ColorPalettePicker from '../components/ui/ColorPalettePicker';
 import AssetLibrary from '../components/ui/AssetLibrary';
 import SortableComponentItem from '../components/ui/SortableComponentItem';
-import {
-    DndContext,
-    closestCenter,
-    PointerSensor,
-    KeyboardSensor,
-    useSensor,
-    useSensors
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { debounce } from '../utils/debounce';
 import { safeSettingsUpdate } from '../utils/settingsMerge';
 import { validateStoreSettings } from '../utils/validation';
@@ -84,16 +71,6 @@ const StoreCustomizer = () => {
     const saveTimeoutRef = useRef(null);
     const [autoSaveStatus, setAutoSaveStatus] = useState(null); // 'saving', 'saved', null
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8, // Avoid accidental drags during clicks
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
 
     useEffect(() => {
         const init = async () => {
@@ -107,6 +84,8 @@ const StoreCustomizer = () => {
         };
         init();
     }, [storeId]);
+
+
 
     // Debounced update to preview iframe
     const debouncedSendUpdate = useMemo(
@@ -533,6 +512,24 @@ const StoreCustomizer = () => {
         setHasUnsavedChanges(true);
     };
 
+    // Listen for inline edit updates from preview iframe
+    useEffect(() => {
+        const handleMessage = (event) => {
+            // Check origin for security
+            if (event.origin !== window.location.origin) return;
+
+            if (event.data?.type === 'CONTENT_UPDATE') {
+                const { componentId, field, value } = event.data;
+                console.log(`Received inline update: ${componentId}.${field} = ${value}`);
+                updateComponentContent(componentId, field, value);
+                toast.success(`Updated ${field}`, { id: 'inline-edit', duration: 1000 });
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
     const updateComponentVisibility = (componentId, isVisible) => {
         if (!componentId) return;
 
@@ -548,28 +545,31 @@ const StoreCustomizer = () => {
         setHasUnsavedChanges(true);
     };
 
-    const handleDragEnd = (event) => {
-        const { active, over } = event;
+    const handleDragEnd = (result) => {
+        const { source, destination } = result;
 
-        if (active.id !== over.id) {
-            setStore((prev) => {
-                const currentComponents = prev.settings?.components || availableComponents;
-                const oldIndex = currentComponents.findIndex((c) => c.id === active.id);
-                const newIndex = currentComponents.findIndex((c) => c.id === over.id);
+        // If dropped outside the list
+        if (!destination) return;
 
-                const newComponents = arrayMove(currentComponents, oldIndex, newIndex);
+        // If position didn't change
+        if (source.index === destination.index) return;
 
-                return {
-                    ...prev,
-                    settings: {
-                        ...prev.settings,
-                        components: newComponents,
-                    },
-                };
-            });
-            setHasUnsavedChanges(true);
-            toast.success('Section order updated');
-        }
+        setStore((prev) => {
+            const currentComponents = prev.settings?.components || availableComponents;
+            const newComponents = Array.from(currentComponents);
+            const [removed] = newComponents.splice(source.index, 1);
+            newComponents.splice(destination.index, 0, removed);
+
+            return {
+                ...prev,
+                settings: {
+                    ...prev.settings,
+                    components: newComponents,
+                },
+            };
+        });
+        setHasUnsavedChanges(true);
+        toast.success('Section order updated');
     };
 
     const duplicateComponent = (componentId) => {
@@ -971,30 +971,30 @@ const StoreCustomizer = () => {
                             </div>
 
                             <div className="visibility-controls-grid">
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
-                                >
-                                    <SortableContext
-                                        items={components
-                                            .filter(c => !['navigation', 'navbar', 'footer'].includes(c.type))
-                                            .map(c => c.id)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        {components
-                                            .filter(c => !['navigation', 'navbar', 'footer'].includes(c.type))
-                                            .map(component => (
-                                                <SortableComponentItem
-                                                    key={component.id}
-                                                    component={component}
-                                                    onToggleVisibility={updateComponentVisibility}
-                                                    onDuplicate={duplicateComponent}
-                                                />
-                                            ))
-                                        }
-                                    </SortableContext>
-                                </DndContext>
+                                <DragDropContext onDragEnd={handleDragEnd}>
+                                    <Droppable droppableId="components-list">
+                                        {(provided) => (
+                                            <div
+                                                {...provided.droppableProps}
+                                                ref={provided.innerRef}
+                                            >
+                                                {components
+                                                    .filter(c => !['navigation', 'navbar', 'footer'].includes(c.type))
+                                                    .map((component, index) => (
+                                                        <SortableComponentItem
+                                                            key={component.id}
+                                                            component={component}
+                                                            index={index}
+                                                            onToggleVisibility={updateComponentVisibility}
+                                                            onDuplicate={duplicateComponent}
+                                                        />
+                                                    ))
+                                                }
+                                                {provided.placeholder}
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                </DragDropContext>
                             </div>
                         </section>
 

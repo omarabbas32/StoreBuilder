@@ -1,0 +1,35 @@
+.editable-text {
+    outline: 2px dashed transparent;
+    transition: all 0.2s ease;
+    cursor: text;
+    display: inline-block;
+    min-width: 20px;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+}
+
+.editable-text:hover {
+    outline-color: var(--primary-color, #2563eb);
+    background-color: rgba(37, 99, 235, 0.05);
+}
+
+.editable-text:focus {
+    outline-color: var(--primary-color, #2563eb);
+    outline-style: solid;
+    background-color: white;
+    color: #1e293b;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+}
+
+.editable-text:empty::before {
+    content: attr(data-placeholder);
+    opacity: 0.5;
+    font-style: italic;
+}
+
+/* Ensure darker text for visibility when editing if background is dark */
+.has-bg .editable-text:focus {
+    color: #0f172a;
+}

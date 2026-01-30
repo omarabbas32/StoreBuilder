@@ -10,6 +10,7 @@ import { useStorePath } from '../hooks/useStorePath';
 import StorefrontSidebar from '../components/storefront/StorefrontSidebar';
 import CartDrawer from '../components/storefront/CartDrawer';
 import useCartStore from '../store/cartStore';
+import EditableText from '../components/storefront/EditableText';
 import './Storefront.css';
 
 const Storefront = ({ slug: slugProp }) => {
@@ -114,6 +115,7 @@ const Storefront = ({ slug: slugProp }) => {
                 return (
                     <StorefrontHero
                         key={component.id}
+                        componentId={component.id}
                         {...content}
                         brandColor={brandColor}
                         storeName={store.name}
@@ -132,8 +134,20 @@ const Storefront = ({ slug: slugProp }) => {
                 return (
                     <section key={component.id} className="products-section container" id={`section-${component.id}`}>
                         <div className="section-header-modern">
-                            <h2>{content.title || 'Featured Collection'}</h2>
-                            <p>{content.subtitle || 'Hand-picked selections just for you'}</p>
+                            <EditableText
+                                tag="h2"
+                                value={content.title}
+                                componentId={component.id}
+                                field="title"
+                                placeholder="Featured Collection"
+                            />
+                            <EditableText
+                                tag="p"
+                                value={content.subtitle}
+                                componentId={component.id}
+                                field="subtitle"
+                                placeholder="Hand-picked selections just for you"
+                            />
                         </div>
                         {productsToShow.length === 0 ? (
                             <p className="no-products">No products matched the selection.</p>

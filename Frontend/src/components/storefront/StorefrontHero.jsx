@@ -1,7 +1,9 @@
 import React from 'react';
+import EditableText from './EditableText';
 import './StorefrontHero.css';
 
 const StorefrontHero = ({
+    componentId,
     title,
     subtitle,
     brandColor,
@@ -58,21 +60,33 @@ const StorefrontHero = ({
 
             <div className="storefront-hero-content container">
                 <div className="hero-text-content">
-                    <h1 className="hero-title">
-                        {title || `Premium Collection by ${storeName} `}
-                    </h1>
-                    <p className="hero-subtitle">
-                        {subtitle || description || 'Discover our curated selection of high-quality products designed for your lifestyle.'}
-                    </p>
+                    <EditableText
+                        tag="h1"
+                        className="hero-title"
+                        value={title}
+                        componentId={componentId}
+                        field="title"
+                        placeholder={`Premium Collection by ${storeName}`}
+                    />
+                    <EditableText
+                        tag="p"
+                        className="hero-subtitle"
+                        value={subtitle}
+                        componentId={componentId}
+                        field="subtitle"
+                        placeholder={description || 'Discover our curated selection of high-quality products designed for your lifestyle.'}
+                    />
                     <div className="hero-actions">
-                        <button
+                        <EditableText
+                            tag="button"
                             className="hero-cta"
+                            value={ctaText}
+                            componentId={componentId}
+                            field="ctaText"
+                            placeholder="Shop Collection"
                             style={{ backgroundColor: brandColor }}
                             onClick={() => ctaLink && (window.location.href = ctaLink)}
-                        >
-                            {ctaText || 'Shop Collection'}
-                            <span className="btn-shine"></span>
-                        </button>
+                        />
                         <button className="hero-secondary-cta">
                             Explore Categories
                         </button>
