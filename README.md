@@ -174,4 +174,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-**Built with ❤️ by the Storely Team**
+**Built with ❤️ by Omar Abbas**
