@@ -12,8 +12,11 @@ const EditableText = ({
     // Check if we are in preview mode via URL parameter
     const isEditMode = new URLSearchParams(window.location.search).get('preview') === 'true';
 
+    console.log(`[EditableText] field=${field} isEditMode=${isEditMode}`);
+
     const handleBlur = (e) => {
         const newValue = e.target.innerText;
+        console.log(`[EditableText] Blur - field=${field} newValue=${newValue}`);
         // Only send update if value actually changed
         if (newValue !== (value || placeholder)) {
             window.parent.postMessage({
@@ -22,6 +25,12 @@ const EditableText = ({
                 field,
                 value: newValue
             }, window.location.origin);
+        }
+    };
+
+    const handleClick = (e) => {
+        if (isEditMode) {
+            e.stopPropagation();
         }
     };
 
@@ -36,6 +45,7 @@ const EditableText = ({
             contentEditable
             suppressContentEditableWarning
             onBlur={handleBlur}
+            onClick={handleClick}
             data-placeholder={placeholder}
         >
             {value || placeholder}

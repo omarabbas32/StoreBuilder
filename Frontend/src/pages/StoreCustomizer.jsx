@@ -249,6 +249,7 @@ const StoreCustomizer = () => {
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [showAssetModal, setShowAssetModal] = useState(false);
     const [showProductPicker, setShowProductPicker] = useState(false);
+    const [activePickerComponentId, setActivePickerComponentId] = useState(null);
     const [assetCallback, setAssetCallback] = useState(null);
     const isUndoing = useRef(false);
     const iframeRef = useRef(null);
@@ -700,7 +701,11 @@ const StoreCustomizer = () => {
             const currentComponents = (store.settings?.components && store.settings.components.length > 0)
                 ? store.settings.components
                 : availableComponents;
-            const comp = currentComponents.find(c => c.type === typeFallback);
+            const comp = currentComponents.find(c =>
+                c.type === typeFallback ||
+                (typeFallback === 'product-grid' && c.type === 'grid') ||
+                (typeFallback === 'grid' && c.type === 'product-grid')
+            );
             finalId = comp?.id;
         }
 
@@ -822,19 +827,41 @@ const StoreCustomizer = () => {
         toast.success('Section duplicated');
     };
 
-    const toggleProductSelection = (productId) => {
+    const toggleProductSelection = (productId, componentId) => {
+        console.log(`[toggleProductSelection] productId=${productId} componentId=${componentId}`);
         if (!productId) return;
+        let finalComponentId = componentId;
+        if (!finalComponentId) {
+            const currentSettings = store?.settings || { components: [], componentContent: {} };
+            const componentsList = (currentSettings.components && currentSettings.components.length > 0)
+                ? currentSettings.components
+                : availableComponents;
+            const fallbackGrid = componentsList.find(c => c.type === 'product-grid' || c.type === 'grid');
+            finalComponentId = fallbackGrid?.id;
+        }
+
+        if (!finalComponentId) {
+            console.warn('[toggleProductSelection] No componentId found');
+            toast.error('Could not find component to update selection');
+            return;
+        }
+
+        toast.success('Selection updated!', { id: 'toggle-product', duration: 800 });
+
         const pidString = String(productId);
 
         setStore(prev => {
             const currentSettings = prev.settings || { components: [], componentContent: {} };
-            // Robustly find the grid component regardless of where components come from
+            // Robustly find the grid component by id
             const componentsList = (currentSettings.components && currentSettings.components.length > 0)
                 ? currentSettings.components
                 : availableComponents;
 
-            const currentGrid = componentsList.find(c => c.type === 'product-grid');
-            if (!currentGrid) return prev;
+            const currentGrid = componentsList.find(c => c.id === finalComponentId);
+            if (!currentGrid) {
+                console.warn(`[toggleProductSelection] Component ${finalComponentId} not found`);
+                return prev;
+            }
 
             const currentContent = currentSettings.componentContent?.[currentGrid.id] || {};
             const currentSelected = Array.isArray(currentContent.selectedProductIds)
@@ -996,7 +1023,11 @@ const StoreCustomizer = () => {
         ctaText: 'Shop Now'
     };
 
-    const gridComponent = components.find(c => c.type === 'product-grid');
+    const gridComponent = components.find(c =>
+        c.type === 'product-grid' ||
+        c.type === 'grid' ||
+        (c.name && c.name.toLowerCase().includes('product'))
+    );
     const gridContent = settings.componentContent?.[gridComponent?.id] || {};
     const selectedProductIds = Array.isArray(gridContent.selectedProductIds)
         ? gridContent.selectedProductIds.map(String)
@@ -1009,7 +1040,7 @@ const StoreCustomizer = () => {
         fontWeight: 'normal'
     };
 
-    const navbarComp = components.find(c => ['navbar', 'navigation'].includes(c.type));
+    const navbarComp = components.find(c => ['navbar', 'navigation', 'nav'].includes(c.type));
     const navbarContent = settings.componentContent?.[navbarComp?.id] || {
         menuItems: []
     };
@@ -1523,14 +1554,29 @@ const StoreCustomizer = () => {
                                                     </div>
                                                     <div className="field-group-modern">
                                                         <label>Show Items</label>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setShowProductPicker(true)}
-                                                            className="w-full h-10 rounded-[10px]"
+                                                        <button
+                                                            className="btn-manage-products"
+                                                            onClick={() => {
+                                                                const currentComponents = (store.settings?.components && store.settings.components.length > 0)
+                                                                    ? store.settings.components
+                                                                    : availableComponents;
+
+                                                                const currentGrid = currentComponents.find(c =>
+                                                                    c.type === 'product-grid' ||
+                                                                    c.type === 'grid' ||
+                                                                    (c.name && c.name.toLowerCase().includes('product'))
+                                                                );
+
+                                                                if (currentGrid) {
+                                                                    setActivePickerComponentId(currentGrid.id);
+                                                                    setShowProductPicker(true);
+                                                                } else {
+                                                                    toast.error('Could not identify the product collection section.');
+                                                                }
+                                                            }}
                                                         >
                                                             Manage Products ({selectedProductIds.length})
-                                                        </Button>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1744,9 +1790,12 @@ const StoreCustomizer = () => {
                     onClose={() => setShowProductPicker(false)}
                     products={allProducts}
                     selectedIds={selectedProductIds}
-                    onToggle={toggleProductSelection}
+                    onToggle={(pid) => toggleProductSelection(pid, activePickerComponentId)}
                 />
             )}
+
+
+
 
             {showAssetModal && (
                 <div className="asset-modal-overlay" onClick={() => setShowAssetModal(false)}>

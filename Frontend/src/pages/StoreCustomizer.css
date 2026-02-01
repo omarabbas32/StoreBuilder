@@ -2065,3 +2065,43 @@ select.modern-input {
 .product-picker-item {
     border-color: #e5e7eb;
 }
+
+/* Sub-section card styling for manage sections */
+.sub-section-card {
+    background: #f8fafc;
+    border: 1px solid var(--designer-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Utility classes for buttons */
+.w-full {
+    width: 100%;
+}
+
+.h-10 {
+    height: 40px;
+}
+
+.rounded-10 {
+    border-radius: 10px;
+}
+
+.btn-manage-products {
+    width: 100%;
+    height: 40px;
+    border-radius: 10px;
+    background: white;
+    border: 1px solid var(--designer-border);
+    color: var(--designer-secondary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-manage-products:hover {
+    background: #f8fafc;
+    border-color: var(--designer-primary);
+}
