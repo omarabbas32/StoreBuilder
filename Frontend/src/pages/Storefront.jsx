@@ -172,13 +172,6 @@ const Storefront = ({ slug: slugProp }) => {
                             field="title"
                             placeholder="Featured Collection"
                         />
-                        <EditableText
-                            tag="p"
-                            value={content.subtitle}
-                            componentId={component.id}
-                            field="subtitle"
-                            placeholder="Hand-picked selections just for you"
-                        />
                     </div>
                     {productsToShow.length === 0 ? (
                         <p className="no-products">No products matched the selection.</p>
