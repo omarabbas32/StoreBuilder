@@ -59,6 +59,8 @@
     line-height: 1.8;
     font-size: 1rem;
     color: var(--footer-text, #94a3b8);
+    overflow-wrap: anywhere;
+    word-break: break-all;
 }
 
 .footer-contact-item {

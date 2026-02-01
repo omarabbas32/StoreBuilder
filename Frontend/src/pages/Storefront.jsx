@@ -35,9 +35,10 @@ const Storefront = ({ slug: slugProp }) => {
         initializeSession();
 
         const handleMessage = (event) => {
-            // Security: In production, you might want to check origin
-            // For now, same-origin is implied or managed by the customizer
+            if (event.origin !== window.location.origin) return;
+
             if (event.data?.type === 'STORE_UPDATE') {
+                console.log('[Storefront] Received STORE_UPDATE', event.data.settings);
                 setStore(prev => ({
                     ...prev,
                     settings: event.data.settings
@@ -86,6 +87,7 @@ const Storefront = ({ slug: slugProp }) => {
             ]);
 
             if (productsResult.success) {
+                console.log('[Storefront] Loaded products:', productsResult.data?.length || 0);
                 setProducts(productsResult.data || []);
             }
             if (categoriesResult.success) {
@@ -127,96 +129,106 @@ const Storefront = ({ slug: slugProp }) => {
 
     const renderComponent = (component) => {
         const content = store?.settings?.componentContent?.[component.id] || {};
+        const type = component.type;
+        const name = component.name || '';
 
-        // Use component types for stable matching
-        switch (component.type) {
-            case 'hero':
-                return (
-                    <StorefrontHero
-                        key={component.id}
-                        componentId={component.id}
-                        {...content}
-                        brandColor={brandColor}
-                        storeName={store.name}
-                        description={store.description}
-                    />
-                );
-            case 'product-grid':
-                const selectedIds = Array.isArray(content.selectedProductIds)
-                    ? content.selectedProductIds.map(String)
-                    : [];
+        // Unified component identification (matching Customizer logic)
+        const isHero = type === 'hero' || name.toLowerCase().includes('hero');
+        const isProductGrid = type === 'product-grid' || type === 'grid' || name.toLowerCase().includes('product');
 
-                const productsToShow = selectedIds.length > 0
-                    ? products.filter(p => selectedIds.includes(String(p._id || p.id)))
-                    : products.slice(0, 8);
-
-                return (
-                    <section key={component.id} className="products-section container" id={`section-${component.id}`}>
-                        <div className="section-header-modern">
-                            <EditableText
-                                tag="h2"
-                                value={content.title}
-                                componentId={component.id}
-                                field="title"
-                                placeholder="Featured Collection"
-                            />
-                            <EditableText
-                                tag="p"
-                                value={content.subtitle}
-                                componentId={component.id}
-                                field="subtitle"
-                                placeholder="Hand-picked selections just for you"
-                            />
-                        </div>
-                        {productsToShow.length === 0 ? (
-                            <p className="no-products">No products matched the selection.</p>
-                        ) : (
-                            <div className="products-grid">
-                                {productsToShow.map(product => (
-                                    <Card key={product._id || product.id} className="product-card">
-                                        <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
-                                            <div className="product-image-container">
-                                                {product.images?.[0] ? (
-                                                    <img src={formatImageUrl(product.images[0])} alt={product.name} className="product-img" />
-                                                ) : (
-                                                    <div className="product-image-placeholder">
-                                                        <div className="image-icon">🛍️</div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="product-info">
-                                                <h3>{product.name}</h3>
-                                                <p className="product-price">${product.price}</p>
-                                            </div>
-                                        </Link>
-                                        {product.images && product.images.length > 1 && ( // Added from instruction
-                                            <div className="image-thumbnails">
-                                                {product.images.map((img, idx) => (
-                                                    <div key={idx} className="thumb">
-                                                        <img src={formatImageUrl(img)} alt="" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <button
-                                            className="add-to-cart"
-                                            style={{ backgroundColor: brandColor }}
-                                            onClick={() => {
-                                                addItem(product);
-                                                setIsCartOpen(true);
-                                            }}
-                                        >
-                                            Add to Cart
-                                        </button>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-                );
-            default:
-                return null;
+        if (isHero) {
+            return (
+                <StorefrontHero
+                    key={component.id}
+                    componentId={component.id}
+                    {...content}
+                    brandColor={brandColor}
+                    storeName={store.name}
+                    description={store.description}
+                />
+            );
         }
+
+        if (isProductGrid) {
+            const selectedIds = Array.isArray(content.selectedProductIds)
+                ? content.selectedProductIds.map(String)
+                : [];
+
+            // More robust product matching (checks both _id and id)
+            const matchedProducts = selectedIds.map(id => products.find(p => String(p._id) === id || String(p.id) === id)).filter(Boolean);
+            console.log(`[Storefront] Product matching for grid ${component.id}: selected=${selectedIds.length}, found=${matchedProducts.length}`);
+
+            const productsToShow = selectedIds.length > 0
+                ? matchedProducts
+                : products.slice(0, 8);
+
+            return (
+                <section key={component.id} className="products-section container" id={`section-${component.id}`}>
+                    <div className="section-header-modern">
+                        <EditableText
+                            tag="h2"
+                            value={content.title}
+                            componentId={component.id}
+                            field="title"
+                            placeholder="Featured Collection"
+                        />
+                        <EditableText
+                            tag="p"
+                            value={content.subtitle}
+                            componentId={component.id}
+                            field="subtitle"
+                            placeholder="Hand-picked selections just for you"
+                        />
+                    </div>
+                    {productsToShow.length === 0 ? (
+                        <p className="no-products">No products matched the selection.</p>
+                    ) : (
+                        <div className="products-grid">
+                            {productsToShow.map(product => (
+                                <Card key={product._id || product.id} className="product-card">
+                                    <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
+                                        <div className="product-image-container">
+                                            {product.images?.[0] ? (
+                                                <img src={formatImageUrl(product.images[0])} alt={product.name} className="product-img" />
+                                            ) : (
+                                                <div className="product-image-placeholder">
+                                                    <div className="image-icon">🛍️</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="product-info">
+                                            <h3>{product.name}</h3>
+                                            <p className="product-price">${product.price}</p>
+                                        </div>
+                                    </Link>
+                                    {product.images && product.images.length > 1 && ( // Added from instruction
+                                        <div className="image-thumbnails">
+                                            {product.images.map((img, idx) => (
+                                                <div key={idx} className="thumb">
+                                                    <img src={formatImageUrl(img)} alt="" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <button
+                                        className="add-to-cart"
+                                        style={{ backgroundColor: brandColor }}
+                                        onClick={() => {
+                                            addItem(product);
+                                            setIsCartOpen(true);
+                                        }}
+                                    >
+                                        Add to Cart
+                                    </button>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            );
+        }
+
+        return null;
     };
 
     const fontSizeMap = {
