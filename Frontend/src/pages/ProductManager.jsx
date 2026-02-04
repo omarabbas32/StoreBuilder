@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, GripVertical, Save } from "lucide-react";
+import { Plus, Edit, Trash2, GripVertical, Save, ChevronLeft, ChevronRight } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -21,6 +21,8 @@ const ProductManager = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [imageCarousel, setImageCarousel] = useState({});
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -95,6 +97,70 @@ const ProductManager = () => {
       await productService.deleteProduct(id);
       loadProducts();
     }
+  };
+
+  const handleEditClick = (product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name || "",
+      description: product.description || "",
+      price: product.price?.toString() || "",
+      stock: product.stock?.toString() || "",
+      images: product.images || [],
+      categoryId: product.category_id || "",
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    
+    const submissionData = {
+      ...formData,
+      price: parseFloat(formData.price) || 0,
+      stock: parseInt(formData.stock, 10) || 0,
+      storeId: store?.id,
+    };
+
+    const result = await productService.updateProduct(editingProduct.id, submissionData);
+    if (result.success) {
+      setEditingProduct(null);
+      setFormData({
+        name: "",
+        description: "",
+        price: "",
+        stock: "",
+        images: [],
+        categoryId: "",
+      });
+      success("Product updated successfully!");
+      loadProducts();
+    } else {
+      showError(result.error || "Failed to update product");
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditingProduct(null);
+    setFormData({
+      name: "",
+      description: "",
+      price: "",
+      stock: "",
+      images: [],
+      categoryId: "",
+    });
+  };
+
+  const nextImage = (productId, totalImages) => {
+    const currentIndex = imageCarousel[productId] || 0;
+    const nextIndex = (currentIndex + 1) % totalImages;
+    setImageCarousel({ ...imageCarousel, [productId]: nextIndex });
+  };
+
+  const prevImage = (productId, totalImages) => {
+    const currentIndex = imageCarousel[productId] || 0;
+    const prevIndex = currentIndex === 0 ? totalImages - 1 : currentIndex - 1;
+    setImageCarousel({ ...imageCarousel, [productId]: prevIndex });
   };
 
   const onDragEnd = (result) => {
@@ -285,14 +351,45 @@ const ProductManager = () => {
                               <GripVertical size={20} />
                             </div>
                             <div className="product-image-preview">
-                              {product.images && product.images[0] ? (
-                                <img
-                                  src={product.images[0]}
-                                  alt={product.name}
-                                />
+                              {product.images && product.images.length > 0 ? (
+                                <>
+                                  <img
+                                    src={product.images[imageCarousel[product.id] || 0]}
+                                    alt={product.name}
+                                    loading="lazy"
+                                  />
+                                  {product.images.length > 1 && (
+                                    <>
+                                      <button
+                                        className="carousel-btn carousel-prev"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          prevImage(product.id, product.images.length);
+                                        }}
+                                        type="button"
+                                      >
+                                        <ChevronLeft size={18} />
+                                      </button>
+                                      <button
+                                        className="carousel-btn carousel-next"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          nextImage(product.id, product.images.length);
+                                        }}
+                                        type="button"
+                                      >
+                                        <ChevronRight size={18} />
+                                      </button>
+                                      <div className="carousel-counter">
+                                        {(imageCarousel[product.id] || 0) + 1} / {product.images.length}
+                                      </div>
+                                    </>
+                                  )}
+                                </>
                               ) : (
                                 <div className="product-image-placeholder">
-                                  🛍️
+                                  <span>📷</span>
+                                  <span>No Image</span>
                                 </div>
                               )}
                             </div>
@@ -316,13 +413,19 @@ const ProductManager = () => {
                               </div>
                             </div>
                             <div className="product-actions">
-                              <Button size="sm" variant="ghost">
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => handleEditClick(product)}
+                                title="Edit product"
+                              >
                                 <Edit size={16} />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleDelete(product.id)}
+                                title="Delete product"
                               >
                                 <Trash2 size={16} />
                               </Button>
@@ -339,6 +442,103 @@ const ProductManager = () => {
           </DragDropContext>
         )}
       </div>
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <Card className="edit-modal">
+            <div className="modal-header">
+              <h2>Edit Product</h2>
+              <button 
+                className="modal-close"
+                onClick={closeEditModal}
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="modal-form">
+              <Input
+                label="Product Name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                required
+                fullWidth
+              />
+              <Input
+                label="Description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                fullWidth
+              />
+              <div className="form-row">
+                <Input
+                  label="Price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: e.target.value })
+                  }
+                  required
+                />
+                <Input
+                  label="Stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={(e) =>
+                    setFormData({ ...formData, stock: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
+                <label className="input-label" style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-color)' }}>Category</label>
+                <select
+                  className="category-select"
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'white',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group" style={{ marginBottom: "var(--space-4)" }}>
+                <MultiImageUpload
+                  label="Product Images"
+                  value={formData.images}
+                  onChange={(urls) => setFormData({ ...formData, images: urls })}
+                  maxImages={5}
+                />
+              </div>
+              <div className="form-actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={closeEditModal}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Update Product</Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

@@ -36,30 +36,37 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
             </div>
 
             <div className="reviews-container">
-                {reviews.map((review) => (
-                    <Card key={review.id} className="review-card">
-                        <div className="review-header">
-                            <div className="user-info">
-                                <span className="user-name">{review.user_name || 'Anonymous'}</span>
-                                <span className="review-date">
-                                    {new Date(review.created_at).toLocaleDateString()}
-                                </span>
+                {reviews.map((review) => {
+                    // Handle null or undefined reviews
+                    if (!review || typeof review !== 'object') {
+                        return null;
+                    }
+
+                    return (
+                        <Card key={review.id || Math.random()} className="review-card">
+                            <div className="review-header">
+                                <div className="user-info">
+                                    <span className="user-name">{review.user_name || review.userName || 'Anonymous'}</span>
+                                    <span className="review-date">
+                                        {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Recently'}
+                                    </span>
+                                </div>
+                                <StarRating rating={review.rating || 5} readonly size={16} />
                             </div>
-                            <StarRating rating={review.rating} readonly size={16} />
-                        </div>
-                        <h4 className="review-title">{review.title}</h4>
-                        <p className="review-comment">{review.comment}</p>
-                        <div className="review-footer">
-                            <button
-                                className="helpful-button"
-                                onClick={() => handleHelpful(review.id)}
-                            >
-                                <ThumbsUp size={14} />
-                                Helpful ({review.helpful_count || 0})
-                            </button>
-                        </div>
-                    </Card>
-                ))}
+                            <h4 className="review-title">{review.title || 'Review'}</h4>
+                            <p className="review-comment">{review.comment || ''}</p>
+                            <div className="review-footer">
+                                <button
+                                    className="helpful-button"
+                                    onClick={() => handleHelpful(review.id)}
+                                >
+                                    <ThumbsUp size={14} />
+                                    Helpful ({review.helpful_count || 0})
+                                </button>
+                            </div>
+                        </Card>
+                    );
+                })}
             </div>
         </div>
     );

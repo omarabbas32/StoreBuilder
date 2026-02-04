@@ -1,8 +1,16 @@
 import apiClient from './api';
 
 const orderService = {
-    async createOrder(orderData, items, cartId = null) {
-        return await apiClient.post('/orders', { orderData, items, cartId });
+    async createOrder(orderData, items) {
+        // Flatten the request to match back-end expectations
+        const payload = {
+            ...orderData,
+            items: items.map(item => ({
+                productId: item.productId || item.id || item._id,
+                quantity: item.quantity
+            }))
+        };
+        return await apiClient.post('/orders', payload);
     },
 
     async getStoreOrders(storeId) {

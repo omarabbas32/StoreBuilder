@@ -1,29 +1,10 @@
 import apiClient from './api';
 
 const reviewService = {
-    // Create review with optional images
-    async create(reviewData, images = []) {
+    // Create review
+    async create(reviewData) {
         try {
-            const formData = new FormData();
-
-            // Append review data
-            Object.keys(reviewData).forEach(key => {
-                formData.append(key, reviewData[key]);
-            });
-
-            // Append images if provided
-            if (images && images.length > 0) {
-                images.forEach(image => {
-                    formData.append('images', image);
-                });
-            }
-
-            const response = await apiClient.post('/reviews', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
+            const response = await apiClient.post('/reviews', reviewData);
             return { success: true, data: response.data };
         } catch (error) {
             return {

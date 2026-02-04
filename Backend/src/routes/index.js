@@ -58,10 +58,12 @@ customerRouter.get('/me', auth, (req, res, next) => container.customerController
 router.use('/customers', customerRouter);
 
 // Orders
+const { createOrderSchema } = require('../validators/order.validator');
 const orderRouter = express.Router();
 orderRouter.get('/store/:storeId', auth, (req, res, next) => container.orderController.getByStore(req, res, next));
 orderRouter.get('/my-orders', auth, (req, res, next) => container.orderController.getMyOrders(req, res, next));
-orderRouter.post('/', auth, (req, res, next) => container.orderController.create(req, res, next));
+orderRouter.post('/', validate(createOrderSchema), (req, res, next) => container.orderController.create(req, res, next));
+orderRouter.post('/checkout', validate(createOrderSchema), (req, res, next) => container.orderController.createFromCart(req, res, next));
 router.use('/orders', orderRouter);
 
 // Reviews

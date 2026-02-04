@@ -31,9 +31,16 @@ const validate = (schema, source = 'body') => {
             if (!result.success) {
                 // Format Zod errors
                 const errors = result.error.flatten().fieldErrors;
+                console.log('[VALIDATION_ERROR]', JSON.stringify(errors, null, 2));
+
+                // Create a more descriptive message for the frontend
+                const errorDetails = Object.entries(errors)
+                    .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
+                    .join('; ');
+
                 return res.status(400).json({
                     success: false,
-                    message: 'Validation failed',
+                    message: `Validation failed: ${errorDetails}`,
                     errors
                 });
             }

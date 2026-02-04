@@ -44,7 +44,7 @@ class ReviewService {
         // Create review
         const review = await this.reviewModel.create({
             product_id: productId,
-            store_id: product.store_id,
+            store_id: product.store_id || null, // Store_id is optional
             customer_id: customerId,
             order_id: orderId || null,
             rating: parseInt(rating),

@@ -1,7 +1,8 @@
 import { formatImageUrl } from '../../utils/imageUtils';
+import EditableText from './EditableText';
 import './SydneyHighlight.css';
 
-const SydneyHighlight = ({ title, description, image, miniImage, brandColor }) => {
+const SydneyHighlight = ({ componentId, title, description, image, miniImage, brandColor }) => {
     return (
         <div className="sydney-highlight">
             <div className="sydney-highlight-image-wrapper">
@@ -12,10 +13,22 @@ const SydneyHighlight = ({ title, description, image, miniImage, brandColor }) =
                 />
             </div>
             <div className="sydney-highlight-content">
-                <h2 className="sydney-highlight-title">{title || 'Luxury Knitwear'}</h2>
-                <p className="sydney-highlight-description">
-                    {description || 'This soft lambswool jumper is knitted in Scotland, using yarn from one of the world oldest spinners based in Fife.'}
-                </p>
+                <EditableText
+                    tag="h2"
+                    className="sydney-highlight-title"
+                    value={title}
+                    componentId={componentId}
+                    field="title"
+                    placeholder="Luxury Knitwear"
+                />
+                <EditableText
+                    tag="p"
+                    className="sydney-highlight-description"
+                    value={description}
+                    componentId={componentId}
+                    field="description"
+                    placeholder="This soft lambswool jumper is knitted in Scotland, using yarn from one of the world oldest spinners based in Fife."
+                />
                 <div className="sydney-highlight-footer">
                     <button className="sydney-highlight-link" style={{ color: brandColor, borderBottomColor: brandColor }}>
                         Shop Now

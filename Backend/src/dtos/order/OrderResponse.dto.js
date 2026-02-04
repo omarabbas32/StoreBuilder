@@ -23,7 +23,7 @@ class OrderResponseDTO {
                 productId: item.product_id,
                 productName: item.product?.name,
                 quantity: item.quantity,
-                price: parseFloat(item.price)
+                unitPrice: parseFloat(item.unit_price)
             }));
         }
     }

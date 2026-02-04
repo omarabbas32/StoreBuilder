@@ -30,7 +30,10 @@ class ReviewModel {
             ...(includeCustomer && {
                 include: {
                     customer: {
-                        include: {
+                        select: {
+                            id: true,
+                            first_name: true,
+                            last_name: true,
                             user: {
                                 select: { name: true }
                             }

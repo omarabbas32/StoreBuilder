@@ -1,5 +1,8 @@
 .theme-manager {
     max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4);
+    width: 100%;
 }
 
 .page-header {
@@ -14,15 +17,27 @@
     font-size: var(--text-3xl);
     font-weight: 700;
     margin-bottom: var(--space-2);
+    color: var(--color-text);
+}
+
+.page-header p {
+    color: var(--color-text-muted);
 }
 
 .theme-form {
     margin-bottom: var(--space-8);
+    background-color: var(--color-bg);
+    padding: var(--space-6);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
 }
 
 .theme-form h3 {
     font-size: var(--text-xl);
     margin-bottom: var(--space-6);
+    font-weight: 700;
+    color: var(--color-text);
 }
 
 .theme-form form {
@@ -48,6 +63,17 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    padding: var(--space-4);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.theme-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
 }
 
 .theme-preview {
@@ -56,20 +82,51 @@
     object-fit: cover;
     border-radius: var(--radius-md);
     margin-bottom: var(--space-2);
+    background: var(--color-bg-alt);
 }
 
 .theme-card h3 {
     font-size: var(--text-lg);
     font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.theme-card p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1024px) {
+    .themes-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
+    .theme-manager {
+        padding: var(--space-4);
+    }
+
     .page-header {
         flex-direction: column;
-        align-items: stretch;
+        align-items: flex-start;
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+    }
+
+    .page-header button {
+        width: 100%;
     }
 
     .themes-grid {
         grid-template-columns: 1fr;
+        gap: var(--space-4);
+    }
+
+    .theme-form {
+        padding: var(--space-4);
     }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ShoppingBag, CreditCard, ChevronLeft, CheckCircle } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
@@ -7,17 +7,19 @@ import orderService from '../services/orderService';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
+import storeService from '../services/storeService';
 import { useStorePath } from '../hooks/useStorePath';
 import './Checkout.css';
 
 const Checkout = () => {
     const navigate = useNavigate();
+    const { slug } = useParams();
     const { items, getTotal, clearCart } = useCartStore();
-    const { store } = useAuthStore();
     const storePath = useStorePath();
     const [loading, setLoading] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
     const [orderResult, setOrderResult] = useState(null);
+    const [store, setStore] = useState(null);
 
     const [formData, setFormData] = useState({
         customer_name: '',
@@ -29,9 +31,22 @@ const Checkout = () => {
 
     useEffect(() => {
         if (items.length === 0 && !orderComplete) {
-            navigate(storePath); // Back to store
+            navigate(storePath || '/'); // Back to store
         }
     }, [items, orderComplete]);
+
+    useEffect(() => {
+        if (slug && !['checkout', 'demo', 'cart'].includes(slug)) {
+            loadStore();
+        }
+    }, [slug]);
+
+    const loadStore = async () => {
+        const result = await storeService.getStoreBySlugOrId(slug);
+        if (result.success) {
+            setStore(result.data);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -43,8 +58,26 @@ const Checkout = () => {
 
         setLoading(true);
 
-        // Get store_id from the first item in the cart
-        const store_id = items[0].storeId || items[0].store_id;
+        // Resolve store_id with exhaustive multi-layered fallback
+        // PRIORITIZE items if we are on global /checkout
+        const firstItem = items[0] || {};
+        const storeFromItem = firstItem.storeId ||
+            firstItem.store_id ||
+            firstItem.storeID ||
+            firstItem.store_ID ||
+            (firstItem.store ? (firstItem.store.id || firstItem.store._id) : null);
+
+        const storeFromState = store?.id || store?._id;
+        const store_id = storeFromItem || storeFromState;
+
+        console.log('[CHECKOUT_DEBUG_DEEP]', {
+            slug,
+            storeFromState,
+            storeFromItem,
+            resolvedId: store_id,
+            firstItemKeys: Object.keys(firstItem),
+            firstItemSample: firstItem
+        });
 
         const orderData = {
             store_id: store_id,
@@ -52,7 +85,16 @@ const Checkout = () => {
             ...formData
         };
 
+        console.log('[CHECKOUT_SUBMIT]', { orderData, itemsCount: items.length });
+
+        if (!store_id) {
+            alert('Error: Store ID could not be identified. Please try returning to the store and adding items again.');
+            setLoading(false);
+            return;
+        }
+
         const result = await orderService.createOrder(orderData, items);
+        console.log('[CHECKOUT_RESULT]', result);
 
         if (result.success) {
             clearCart();
