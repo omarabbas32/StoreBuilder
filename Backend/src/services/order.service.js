@@ -83,7 +83,7 @@ class OrderService {
                     order_id: newOrder.id,
                     product_id: item.product_id,
                     quantity: item.quantity,
-                    price: item.product.price
+                    unit_price: item.product.price
                 });
 
                 // Decrement stock
@@ -166,7 +166,7 @@ class OrderService {
                     order_id: newOrder.id,
                     product_id: item.product.id,
                     quantity: item.quantity,
-                    price: item.price
+                    unit_price: item.price
                 });
 
                 await this.productModel.update(item.product.id, {

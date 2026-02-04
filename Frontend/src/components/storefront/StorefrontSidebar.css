@@ -84,6 +84,47 @@
     .storefront-sidebar {
         width: 100%;
         padding-right: 0;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
+        gap: 1rem;
+    }
+
+    .sidebar-section {
+        padding: 1rem;
+    }
+
+    .category-list {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding-bottom: 0.5rem;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .category-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .category-item {
+        flex-shrink: 0;
+        padding: 0.5rem 1rem;
+        border-bottom: none;
+        background-color: var(--color-bg-alt);
+        border-radius: var(--radius-full);
+        border: 1px solid var(--color-border);
+    }
+
+    .category-item.active {
+        background-color: var(--primary-color);
+    }
+
+    .category-item.active .category-link {
+        color: white;
+    }
+
+    .sidebar-title {
+        margin-bottom: 0.75rem;
+        font-size: 1rem;
     }
 }

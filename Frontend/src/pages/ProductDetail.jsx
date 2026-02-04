@@ -6,10 +6,12 @@ import reviewService from '../services/reviewService';
 import storeService from '../services/storeService';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import ErrorBoundary from '../components/ErrorBoundary';
 import ReviewList from '../components/review/ReviewList';
 import ReviewForm from '../components/review/ReviewForm';
 import { useStorePath } from '../hooks/useStorePath';
 import { formatImageUrl } from '../utils/imageUtils';
+import useCartStore from '../store/cartStore';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -20,6 +22,8 @@ const ProductDetail = () => {
     const [loading, setLoading] = useState(true);
     const storePath = useStorePath();
     const [error, setError] = useState(null);
+    const addItem = useCartStore(state => state.addItem);
+    const [addToCartMessage, setAddToCartMessage] = useState('');
 
     useEffect(() => {
         loadProductData();
@@ -35,10 +39,13 @@ const ProductDetail = () => {
         if (productResult.success) {
             setProduct(productResult.data);
 
-            // Load store info
-            const storeResult = await storeService.getStoreById(productResult.data.storeId || productResult.data.store_id);
-            if (storeResult.success) {
-                setStore(storeResult.data);
+            // Load store info only if store_id exists
+            const storeId = productResult.data.storeId || productResult.data.store_id;
+            if (storeId) {
+                const storeResult = await storeService.getStoreById(storeId);
+                if (storeResult.success) {
+                    setStore(storeResult.data);
+                }
             }
         } else {
             setError(productResult.error);
@@ -52,8 +59,15 @@ const ProductDetail = () => {
         setLoading(false);
     };
 
+    const handleAddToCart = () => {
+        addItem(product, 1);
+        setAddToCartMessage('Added to cart!');
+        setTimeout(() => setAddToCartMessage(''), 2000);
+    };
+
     const handleReviewSubmitted = (newReview) => {
-        setReviews([newReview, ...reviews]);
+        // Reload all reviews to ensure data consistency
+        loadProductData();
     };
 
     if (loading) return <div className="product-detail-loading">Loading product...</div>;
@@ -117,9 +131,10 @@ const ProductDetail = () => {
                             className="add-to-cart-btn"
                             style={{ backgroundColor: brandColor }}
                             disabled={product.stock <= 0}
+                            onClick={handleAddToCart}
                         >
                             <ShoppingCart size={20} />
-                            Add to Cart
+                            {addToCartMessage || 'Add to Cart'}
                         </Button>
                     </div>
                 </div>
@@ -131,10 +146,14 @@ const ProductDetail = () => {
 
                     <div className="reviews-grid">
                         <div className="reviews-list-col">
-                            <ReviewList reviews={reviews} onHelpfulVote={loadProductData} />
+                            <ErrorBoundary>
+                                <ReviewList reviews={reviews} onHelpfulVote={loadProductData} />
+                            </ErrorBoundary>
                         </div>
                         <div className="reviews-form-col">
-                            <ReviewForm productId={productId} onReviewSubmitted={handleReviewSubmitted} />
+                            <ErrorBoundary>
+                                <ReviewForm productId={productId} onReviewSubmitted={handleReviewSubmitted} />
+                            </ErrorBoundary>
                         </div>
                     </div>
                 </div>

@@ -22,15 +22,21 @@ const errorHandler = (err, req, res, next) => {
 
     // Log error in development
     if (process.env.NODE_ENV === 'development') {
-        console.error('Error:', err);
+        console.error('Error Details:', {
+            code: err.code,
+            message: err.message,
+            meta: err.meta,
+            stack: err.stack
+        });
     }
 
     res.status(statusCode).json({
         success: false,
         message,
         ...(process.env.NODE_ENV === 'development' && {
-            stack: err.stack,
-            error: err
+            prismaCode: err.code,
+            prismaMeta: err.meta,
+            stack: err.stack
         })
     });
 };

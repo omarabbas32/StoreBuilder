@@ -10,6 +10,7 @@ import StorefrontFooter from '../components/storefront/StorefrontFooter';
 import { useStorePath } from '../hooks/useStorePath';
 import StorefrontSidebar from '../components/storefront/StorefrontSidebar';
 import CartDrawer from '../components/storefront/CartDrawer';
+import SydneyHighlight from '../components/storefront/SydneyHighlight';
 import useCartStore from '../store/cartStore';
 import EditableText from '../components/storefront/EditableText';
 import { formatImageUrl } from '../utils/imageUtils';
@@ -55,7 +56,7 @@ const Storefront = ({ slug: slugProp }) => {
     }, [slug]);
 
     const loadStore = async () => {
-        if (!slug) {
+        if (!slug || ['checkout', 'cart', 'login', 'register', 'dashboard', 'admin', 'demo'].includes(slug)) {
             setLoading(false);
             setStore({ name: 'Your Store', settings: { primaryColor: '#2563eb', components: [] } });
             return;
@@ -194,20 +195,13 @@ const Storefront = ({ slug: slugProp }) => {
                                             <p className="product-price">${product.price}</p>
                                         </div>
                                     </Link>
-                                    {product.images && product.images.length > 1 && ( // Added from instruction
-                                        <div className="image-thumbnails">
-                                            {product.images.map((img, idx) => (
-                                                <div key={idx} className="thumb">
-                                                    <img src={formatImageUrl(img)} alt="" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                     <button
                                         className="add-to-cart"
                                         style={{ backgroundColor: brandColor }}
                                         onClick={() => {
-                                            addItem(product);
+                                            // Explicitly include storeId to ensure cart context
+                                            const storeId = store?.id || store?._id || activeStoreId;
+                                            addItem({ ...product, storeId });
                                             setIsCartOpen(true);
                                         }}
                                     >
@@ -217,6 +211,18 @@ const Storefront = ({ slug: slugProp }) => {
                             ))}
                         </div>
                     )}
+                </section>
+            );
+        }
+
+        const isHighlight = type === 'highlight' || name.toLowerCase().includes('highlight');
+        if (isHighlight) {
+            return (
+                <section key={component.id} className="highlight-section container" id={`section-${component.id}`}>
+                    <SydneyHighlight
+                        {...content}
+                        brandColor={brandColor}
+                    />
                 </section>
             );
         }

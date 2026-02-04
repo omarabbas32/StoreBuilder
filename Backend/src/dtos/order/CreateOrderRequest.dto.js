@@ -8,6 +8,7 @@ class CreateOrderRequestDTO {
         this.customerId = data.customerId;
         this.customerName = data.customerName;
         this.customerEmail = data.customerEmail;
+        //  this.unitPrice = data.unitPrice;    
         this.customerPhone = data.customerPhone;
         this.shippingAddress = data.shippingAddress;
         this.notes = data.notes;
@@ -23,7 +24,10 @@ class CreateOrderRequestDTO {
             customerPhone: body.customerPhone || body.customer_phone,
             shippingAddress: body.shippingAddress || body.shipping_address,
             notes: body.notes,
-            items: body.items
+            items: (body.items || []).map(item => ({
+                productId: item.productId || item.product_id || item.id,
+                quantity: item.quantity
+            }))
         });
     }
 }

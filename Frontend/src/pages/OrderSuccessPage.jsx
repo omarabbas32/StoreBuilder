@@ -64,11 +64,11 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
             ) : (
                 <nav className="simple-navbar">
                     <div className="container">
-                        <Link to="/" className="navbar-brand">{store?.name || 'Store'}</Link>
+                        <Link to={storePath} className="navbar-brand">{store?.name || 'Store'}</Link>
                         <div className="navbar-links">
-                            <Link to="/">الرئيسية</Link>
-                            <Link to="/categories">التصنيفات</Link>
-                            <Link to="/cart">السلة</Link>
+                            <Link to={storePath}>الرئيسية</Link>
+                            <Link to={`${storePath}/categories`}>التصنيفات</Link>
+                            <Link to={`${storePath}/cart`}>السلة</Link>
                         </div>
                     </div>
                 </nav>
@@ -123,7 +123,7 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
                             <Home size={18} />
                             العودة للرئيسية
                         </Link>
-                        <Link to="/categories" className="secondary-btn">
+                        <Link to={`${storePath}/categories`} className="secondary-btn">
                             متابعة التسوق
                             <ArrowRight size={18} />
                         </Link>

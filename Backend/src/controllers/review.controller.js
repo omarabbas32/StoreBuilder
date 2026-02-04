@@ -1,6 +1,8 @@
 const { asyncHandler } = require('../middleware/errorHandler');
 const CreateReviewRequestDTO = require('../dtos/review/CreateReviewRequest.dto');
 const ReviewResponseDTO = require('../dtos/review/ReviewResponse.dto');
+const { createReviewSchema } = require('../validators/review.validator');
+const { v4: uuidv4 } = require('uuid');
 
 class ReviewController {
     constructor(reviewService) {
@@ -8,10 +10,28 @@ class ReviewController {
     }
 
     create = asyncHandler(async (req, res) => {
-        const dto = CreateReviewRequestDTO.fromRequest(req.validatedData);
-        // Assuming req.user contains customer context or we fetch it
-        // For simplicity, using req.user.id as customerId (needs mapping if separate)
-        const result = await this.reviewService.createReview(dto, req.user.id);
+        // Validate request data (must happen in controller for FormData support)
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Request body is empty',
+                details: []
+            });
+        }
+
+        const validation = createReviewSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                success: false,
+                error: 'Validation failed',
+                details: validation.error.errors
+            });
+        }
+
+        const dto = CreateReviewRequestDTO.fromRequest(validation.data);
+        // Handle case where auth is optional - use authenticated user or generate guest UUID
+        const customerId = req.user?.id || req.body.customerId || uuidv4();
+        const result = await this.reviewService.createReview(dto, customerId);
         res.status(201).json({ success: true, data: new ReviewResponseDTO(result) });
     });
 

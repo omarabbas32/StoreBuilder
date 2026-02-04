@@ -153,10 +153,9 @@ function App() {
                 {/* AI Onboarding Preview */}
                 <Route path="/onboarding/preview" element={<Storefront />} />
 
-                {/* Checkout Page */}
+                {/* Global Checkout Route (Should be above greedy /:slug) */}
                 <Route path="/checkout" element={<Checkout />} />
-
-
+                <Route path="/order-success" element={<OrderSuccessPage />} />
 
                 {/* Default/Landing Page */}
                 <Route
@@ -166,20 +165,38 @@ function App() {
                     }
                 />
 
-                {/* Store storefront routes */}
-                <Route path="/s/:slug" element={<Storefront />} />
+                {/* Specific Store storefront routes (High Priority) */}
                 <Route path="/s/:slug/products" element={<ProductsPage />} />
+                <Route path="/s/:slug/categories" element={<CategoriesPage />} />
                 <Route path="/s/:slug/category/:categoryId" element={<CategoryProductsPage />} />
                 <Route path="/s/:slug/product/:productId" element={<ProductDetail />} />
-                <Route path="/preview/:slug" element={<Storefront />} />
+                <Route path="/s/:slug/cart" element={<CartPage />} />
+                <Route path="/s/:slug/checkout" element={<Checkout />} />
+                <Route path="/s/:slug/order-success" element={<OrderSuccessPage />} />
+                <Route path="/s/:slug" element={<Storefront />} />
+
+                {/* Preview Routes */}
                 <Route path="/preview/:slug/products" element={<ProductsPage />} />
+                <Route path="/preview/:slug/categories" element={<CategoriesPage />} />
                 <Route path="/preview/:slug/category/:categoryId" element={<CategoryProductsPage />} />
                 <Route path="/preview/:slug/product/:productId" element={<ProductDetail />} />
-                <Route path="/:slug" element={<Storefront />} />
+                <Route path="/preview/:slug/cart" element={<CartPage />} />
+                <Route path="/preview/:slug/checkout" element={<Checkout />} />
+                <Route path="/preview/:slug/order-success" element={<OrderSuccessPage />} />
+                <Route path="/preview/:slug" element={<Storefront />} />
+
+                {/* Greedy slug routes (Should be LAST) */}
                 <Route path="/:slug/products" element={<ProductsPage />} />
+                <Route path="/:slug/categories" element={<CategoriesPage />} />
                 <Route path="/:slug/category/:categoryId" element={<CategoryProductsPage />} />
                 <Route path="/:slug/product/:productId" element={<ProductDetail />} />
+                <Route path="/:slug/cart" element={<CartPage />} />
+                <Route path="/:slug/checkout" element={<Checkout />} />
+                <Route path="/:slug/order-success" element={<OrderSuccessPage />} />
+                <Route path="/:slug" element={<Storefront />} />
+
                 <Route path="/product/:productId" element={<ProductDetail />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toaster position="top-right" />
         </BrowserRouter>

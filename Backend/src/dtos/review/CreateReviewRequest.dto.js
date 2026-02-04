@@ -3,8 +3,8 @@
  */
 class CreateReviewRequestDTO {
     constructor(data) {
-        this.productId = data.productId;
-        this.orderId = data.orderId;
+        this.productId = data.productId || data.product_id;
+        this.orderId = data.orderId || data.order_id;
         this.rating = data.rating;
         this.title = data.title;
         this.comment = data.comment;
@@ -12,6 +12,9 @@ class CreateReviewRequestDTO {
     }
 
     static fromRequest(body) {
+        if (!body) {
+            throw new Error('Request body cannot be null or undefined');
+        }
         return new CreateReviewRequestDTO({
             productId: body.productId || body.product_id,
             orderId: body.orderId || body.order_id,

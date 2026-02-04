@@ -83,9 +83,9 @@ const OrderManagement = () => {
                                         {orders.map((order) => (
                                             <tr key={order.id} className={selectedOrder?.id === order.id ? 'selected' : ''}>
                                                 <td>#{order.id.substring(0, 8)}</td>
-                                                <td>{order.customer_name}</td>
-                                                <td>{new Date(order.created_at).toLocaleDateString()}</td>
-                                                <td>${parseFloat(order.total_amount).toFixed(2)}</td>
+                                                <td>{order.customerName}</td>
+                                                <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                                                <td>${parseFloat(order.totalAmount).toFixed(2)}</td>
                                                 <td>
                                                     <span className={`status-badge ${order.status}`}>
                                                         {getStatusIcon(order.status)}
@@ -115,14 +115,14 @@ const OrderManagement = () => {
 
                                     <div className="details-section">
                                         <h4>Customer Information</h4>
-                                        <p><strong>Name:</strong> {selectedOrder.customer_name}</p>
-                                        <p><strong>Email:</strong> {selectedOrder.customer_email}</p>
-                                        <p><strong>Phone:</strong> {selectedOrder.customer_phone}</p>
+                                        <p><strong>Name:</strong> {selectedOrder.customerName}</p>
+                                        <p><strong>Email:</strong> {selectedOrder.customerEmail}</p>
+                                        <p><strong>Phone:</strong> {selectedOrder.customerPhone}</p>
                                     </div>
 
                                     <div className="details-section">
                                         <h4>Shipping Address</h4>
-                                        <p className="address-text">{selectedOrder.shipping_address}</p>
+                                        <p className="address-text">{selectedOrder.shippingAddress}</p>
                                     </div>
 
                                     <div className="details-section">
@@ -130,14 +130,14 @@ const OrderManagement = () => {
                                         <div className="order-items-list">
                                             {selectedOrder.items?.map((item, idx) => (
                                                 <div key={idx} className="order-item">
-                                                    <span>Item #{item.product_id?.substring(0, 8)} x {item.quantity}</span>
-                                                    <span>${(item.unit_price * item.quantity).toFixed(2)}</span>
+                                                    <span>Item #{item.productId?.substring(0, 8)} x {item.quantity}</span>
+                                                    <span>${(item.unitPrice * item.quantity).toFixed(2)}</span>
                                                 </div>
                                             ))}
                                         </div>
                                         <div className="order-total">
                                             <span>Total</span>
-                                            <span>${parseFloat(selectedOrder.total_amount).toFixed(2)}</span>
+                                            <span>${parseFloat(selectedOrder.totalAmount).toFixed(2)}</span>
                                         </div>
                                     </div>
 

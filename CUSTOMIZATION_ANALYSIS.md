@@ -9,7 +9,7 @@
   ```json
   {
     "themeId": "uuid",
-    "primaryColor": "#2563eb",
+    "primaryColor": "#3f5074ff",
     "componentIds": ["uuid1", "uuid2"],
     "componentContent": { "uuid1": {...} },
     "logo_url": "...",

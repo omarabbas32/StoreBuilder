@@ -1,7 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const validate = require('../middleware/validate');
-const { createReviewSchema } = require('../validators/review.validator');
 const { reviewController } = require('../container');
 const { auth } = require('../middleware/auth');
 
@@ -12,8 +10,9 @@ const { auth } = require('../middleware/auth');
 router.get('/product/:productId', reviewController.getByProduct);
 
 router.post('/',
-    auth,
-    validate(createReviewSchema),
+   // auth,
+    // NOTE: FormData cannot be validated by middleware before body parsing
+    // Validation happens inside controller instead
     reviewController.create
 );
 
