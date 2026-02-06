@@ -55,34 +55,16 @@ const onboardingService = {
     },
 
     /**
-     * Create a store via AI agent with structured answers
+     * Send chat messages to AI Assistant
      */
-    async aiCreateStore(answers) {
+    async assistantChat(messages, provider = 'gemini') {
         try {
-            const response = await apiClient.post('/onboarding/ai-create', { answers });
-            if (!response.success) {
-                return response;
-            }
-            return { ...response, data: normalizeStore(response.data) };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.response?.data?.error || 'Failed to create store via AI',
-            };
-        }
-    },
-
-    /**
-     * Send chat messages to AI agent
-     */
-    async aiChat(messages, provider = null) {
-        try {
-            const response = await apiClient.post('/onboarding/ai-chat', { messages, provider });
+            const response = await apiClient.post('/onboarding/assistant-chat', { messages, provider });
             return response;
         } catch (error) {
             return {
                 success: false,
-                error: error.response?.data?.error || 'Failed to chat with AI',
+                error: error.response?.data?.error || 'Failed to chat with AI Assistant',
             };
         }
     },

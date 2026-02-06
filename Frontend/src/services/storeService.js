@@ -121,11 +121,15 @@ const storeService = {
   },
 
   async completeOnboarding(storeId, answers) {
-    const result = await apiClient.post(`/stores/${storeId}/onboarding`, answers);
+    const result = await apiClient.post(`/onboarding/${storeId}/complete`, answers);
     if (result.success) {
       return { ...result, data: normalizeStore(result.data) };
     }
     return result;
+  },
+
+  async aiChat(messages, provider = 'gemini') {
+    return await apiClient.post('/onboarding/ai-chat', { messages, provider });
   },
 };
 

@@ -28,6 +28,7 @@ storeRouter.get('/:id', (req, res, next) => container.storeController.getById(re
 storeRouter.get('/slug/:slug', (req, res, next) => container.storeController.getBySlug(req, res, next));
 storeRouter.post('/', auth, validate(createStoreSchema), (req, res, next) => container.storeController.create(req, res, next));
 storeRouter.put('/:id', auth, validate(updateStoreSchema), (req, res, next) => container.storeController.update(req, res, next));
+storeRouter.put('/:id/components/:componentId', auth, (req, res, next) => container.storeController.updateComponentContent(req, res, next));
 storeRouter.delete('/:id', auth, (req, res, next) => container.storeController.delete(req, res, next));
 storeRouter.post('/:id/onboarding', auth, (req, res, next) => container.onboardingController.completeStoreOnboarding(req, res, next));
 router.use('/stores', storeRouter);
@@ -86,8 +87,8 @@ router.use('/components', componentRouter);
 // Onboarding
 const onboardingRouter = express.Router();
 onboardingRouter.get('/schema', (req, res, next) => container.onboardingController.getSchema(req, res, next));
-onboardingRouter.post('/ai-create', auth, (req, res, next) => container.onboardingController.aiCreateStore(req, res, next));
-onboardingRouter.post('/ai-chat', (req, res, next) => container.onboardingController.aiChat(req, res, next));
+onboardingRouter.post('/complete/:id', auth, (req, res, next) => container.onboardingController.completeStoreOnboarding(req, res, next));
+onboardingRouter.post('/assistant-chat', auth, (req, res, next) => container.onboardingController.assistantChat(req, res, next));
 router.use('/onboarding', onboardingRouter);
 
 // Media (Generic & Store-specific)

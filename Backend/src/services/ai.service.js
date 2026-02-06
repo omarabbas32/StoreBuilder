@@ -1,4 +1,5 @@
 const Groq = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const AppError = require('../utils/AppError');
 
 /**
@@ -11,6 +12,9 @@ class AIService {
     constructor() {
         this.groq = process.env.GROQ_API_KEY
             ? new Groq({ apiKey: process.env.GROQ_API_KEY })
+            : null;
+        this.genAI = process.env.GEMINI_API_KEY
+            ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
             : null;
     }
 
@@ -93,7 +97,8 @@ class AIService {
 
         const model = provider === 'openai' ? 'gpt-4o-mini' :
             provider === 'groq' ? 'llama-3.3-70b-versatile' :
-                'google/gemini-2.0-flash-exp:free';
+                provider === 'gemini' ? 'gemini-2.0-flash' :
+                    'google/gemini-2.0-flash-exp:free';
 
         let responseData = null;
 
@@ -155,6 +160,20 @@ class AIService {
             const data = await response.json();
             if (data.error) throw new AppError(`OpenRouter Error: ${data.error.message}`, 500);
             responseData = this.safeParseJSON(data.choices?.[0]?.message?.content);
+        } else if (provider === 'gemini') {
+            if (!this.genAI) {
+                throw new AppError('Missing GEMINI_API_KEY', 500);
+            }
+
+            const geminiModel = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+            // Format messages for Gemini
+            // system prompt is handled as a separate instruction or part of the first message
+            const prompt = `${systemPrompt}\n\nChat History:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}`;
+
+            const result = await geminiModel.generateContent(prompt);
+            const response = await result.response;
+            responseData = this.safeParseJSON(response.text());
         }
 
         return responseData;
@@ -227,6 +246,279 @@ class AIService {
             ...data,
             extractedAnswers: normalized
         };
+    }
+
+    /**
+     * General Assistant Chat
+     * Used for the dashboard AI Assistant to perform actions
+     */
+    async assistantChat(messages, context = {}, provider = process.env.AI_PROVIDER || 'gemini') {
+        const enrichedContext = this._buildRichContext(context);
+        const systemPrompt = this._getSystemPrompt(enrichedContext);
+        const model = provider === 'openai' ? 'gpt-4o' : 'gemini-2.0-flash';
+
+        // Sanitize messages for LLM providers (remove extra fields like 'action')
+        const sanitizedMessages = messages.map(m => ({
+            role: m.role,
+            content: m.content
+        }));
+
+        const performGeminiCall = async (retryCount = 0) => {
+            try {
+                if (!this.genAI) throw new AppError('Missing GEMINI_API_KEY', 500);
+                const geminiModel = this.genAI.getGenerativeModel({ model });
+                const prompt = `${systemPrompt}\n\nChat History:\n${sanitizedMessages.map(m => `${m.role}: ${m.content}`).join('\n')}`;
+
+                const result = await geminiModel.generateContent(prompt);
+                const response = await result.response;
+
+                let parsedData = this.safeParseJSON(response.text());
+
+                // Fallback & Validation
+                if (!parsedData) {
+                    parsedData = { message: "I'm sorry, I couldn't process that. Could you try again?" };
+                } else {
+                    if (!parsedData.message) {
+                        parsedData.message = parsedData.action ?
+                            `I'll help you ${parsedData.action.type.replace(/_/g, ' ').toLowerCase()}.` :
+                            "I'm listening. What would you like to do?";
+                    }
+                    if (parsedData.action) {
+                        this._validateAction(parsedData.action, context);
+                    }
+                }
+
+                this.logAction(context.user?.id, parsedData.action, { success: true });
+                return { success: true, data: parsedData };
+
+            } catch (error) {
+                // Retry specific errors
+                // Increase retries to 4 (approx 30s+ coverage) to handle 18s-60s quotas
+                if ((error.status === 429 || error.message?.includes('429')) && retryCount < 4) {
+                    // Backoff: 2s, 4s, 8s, 16s + jitter
+                    const baseDelay = 2000;
+                    const delay = (baseDelay * Math.pow(2, retryCount)) + (Math.random() * 1000);
+
+                    console.log(`[AIService] Rate limit hit. Waiting ${Math.round(delay / 1000)}s before retry ${retryCount + 1}/4...`);
+
+                    await new Promise(r => setTimeout(r, delay));
+                    return performGeminiCall(retryCount + 1);
+                }
+                throw error;
+            }
+        };
+
+        try {
+            // Gemini Provider
+            if (provider === 'gemini') {
+                return await performGeminiCall();
+            }
+
+            // Groq Provider
+            if (provider === 'groq') {
+                if (!this.groq) {
+                    return { success: false, error: 'Missing GROQ_API_KEY. Please add it to your .env file or switch to a different provider.' };
+                }
+
+                const completion = await this.groq.chat.completions.create({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        ...sanitizedMessages
+                    ],
+                    response_format: { type: 'json_object' },
+                    temperature: 0.7
+                });
+
+                const parsedData = this.safeParseJSON(completion.choices[0]?.message?.content);
+                if (parsedData?.action) {
+                    this._validateAction(parsedData.action, context);
+                }
+                this.logAction(context.user?.id, parsedData?.action, { success: true });
+                return { success: true, data: parsedData };
+            }
+
+            // OpenAI Provider (fallback)
+            if (!process.env.OPENAI_API_KEY) {
+                return { success: false, error: 'Missing OPENAI_API_KEY. Please add it to your .env file or switch to a different provider.' };
+            }
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'system', content: systemPrompt }, ...sanitizedMessages], response_format: { type: 'json_object' } })
+            });
+            const data = await response.json();
+            return { success: true, data: this.safeParseJSON(data.choices?.[0]?.message?.content) };
+        } catch (error) {
+            console.error('[AIService] Assistant Chat Error:', error.message);
+            if (error.message?.includes('429')) {
+                return { success: false, error: "I'm busy right now (Rate Limit). Please wait a moment." };
+            }
+            return { success: false, error: error.message };
+        }
+    }
+
+    _buildRichContext(context) {
+        const stores = context.stores || [];
+        const richContext = stores.map(s => `
+        STORE: ${s.name} (ID: ${s.id})
+        - Products: ${(s.products || []).map(p => `${p.name} ($${p.price}) [ID: ${p.id}]`).join(', ')}
+        - Categories: ${(s.categories || []).map(c => `${c.name} [ID: ${c.id}]`).join(', ')}
+        - Components: ${(s.components || []).map(c => `${c.type} [ID: ${c.id}]`).join(', ')}
+        `).join('\n');
+
+        return `
+        User ID: ${context.user?.id}
+        ${richContext}
+        `;
+    }
+
+    _getSystemPrompt(richContext) {
+        return `You are a powerful Storely AI Assistant. You help store owners manage their business.
+        
+        CONTEXT:
+        ${richContext}
+        
+        AVAILABLE TOOLS:
+        1. UPDATE_STORE
+           - Method: PUT
+           - URL: /stores/:id
+           - Description: Update store identity, branding, and contact info.
+           - Optional Fields: ["name", "tagline", "description", "contact_email", "contact_phone", "address", "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "tiktok_url", "settings"]
+           - Specialized updates via "settings":
+             - Change theme color: set data.settings.primaryColor to a hex code (e.g. #FF0000)
+             - Update logo: set data.settings.logo_url to the image URL.
+             - Toggle features: set data.settings.reviews_enabled, etc.
+           - Rule: DO NOT overwrite settings. Preserve existing settings by only including the fields that need changing.
+
+        2. CREATE_PRODUCT
+           - Method: POST
+           - URL: /products
+           - Required: ["name", "price", "storeId"]
+           - Optional: ["description", "categoryId", "stock"]
+
+        3. UPDATE_PRODUCT
+           - Method: PUT
+           - URL: /products/:id
+           - Optional: ["name", "price", "description", "stock", "categoryId"]
+
+        4. DELETE_PRODUCT (Destructive)
+           - Method: DELETE
+           - URL: /products/:id
+
+        5. CREATE_CATEGORY
+           - Method: POST
+           - URL: /categories
+           - Required: ["name", "storeId", "slug"]
+           - Rule: Generate a unique, URL-safe slug based on the name (lower case, hyphens instead of spaces).
+
+        6. DELETE_CATEGORY (Destructive)
+           - Method: DELETE
+           - URL: /categories/:id
+
+        7. UPDATE_CATEGORY
+           - Method: PUT
+           - URL: /categories/:id
+           - Optional: ["name", "description", "slug"]
+
+        8. LIST_PRODUCTS
+           - Method: GET
+           - URL: /products?storeId=:storeId
+           - Purpose: Retrieve all products for a store (for analytics or review)
+
+        9. GET_STORE_STATS
+           - Method: GET
+           - URL: /stores/:id/stats
+           - Purpose: Get order count, revenue, product count
+
+        10. BULK_UPDATE_PRODUCTS
+            - Method: PUT
+            - URL: /products/bulk
+            - Required: ["storeId", "updates"]
+            - updates format: [{ "id": "uuid", "price": 25 }, ...]
+
+        11. UPDATE_COMPONENT_CONTENT
+            - Method: PUT
+            - URL: /stores/:id/components/:componentId
+            - Purpose: Update specific component content.
+            - SCENARIOS:
+              - "Write About Us": Look for component with type='footer' in context. Update { "aboutText": "Generated text..." }.
+              - "Update Hero": Look for type='hero'. Update { "title": "...", "subtitle": "..." }.
+        
+        RULES:
+        1. ALWAYS return an array of "actions".
+        2. For "About Us", find the footer component ID and use UPDATE_COMPONENT_CONTENT.
+        3. For "Colors", use UPDATE_STORE with settings.primaryColor.
+        4. Return ONLY valid JSON.
+        
+        RESPONSE FORMAT (JSON ONLY):
+        {
+          "message": "Friendly confirmation or explanation",
+          "actions": [
+            {
+              "type": "TOOL_NAME",
+              "method": "HTTP_METHOD",
+              "url": "TARGET_URL",
+              "data": { "field": "value" },
+              "requiresConfirmation": true,
+              "destructive": boolean
+            }
+          ]
+        }
+        
+        RULES:
+        1. Replace :id placeholders with actual UUIDs from Context.
+        2. If unsure which store/product, ask the user.
+        3. For DESTRUCTIVE actions, always set "requiresConfirmation": true AND "destructive": true.
+        4. If a user asks for multiple things (e.g., 'update store and add product'), return an array of actions.
+        5. Return ONLY JSON.`;
+    }
+
+    _validateAction(action, context) {
+        // 1. Structure validation
+        if (!action.type || !action.method || !action.url) {
+            throw new Error("Invalid action format: missing type, method, or url");
+        }
+
+        // 2. Placeholder check
+        if (action.url.includes(':id') || action.url.includes(':store_id')) {
+            throw new Error("AI failed to replace URL placeholders with actual IDs");
+        }
+
+        // 3. ID ownership validation (for PUT/DELETE)
+        if (['PUT', 'DELETE'].includes(action.method.toUpperCase())) {
+            const uuidRegex = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi;
+            const urlIds = action.url.match(uuidRegex) || [];
+
+            const stores = context.stores || [];
+            const userOwnedIds = new Set(stores.flatMap(s => [
+                s.id,
+                ...(s.products || []).map(p => p.id),
+                ...(s.categories || []).map(c => c.id)
+            ]));
+
+            for (const id of urlIds) {
+                if (!userOwnedIds.has(id)) {
+                    throw new Error(`Security: ID ${id} does not belong to this user`);
+                }
+            }
+        }
+
+        // 4. Auto-inject store_id for CREATE actions
+        if (action.method.toUpperCase() === 'POST' && action.data) {
+            const stores = context.stores || [];
+            if (stores.length === 1 && !action.data.store_id) {
+                action.data.store_id = stores[0].id;
+                console.log(`[AIService] Auto-injected store_id: ${stores[0].id}`);
+            }
+        }
+    }
+
+    logAction(userId, action, result) {
+        if (process.env.AISERVICE_LOGS === 'true') {
+            console.log(`[AI-AUDIT] User: ${userId} | Action: ${action?.type} | Success: ${result.success}`);
+        }
     }
 }
 

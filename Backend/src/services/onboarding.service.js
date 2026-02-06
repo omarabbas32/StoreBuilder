@@ -6,11 +6,64 @@ const AppError = require('../utils/AppError');
  * Handles AI-powered store setup and configuration generation
  */
 class OnboardingService {
-    constructor({ themeService, componentService, storeService, aiService }) {
+    constructor({ themeService, componentService, storeService, aiService, productService, categoryService }) {
         this.themeService = themeService;
         this.componentService = componentService;
         this.storeService = storeService;
         this.aiService = aiService;
+        this.productService = productService;
+        this.categoryService = categoryService;
+    }
+
+    // ... (lines 16-289 skipped for brevity, no changes)
+
+    /**
+     * AI Assistant Chat for Dashboard
+     */
+    async assistantChat(messages, userId, provider = 'gemini') {
+        // Fetch context: User's stores
+        const stores = await this.storeService.getStoresByOwner(userId);
+
+        // Enrich context with Products, Categories, AND Components for EACH store
+        const enrichedStores = await Promise.all(stores.map(async (store) => {
+            const [products, categories, components] = await Promise.all([
+                this.productService.getProductsByStore(store.id),
+                this.categoryService.getCategoriesByStore(store.id),
+                this.componentService.getActiveComponents() // Get all definitions
+            ]);
+
+            // Filter components to only those active for this store (if store tracks IDs)
+            // Or just send all active component definitions if the store uses them broadly.
+            // For now, we assume store.settings.componentIds tracks the instances or types.
+            // If store.settings.componentIds is just IDs, we match them.
+            // But if the store uses all system components, we just map them.
+
+            // LOGIC: Filter list based on store instance configuration
+            // If `store.settings.componentIds` exists, it likely holds the IDs of components used.
+            const storeComponentIds = store.settings?.componentIds || [];
+            const activeStoreComponents = components.filter(c => storeComponentIds.includes(c.id));
+
+            // If no specific IDs are tracked (legacy stores), fallback to sending all active system components
+            // so the AI can at least try to guess or use them.
+            const finalComponents = activeStoreComponents.length > 0 ? activeStoreComponents : components;
+
+            return {
+                id: store.id,
+                name: store.name,
+                slug: store.slug,
+                settings: store.settings || {},
+                products: products || [],
+                categories: categories || [],
+                components: finalComponents.map(c => ({ id: c.id, type: c.type, name: c.name }))
+            };
+        }));
+
+        const context = {
+            user: { id: userId },
+            stores: enrichedStores
+        };
+
+        return await this.aiService.assistantChat(messages, context, provider);
     }
 
     /**
@@ -129,60 +182,6 @@ class OnboardingService {
     }
 
     /**
-     * AI-Create store from answers
-     */
-    async aiCreateStore(answers, ownerId) {
-        // Validate required fields
-        if (!answers.name) throw new AppError('Store name is required', 400);
-
-        // Generate slug
-        const slug = answers.slug || answers.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-        // Check availability
-        const existing = await this.storeService.getStoreBySlug(slug).catch(() => null);
-        if (existing) throw new AppError(`Store with slug "${slug}" already exists`, 409);
-
-        const { validateSocialUrl } = require('../utils/urlValidator');
-
-        // Extract and validate social links
-        const socialFields = ['facebook_url', 'instagram_url', 'twitter_url', 'linkedin_url', 'tiktok_url'];
-        const validatedSocials = {};
-        const socialSource = answers.socialLinks || answers;
-        for (const field of socialFields) {
-            if (socialSource[field]) {
-                const result = validateSocialUrl(field, socialSource[field]);
-                validatedSocials[field] = result.valid ? result.url : null;
-            }
-        }
-
-        // Extract contact info
-        const contactSource = answers.contactInfo || answers;
-        const contactData = {
-            contact_email: contactSource.contact_email || null,
-            contact_phone: contactSource.contact_phone || null,
-            address: contactSource.address || null
-        };
-
-        // Create store
-        const store = await this.storeService.createStore({
-            name: answers.name,
-            slug,
-            description: answers.description || `${answers.name} - Created via AI`,
-            tagline: answers.tagline || null,
-            business_hours: answers.businessHours || {},
-            ...contactData,
-            ...validatedSocials,
-            settings: {}
-        }, ownerId);
-
-        // Generate full config
-        const config = await this.generateStoreConfig(answers);
-
-        // Update store with config
-        return await this.storeService.updateStore(store.id, { settings: config }, ownerId);
-    }
-
-    /**
      * Complete onboarding for an existing store
      */
     async completeStoreOnboarding(storeId, answers, ownerId) {
@@ -225,14 +224,6 @@ class OnboardingService {
         }
 
         return await this.storeService.updateStore(storeId, updateData, ownerId);
-    }
-
-    /**
-     * Chat with AI for onboarding
-     */
-    async aiChat(messages, provider) {
-        const schema = await this.getSchema();
-        return await this.aiService.chat(messages, schema, provider);
     }
 
     /**

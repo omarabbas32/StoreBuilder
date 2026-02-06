@@ -8,8 +8,7 @@ const { auth } = require('../middleware/auth');
  */
 
 router.get('/schema', onboardingController.getSchema);
-router.post('/ai-create', auth, onboardingController.aiCreateStore);
-router.post('/:storeId/complete', auth, onboardingController.completeOnboarding);
-router.post('/ai-chat', auth, onboardingController.aiChat);
+router.post('/complete/:id', auth, onboardingController.completeStoreOnboarding);
+router.post('/assistant-chat', auth, onboardingController.assistantChat);
 
 module.exports = router;

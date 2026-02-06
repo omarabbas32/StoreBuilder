@@ -42,6 +42,7 @@ import ColorPalettePicker from '../components/ui/ColorPalettePicker';
 import AssetLibrary from '../components/ui/AssetLibrary';
 import SortableComponentItem from '../components/ui/SortableComponentItem';
 import ProductPicker from '../components/ui/ProductPicker';
+import AIAssistant from '../components/dashboard/AIAssistant';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { debounce } from '../utils/debounce';
 import { safeSettingsUpdate } from '../utils/settingsMerge';
@@ -154,34 +155,54 @@ const CustomizationProgress = ({ settings }) => {
     );
 };
 
-const DeviceFrame = ({ children, device, onDeviceChange, subdomain }) => (
+const DeviceFrame = ({ children, device, onDeviceChange, scale, onScaleChange, subdomain }) => (
     <div className="designer-preview-pane">
         <div className="preview-toolbar">
-            <button
-                className={`toolbar-btn ${device === 'mobile' ? 'active' : ''}`}
-                onClick={() => onDeviceChange('mobile')}
-                title="Mobile View"
-            >
-                <Smartphone size={18} />
-            </button>
-            <button
-                className={`toolbar-btn ${device === 'tablet' ? 'active' : ''}`}
-                onClick={() => onDeviceChange('tablet')}
-                title="Tablet View"
-            >
-                <Tablet size={18} />
-            </button>
-            <button
-                className={`toolbar-btn ${device === 'desktop' ? 'active' : ''}`}
-                onClick={() => onDeviceChange('desktop')}
-                title="Desktop View"
-            >
-                <Monitor size={18} />
-            </button>
+            <div className="device-selectors">
+                <button
+                    className={`toolbar-btn ${device === 'mobile' ? 'active' : ''}`}
+                    onClick={() => onDeviceChange('mobile')}
+                    title="Mobile View"
+                >
+                    <Smartphone size={18} />
+                </button>
+                <button
+                    className={`toolbar-btn ${device === 'tablet' ? 'active' : ''}`}
+                    onClick={() => onDeviceChange('tablet')}
+                    title="Tablet View"
+                >
+                    <Tablet size={18} />
+                </button>
+                <button
+                    className={`toolbar-btn ${device === 'desktop' ? 'active' : ''}`}
+                    onClick={() => onDeviceChange('desktop')}
+                    title="Desktop View"
+                >
+                    <Monitor size={18} />
+                </button>
+            </div>
+
+            <div className="toolbar-divider-v" />
+
+            <div className="zoom-controls">
+                <button className="toolbar-btn" onClick={() => onScaleChange(Math.max(0.25, scale - 0.25))} title="Zoom Out">
+                    <Minimize2 size={16} />
+                </button>
+                <span className="zoom-level">{Math.round(scale * 100)}%</span>
+                <button className="toolbar-btn" onClick={() => onScaleChange(Math.min(1, scale + 0.25))} title="Zoom In">
+                    <Maximize2 size={16} />
+                </button>
+            </div>
         </div>
 
         <div className="preview-iframe-wrapper">
-            <div className={`preview-device-frame ${device}`}>
+            <div
+                className={`preview-device-frame ${device}`}
+                style={{
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'center top'
+                }}
+            >
                 <div className={`device-top-bar ${device === 'desktop' ? 'desktop' : ''}`}>
                     <div className="status-dot dot-red" />
                     <div className="status-dot dot-yellow" />
@@ -244,6 +265,7 @@ const StoreCustomizer = () => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [previewMode, setPreviewMode] = useState('split'); // 'split' or 'full' (editor only)
     const [previewDevice, setPreviewDevice] = useState('desktop'); // 'mobile', 'tablet', 'desktop'
+    const [previewScale, setPreviewScale] = useState(0.75); // Added scaling support
     const [draftAvailable, setDraftAvailable] = useState(null);
     const [history, setHistory] = useState([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
@@ -738,6 +760,11 @@ const StoreCustomizer = () => {
                 console.log(`Received inline update: ${componentId}.${field} = ${value}`);
                 updateComponentContent(componentId, field, value);
                 toast.success(`Updated ${field}`, { id: 'inline-edit', duration: 1000 });
+            } else if (event.data?.type === 'REMOVE_SECTION') {
+                const { sectionId } = event.data;
+                console.log(`Received remove section request: ${sectionId}`);
+                updateComponentVisibility(sectionId, false);
+                toast.success('Section removed', { icon: '🗑️' });
             }
         };
 
@@ -1762,7 +1789,13 @@ const StoreCustomizer = () => {
                     </div>
                 </div>
 
-                <DeviceFrame device={previewDevice} onDeviceChange={setPreviewDevice} subdomain={store?.subdomain}>
+                <DeviceFrame
+                    device={previewDevice}
+                    onDeviceChange={setPreviewDevice}
+                    scale={previewScale}
+                    onScaleChange={setPreviewScale}
+                    subdomain={store?.subdomain}
+                >
                     <iframe
                         ref={iframeRef}
                         src={`${window.location.origin}/preview/${store?._id || store?.id || storeId}?preview=true`}
@@ -1813,6 +1846,7 @@ const StoreCustomizer = () => {
                     </div>
                 </div>
             )}
+            <AIAssistant />
         </div>
     );
 };

@@ -56,7 +56,7 @@ const aiService = new AIService();
 const cartService = new CartService({ cartModel, cartItemModel, productModel, prisma });
 const productService = new ProductService({ productModel, storeModel, categoryModel, prisma });
 const orderService = new OrderService({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, prisma });
-const storeService = new StoreService({ storeModel, userModel, prisma });
+const storeService = new StoreService({ storeModel, userModel, categoryModel, prisma });
 const authService = new AuthService({ userModel, emailService });
 const categoryService = new CategoryService({ categoryModel, storeModel, prisma });
 const reviewService = new ReviewService({ reviewModel, reviewHelpfulVoteModel, productModel, orderModel, storeModel, prisma });
@@ -65,7 +65,7 @@ const themeService = new ThemeService({ themeModel, userModel });
 const componentService = new ComponentService({ componentModel });
 const paymentService = new PaymentService({ orderModel });
 const analyticsService = new AnalyticsService({ prisma, orderModel, productModel, storeModel, userModel });
-const onboardingService = new OnboardingService({ themeService, componentService, storeService, aiService });
+const onboardingService = new OnboardingService({ themeService, componentService, storeService, aiService, productService, categoryService });
 
 // Controllers
 const cartController = new CartController(cartService);

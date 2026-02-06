@@ -21,16 +21,13 @@ import ProductDetail from './pages/ProductDetail';
 import DemoPage from './pages/DemoPage';
 import Checkout from './pages/Checkout';
 import OrderManagement from './pages/OrderManagement';
-import OnboardingWizard from './pages/OnboardingWizard';
-import AIOnboardingChat from './pages/AIOnboardingChat';
-import StoreCreationWizard from './pages/StoreCreationWizard';
-import StoreCreationMode from './pages/StoreCreationMode';
 import CategoriesPage from './pages/CategoriesPage';
 import CategoryProductsPage from './pages/CategoryProductsPage';
 import ProductsPage from './pages/ProductsPage';
 import CartPage from './pages/CartPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import MyTemplates from './pages/MyTemplates';
+import AIStoreCreation from './pages/AIStoreCreation';
 
 // Placeholder components
 const ComponentManager = () => <div style={{ padding: '2rem' }}><h1>Component Manager</h1><p>Coming soon...</p></div>;
@@ -118,31 +115,7 @@ function App() {
                     path="/create-store"
                     element={
                         <ProtectedRoute>
-                            <StoreCreationMode />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/create-store/manual"
-                    element={
-                        <ProtectedRoute>
-                            <StoreCreationWizard />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/onboarding/:storeId"
-                    element={
-                        <ProtectedRoute>
-                            <OnboardingWizard />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/onboarding/ai/:storeId?"
-                    element={
-                        <ProtectedRoute>
-                            <AIOnboardingChat />
+                            <AIStoreCreation />
                         </ProtectedRoute>
                     }
                 />

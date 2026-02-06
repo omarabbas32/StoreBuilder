@@ -79,8 +79,8 @@
     .sydney-highlight {
         flex-direction: column;
         text-align: center;
-        gap: var(--space-6);
-        padding: var(--space-8) 0;
+        gap: var(--space-8);
+        padding: var(--space-10) 1.25rem;
     }
 
     .sydney-highlight-image-wrapper,

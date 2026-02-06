@@ -9,9 +9,10 @@ const AppError = require('../utils/AppError');
  * - Store deletion cascades (handled by DB)
  */
 class StoreService {
-    constructor({ storeModel, userModel, prisma }) {
+    constructor({ storeModel, userModel, categoryModel, prisma }) {
         this.storeModel = storeModel;
         this.userModel = userModel;
+        this.categoryModel = categoryModel;
         this.prisma = prisma;
     }
 
@@ -69,6 +70,19 @@ class StoreService {
             settings: settings || {}
         });
 
+        // Business Rule: Automatically create a default category "All Products"
+        if (this.categoryModel) {
+            await this.categoryModel.create({
+                store_id: store.id,
+                name: 'All Products',
+                slug: 'all-products',
+                description: 'Default category for all your products'
+            }).catch(err => {
+                console.error('[StoreService] Failed to create default category:', err.message);
+                // We don't throw here to avoid failing the whole store creation
+            });
+        }
+
         return store;
     }
 
@@ -105,8 +119,48 @@ class StoreService {
         }
 
         // Update store
-        const updated = await this.storeModel.update(storeId, dto);
+        let finalDto = { ...dto };
+
+        // Handle deep merge for settings to prevent data loss
+        if (dto.settings) {
+            const currentSettings = store.settings || {};
+            finalDto.settings = {
+                ...currentSettings,
+                ...dto.settings,
+                // Handle nested objects like componentContent
+                componentContent: {
+                    ...(currentSettings.componentContent || {}),
+                    ...(dto.settings.componentContent || {})
+                },
+                // Handle nested navigation links if present
+                navbar_config: {
+                    ...(currentSettings.navbar_config || {}),
+                    ...(dto.settings.navbar_config || {})
+                }
+            };
+        }
+
+        const updated = await this.storeModel.update(storeId, finalDto);
         return updated;
+    }
+
+    async updateComponentContent(storeId, componentId, content, ownerId) {
+        const store = await this.storeModel.findById(storeId);
+        if (!store) throw new AppError('Store not found', 404);
+        if (store.owner_id !== ownerId) throw new AppError('Unauthorized', 403);
+
+        const settings = store.settings || {};
+        const componentContent = settings.componentContent || {};
+
+        // Merge content
+        componentContent[componentId] = {
+            ...(componentContent[componentId] || {}),
+            ...content
+        };
+
+        settings.componentContent = componentContent;
+
+        return await this.storeModel.update(storeId, { settings });
     }
 
     /**

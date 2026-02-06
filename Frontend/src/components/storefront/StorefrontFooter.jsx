@@ -1,13 +1,15 @@
-import { Facebook, Instagram, Twitter, Mail, Phone } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone } from 'lucide-react';
 import './StorefrontFooter.css';
 
-const StorefrontFooter = ({ config, brandColor, storeName }) => {
-    const copyrightText = config?.copyrightText || config?.copyright || `Ac ${new Date().getFullYear()} ${storeName}. All rights reserved.`;
+const StorefrontFooter = ({ config, brandColor, storeName, socialLinks = {} }) => {
+    const copyrightText = config?.copyrightText || config?.copyright || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`;
     const aboutText = config?.aboutText;
     const aboutLinksRaw = config?.aboutLinks;
-    const facebookUrl = config?.facebookUrl;
-    const instagramUrl = config?.instagramUrl;
-    const twitterUrl = config?.twitterUrl;
+    const facebookUrl = config?.facebookUrl || socialLinks.facebook;
+    const instagramUrl = config?.instagramUrl || socialLinks.instagram;
+    const twitterUrl = config?.twitterUrl || socialLinks.twitter;
+    const linkedinUrl = config?.linkedinUrl || socialLinks.linkedin;
+    const tiktokUrl = config?.tiktokUrl || socialLinks.tiktok;
     const email = config?.email;
     const phone = config?.phone;
     const showSocial = config?.showSocial !== false;
@@ -29,7 +31,7 @@ const StorefrontFooter = ({ config, brandColor, storeName }) => {
     const aboutLinks = parseLinks(aboutLinksRaw);
     const safeAboutLinks = aboutLinks.filter((link) => link?.label && link?.url);
     const hasAboutSection = Boolean(aboutText) || safeAboutLinks.length > 0;
-    const hasSocialLinks = showSocial && (facebookUrl || instagramUrl || twitterUrl);
+    const hasSocialLinks = showSocial && (facebookUrl || instagramUrl || twitterUrl || linkedinUrl || tiktokUrl);
 
     return (
         <footer
@@ -102,6 +104,16 @@ const StorefrontFooter = ({ config, brandColor, storeName }) => {
                                 {twitterUrl && (
                                     <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="social-link">
                                         <Twitter size={20} />
+                                    </a>
+                                )}
+                                {linkedinUrl && (
+                                    <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="social-link">
+                                        <Linkedin size={20} />
+                                    </a>
+                                )}
+                                {tiktokUrl && (
+                                    <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="social-link">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" /></svg>
                                     </a>
                                 )}
                             </div>

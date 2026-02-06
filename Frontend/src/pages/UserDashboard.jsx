@@ -4,6 +4,7 @@ import { Package, ShoppingCart, DollarSign, TrendingUp, Plus, Store as StoreIcon
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import GettingStartedChecklist from '../components/dashboard/GettingStartedChecklist';
+import AIAssistant from '../components/dashboard/AIAssistant';
 import storeService from '../services/storeService';
 import productService from '../services/productService';
 import orderService from '../services/orderService';
@@ -187,6 +188,8 @@ const UserDashboard = () => {
                     </Card>
                 ))}
             </div>
+
+            <AIAssistant />
         </div>
     );
 };

@@ -20,8 +20,8 @@
 .product-main {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-12);
-    margin-bottom: var(--space-16);
+    gap: clamp(2rem, 5vw, var(--space-12));
+    margin-bottom: var(--space-12);
 }
 
 .product-gallery {
@@ -140,6 +140,7 @@
     justify-content: center;
     gap: var(--space-3);
     height: 56px;
+    width: 100%;
     font-weight: 700;
 }
 
@@ -159,8 +160,8 @@
 
 .reviews-grid {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: var(--space-12);
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
 }
 
 .product-detail-loading,

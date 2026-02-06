@@ -32,6 +32,11 @@ router.put('/:id',
     storeController.update
 );
 
+router.put('/:id/components/:componentId',
+    auth,
+    storeController.updateComponentContent
+);
+
 router.delete('/:id',
     auth,
     storeController.delete
