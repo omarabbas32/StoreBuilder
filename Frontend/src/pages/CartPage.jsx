@@ -48,7 +48,7 @@ const CartPage = ({ slug: slugProp }) => {
         navigate(`${storePath}/checkout`);
     };
 
-    if (loading) return <div className="cart-page-loading">جاري التحميل...</div>;
+    if (loading) return <div className="cart-page-loading">Loading...</div>;
 
     const brandColor = store?.settings?.primaryColor || '#2563eb';
     const components = store?.settings?.components || [];
@@ -71,9 +71,9 @@ const CartPage = ({ slug: slugProp }) => {
                     <div className="container">
                         <Link to={storePath} className="navbar-brand">{store?.name || 'Store'}</Link>
                         <div className="navbar-links">
-                            <Link to={storePath}>الرئيسية</Link>
-                            <Link to={`${storePath}/categories`}>التصنيفات</Link>
-                            <Link to={`${storePath}/cart`} className="active">السلة</Link>
+                            <Link to={storePath}>Home</Link>
+                            <Link to={`${storePath}/categories`}>Categories</Link>
+                            <Link to={`${storePath}/cart`} className="active">Cart</Link>
                         </div>
                     </div>
                 </nav>
@@ -82,16 +82,16 @@ const CartPage = ({ slug: slugProp }) => {
             <main className="cart-main container">
                 <div className="cart-header">
                     <ShoppingCart size={32} style={{ color: brandColor }} />
-                    <h1>سلة التسوق</h1>
+                    <h1>Shopping Cart</h1>
                 </div>
 
                 {items.length === 0 ? (
                     <div className="empty-cart">
                         <ShoppingBag size={80} className="empty-icon" />
-                        <h2>سلتك فارغة</h2>
-                        <p>لم تضف أي منتجات بعد</p>
+                        <h2>Your cart is empty</h2>
+                        <p>You haven't added any products yet</p>
                         <Link to={`${storePath}/categories`} className="continue-shopping" style={{ backgroundColor: brandColor }}>
-                            تصفح المنتجات
+                            Browse Products
                         </Link>
                     </div>
                 ) : (
@@ -139,22 +139,23 @@ const CartPage = ({ slug: slugProp }) => {
 
                             <button className="clear-cart-btn" onClick={clearCart}>
                                 <Trash2 size={16} />
-                                إفراغ السلة
+                                <Trash2 size={16} />
+                                Clear Cart
                             </button>
                         </div>
 
                         <div className="cart-summary">
-                            <h3>ملخص الطلب</h3>
+                            <h3>Order Summary</h3>
                             <div className="summary-row">
-                                <span>المجموع الفرعي</span>
+                                <span>Subtotal</span>
                                 <span>${getTotal().toFixed(2)}</span>
                             </div>
                             <div className="summary-row">
-                                <span>الشحن</span>
-                                <span className="free">مجاني</span>
+                                <span>Shipping</span>
+                                <span className="free">Free</span>
                             </div>
                             <div className="summary-row total">
-                                <span>الإجمالي</span>
+                                <span>Total</span>
                                 <span>${getTotal().toFixed(2)}</span>
                             </div>
                             <Button
@@ -163,11 +164,11 @@ const CartPage = ({ slug: slugProp }) => {
                                 onClick={handleCheckout}
                                 style={{ backgroundColor: brandColor }}
                             >
-                                إتمام الطلب
+                                Checkout
                                 <ArrowRight size={18} />
                             </Button>
                             <Link to={`${storePath}/categories`} className="continue-link">
-                                متابعة التسوق
+                                Continue Shopping
                             </Link>
                         </div>
                     </div>

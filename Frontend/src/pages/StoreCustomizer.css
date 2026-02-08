@@ -122,6 +122,17 @@
     background: #000;
 }
 
+.save-btn-modern.success {
+    background-color: #10b981;
+    /* Green success color */
+    color: white;
+    border-color: #10b981;
+}
+
+.save-btn-modern.success:hover {
+    background-color: #059669;
+}
+
 /* Optional variant if you need bigger in header */
 .save-btn-modern--header {
     padding: 0.875rem 2rem;

@@ -3,6 +3,7 @@ import { Plus, Trash2, Tag } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
+import PageLoader from '../components/ui/PageLoader';
 import categoryService from '../services/categoryService';
 import useAuthStore from '../store/authStore';
 import { useToast } from '../components/ui/Toast';
@@ -101,7 +102,7 @@ const CategoryManager = () => {
 
             <div className="categories-grid">
                 {loading ? (
-                    <p>Loading categories...</p>
+                    <PageLoader type="list" />
                 ) : categories.length === 0 ? (
                     <Card className="empty-state-card">
                         <div className="empty-state-icon">🏷️</div>

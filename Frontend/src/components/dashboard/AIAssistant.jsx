@@ -311,20 +311,17 @@ const AIAssistant = () => {
 
     const toggleOpen = () => {
         if (isOpen) {
-            // Closing: Move position to where the trigger would be relative to the window
-            setPosition(prev => ({
-                x: prev.x + (isMinimized ? 150 : 250),
-                y: prev.y + (isMinimized ? 0 : 620)
-            }));
+            // Reset minimize state when closing
+            setIsMinimized(false);
             setIsOpen(false);
         } else {
-            // Opening: Move position so the window appears where the trigger was
-            setPosition(prev => ({
-                x: Math.max(20, prev.x - (isMinimized ? 150 : 250)),
-                y: Math.max(20, prev.y - (isMinimized ? 0 : 620))
-            }));
             setIsOpen(true);
         }
+    };
+
+    const handleClose = () => {
+        setIsMinimized(false);
+        setIsOpen(false);
     };
 
     if (!isOpen) {
@@ -359,37 +356,55 @@ const AIAssistant = () => {
                 right: 'auto'
             }}
         >
-            <div className="ai-assistant-header" onMouseDown={handleDragStart} style={{ cursor: 'move', userSelect: 'none' }}>
+            <div
+                className="ai-assistant-header"
+                onMouseDown={handleDragStart}
+                onClick={(e) => {
+                    // If minimized and not dragging, click to expand
+                    if (isMinimized && !isDragging) {
+                        setIsMinimized(false);
+                    }
+                }}
+                style={{ cursor: isMinimized ? 'pointer' : 'move', userSelect: 'none' }}
+            >
                 <div className="header-info">
                     <Bot size={20} />
                     <h3>Storely AI</h3>
-                    <select
-                        value={aiProvider}
-                        onChange={(e) => setAiProvider(e.target.value)}
-                        style={{
-                            marginLeft: '10px',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            border: '1px solid #ddd',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            background: '#f8f9fa'
-                        }}
-                        title="Select AI Provider"
-                    >
-                        <option value="gemini">⚡ Gemini</option>
-                        <option value="openai">🤖 GPT-4</option>
-                        <option value="groq">🚀 Groq</option>
-                    </select>
+                    {!isMinimized && (
+                        <select
+                            value={aiProvider}
+                            onChange={(e) => setAiProvider(e.target.value)}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                marginLeft: '10px',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                border: '1px solid #ddd',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                background: '#f8f9fa',
+                                position: 'relative',
+                                zIndex: 10
+                            }}
+                            title="Select AI Provider"
+                        >
+                            <option value="gemini">⚡ Gemini</option>
+                            <option value="openai">🤖 GPT-4</option>
+                            <option value="groq">🚀 Groq</option>
+                        </select>
+                    )}
                 </div>
                 <div className="header-actions">
-                    <button onClick={clearHistory} title="Clear chat history">
-                        <Trash2 size={16} />
-                    </button>
-                    <button onClick={() => setIsMinimized(!isMinimized)}>
+                    {!isMinimized && (
+                        <button onClick={(e) => { e.stopPropagation(); clearHistory(); }} onMouseDown={(e) => e.stopPropagation()} title="Clear chat history">
+                            <Trash2 size={16} />
+                        </button>
+                    )}
+                    <button onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }} onMouseDown={(e) => e.stopPropagation()}>
                         {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
                     </button>
-                    <button onClick={() => setIsOpen(false)}>
+                    <button onClick={(e) => { e.stopPropagation(); handleClose(); }} onMouseDown={(e) => e.stopPropagation()}>
                         <X size={16} />
                     </button>
                 </div>

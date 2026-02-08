@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ShoppingBag, Eye, CheckCircle, Clock } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import PageLoader from '../components/ui/PageLoader';
 import orderService from '../services/orderService';
 import useAuthStore from '../store/authStore';
 import '../styles/empty-states.css';
@@ -36,7 +37,7 @@ const OrderManagement = () => {
         }
     };
 
-    if (loading) return <div className="order-management">Loading orders...</div>;
+    if (loading) return <div className="order-management"><PageLoader type="table" /></div>;
 
     return (
         <div className="order-management">
