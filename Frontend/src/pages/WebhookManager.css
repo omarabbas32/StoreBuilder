@@ -1,0 +1,371 @@
+.webhook-manager {
+    padding: var(--space-6);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.webhook-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-8);
+}
+
+.webhook-header h1 {
+    font-size: var(--font-3xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+}
+
+.webhook-header p {
+    color: var(--color-text-light);
+}
+
+.add-webhook-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.webhook-form-card {
+    margin-bottom: var(--space-8);
+    animation: slideDown 0.3s ease-out;
+}
+
+.webhook-form-card h3 {
+    margin-bottom: var(--space-4);
+    font-size: var(--font-xl);
+}
+
+.form-group {
+    margin-bottom: var(--space-4);
+}
+
+.field-help {
+    font-size: var(--font-sm);
+    color: var(--color-text-light);
+    margin-top: var(--space-1);
+}
+
+.checkbox-label-group {
+    display: block;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    color: var(--color-text);
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-md);
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+}
+
+.checkbox-item input {
+    width: 18px;
+    height: 18px;
+}
+
+.form-actions {
+    margin-top: var(--space-6);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.webhooks-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.webhook-item-wrapper {
+    transition: all 0.3s ease;
+}
+
+.webhook-item {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.webhook-main {
+    display: flex;
+    align-items: center;
+    padding: var(--space-4);
+    gap: var(--space-4);
+}
+
+.webhook-status {
+    flex-shrink: 0;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.status-dot.active {
+    background-color: var(--color-success);
+    box-shadow: 0 0 8px var(--color-success);
+}
+
+.status-dot.inactive {
+    background-color: var(--color-text-light);
+}
+
+.webhook-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.webhook-url-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-1);
+}
+
+.webhook-url {
+    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: var(--font-sm);
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.webhook-meta {
+    font-size: var(--font-xs);
+    color: var(--color-text-light);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.dot-separator {
+    color: var(--color-border);
+}
+
+.badge {
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.badge.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.badge.secondary {
+    background: var(--color-bg-alt);
+    color: var(--color-text-light);
+}
+
+.webhook-actions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+/* Details Section */
+.webhook-details {
+    background: var(--color-bg-alt);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-4);
+    animation: fadeIn 0.3s ease;
+}
+
+.details-section {
+    margin-bottom: var(--space-6);
+}
+
+.details-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.section-header h4 {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-text-light);
+    letter-spacing: 0.05em;
+}
+
+.secret-box {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+}
+
+.secret-label {
+    font-size: var(--font-xs);
+    color: var(--color-text-light);
+    margin-bottom: var(--space-2);
+}
+
+.secret-value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.secret-value-row code {
+    font-family: var(--font-mono);
+    font-size: var(--font-sm);
+    color: var(--color-primary);
+    word-break: break-all;
+}
+
+.secret-actions {
+    display: flex;
+    gap: var(--space-1);
+    flex-shrink: 0;
+}
+
+.secret-warning {
+    font-size: var(--font-xs);
+    color: var(--color-warning);
+    margin-top: var(--space-2);
+}
+
+/* Logs */
+.logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.log-item {
+    display: grid;
+    grid-template-columns: 80px 140px 100px 1fr;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-xs);
+    border-radius: var(--radius-sm);
+    align-items: center;
+}
+
+.log-item:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.log-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: 600;
+}
+
+.log-event {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.log-time {
+    color: var(--color-text-light);
+}
+
+.log-error {
+    color: var(--color-danger);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.refresh-logs {
+    margin-left: auto;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--space-12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    color: var(--color-text-light);
+}
+
+.empty-state h3 {
+    color: var(--color-text);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .webhook-main {
+        flex-wrap: wrap;
+    }
+
+    .webhook-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: var(--space-2);
+    }
+
+    .log-item {
+        grid-template-columns: 80px 1fr 100px;
+    }
+
+    .log-error {
+        display: none;
+    }
+}

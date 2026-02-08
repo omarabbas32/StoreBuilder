@@ -11,11 +11,13 @@ const ProductResponseDTO = require('../dtos/product/ProductResponse.dto');
  * - Price validation
  */
 class ProductService {
-    constructor({ productModel, storeModel, categoryModel, prisma }) {
+    constructor({ productModel, storeModel, categoryModel, prisma, webhookService, notificationService }) {
         this.productModel = productModel;
         this.storeModel = storeModel;
         this.categoryModel = categoryModel;
         this.prisma = prisma;
+        this.webhookService = webhookService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -99,6 +101,27 @@ class ProductService {
 
         // Update product
         const updated = await this.productModel.update(productId, dto);
+
+        // Trigger stock.low webhook if stock is low (threshold: 5)
+        if (this.webhookService && updated.stock !== null && updated.stock <= 5) {
+            this.webhookService.trigger(updated.store_id, 'stock.low', {
+                productId: updated.id,
+                productName: updated.name,
+                currentStock: updated.stock,
+                threshold: 5
+            }).catch(err => console.error('[Webhook] Failed to trigger stock.low:', err.message));
+        }
+
+        // Create internal notification for low stock
+        if (this.notificationService && updated.stock !== null && updated.stock <= 5) {
+            this.notificationService.createNotification(updated.store_id, {
+                type: 'stock.low',
+                title: 'Low Stock Alert',
+                message: `Product "${updated.name}" is low on stock (${updated.stock} remains).`,
+                metadata: { productId: updated.id, currentStock: updated.stock }
+            }).catch(err => console.error('[Notification] Failed to create low stock notification:', err.message));
+        }
+
         return new ProductResponseDTO(updated);
     }
 

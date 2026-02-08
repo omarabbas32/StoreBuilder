@@ -110,4 +110,24 @@ cartRouter.get('/', (req, res, next) => container.cartController.getCart(req, re
 cartRouter.post('/items', (req, res, next) => container.cartController.addItem(req, res, next));
 router.use('/cart', cartRouter);
 
+// Webhooks
+const webhookRouter = express.Router();
+webhookRouter.get('/', auth, (req, res, next) => container.webhookController.getAll(req, res, next));
+webhookRouter.post('/', auth, (req, res, next) => container.webhookController.create(req, res, next));
+webhookRouter.get('/:id', auth, (req, res, next) => container.webhookController.getOne(req, res, next));
+webhookRouter.put('/:id', auth, (req, res, next) => container.webhookController.update(req, res, next));
+webhookRouter.delete('/:id', auth, (req, res, next) => container.webhookController.delete(req, res, next));
+webhookRouter.post('/:id/regenerate-secret', auth, (req, res, next) => container.webhookController.regenerateSecret(req, res, next));
+webhookRouter.post('/:id/test', auth, (req, res, next) => container.webhookController.sendTest(req, res, next));
+webhookRouter.get('/:id/logs', auth, (req, res, next) => container.webhookController.getLogs(req, res, next));
+router.use('/webhooks', webhookRouter);
+
+// Notifications
+const notificationRouter = express.Router();
+notificationRouter.get('/', auth, (req, res, next) => container.notificationController.getAll(req, res, next));
+notificationRouter.put('/:id/read', auth, (req, res, next) => container.notificationController.markAsRead(req, res, next));
+notificationRouter.put('/mark-all-read', auth, (req, res, next) => container.notificationController.markAllAsRead(req, res, next));
+notificationRouter.delete('/:id', auth, (req, res, next) => container.notificationController.delete(req, res, next));
+router.use('/notifications', notificationRouter);
+
 module.exports = router;

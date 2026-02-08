@@ -27,11 +27,13 @@ const useCartStore = create(
                         )
                     });
                 } else {
-                    // Ensure the stored item has a consistent 'id' property
+                    // Ensure the stored item has a consistent 'id' and 'storeId' property
+                    const storeId = product.storeId || product.store_id || product.storeID;
                     set({
                         items: [...items, {
                             ...product,
                             id: productId, // Normalize id
+                            storeId, // Explicitly ensure storeId is present
                             quantity
                         }]
                     });

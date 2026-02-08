@@ -2,11 +2,13 @@ import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
 import Button from '../ui/Button';
+import { useStorePath } from '../../hooks/useStorePath';
 import { formatImageUrl } from '../../utils/imageUtils';
 import './CartDrawer.css';
 
 const CartDrawer = ({ isOpen, onClose, brandColor }) => {
     const navigate = useNavigate();
+    const storePath = useStorePath();
     const { items, updateQuantity, removeItem, getTotal, getItemCount, clearCart } = useCartStore();
 
     if (!isOpen) return null;

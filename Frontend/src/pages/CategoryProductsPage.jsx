@@ -73,7 +73,8 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
     };
 
     const handleAddToCart = (product) => {
-        addItem(product);
+        const storeId = store?.id || store?._id || product.storeId || product.store_id;
+        addItem({ ...product, storeId });
         setIsCartOpen(true);
     };
 
