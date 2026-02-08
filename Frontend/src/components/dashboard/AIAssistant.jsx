@@ -190,7 +190,8 @@ const AIAssistant = () => {
         'CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY',
         // Analytics
         'GET_STORE_STATS',
-        'UPDATE_COMPONENT_CONTENT'
+        'UPDATE_COMPONENT_CONTENT',
+        'SEARCH_IMAGES'
     ]);
 
     const executeAction = async (action) => {
@@ -258,8 +259,26 @@ const AIAssistant = () => {
             setMessages(prev => [...prev, { role: 'assistant', content: `I tried to perform that action but it failed: ${errorMessage}` }]);
             console.error('[AIAssistant] Action Error:', error);
         } finally {
+            if (action.type === 'SEARCH_IMAGES' && executionRecord.result?.success) {
+                // Find the assistant message that contains this specific action id and update it with results
+                setMessages(prev => {
+                    return prev.map(m => {
+                        if (m.role === 'assistant' && m.actions) {
+                            const hasAction = m.actions.some(a => a.id === action.id);
+                            if (hasAction) {
+                                return {
+                                    ...m,
+                                    actions: m.actions.map(a => a.id === action.id ? { ...a, results: executionRecord.result.data } : a)
+                                };
+                            }
+                        }
+                        return m;
+                    });
+                });
+            } else {
+                setPendingActions(prev => prev.filter(a => a.id !== action.id));
+            }
             setActionHistory(prev => [...prev, executionRecord]);
-            setPendingActions(prev => prev.filter(a => a.id !== action.id));
         }
     };
 
@@ -397,7 +416,23 @@ const AIAssistant = () => {
                                                     {act.type === 'UPDATE_COMPONENT_CONTENT' && (
                                                         <p>Update {act.url.split('/').pop()} content</p>
                                                     )}
-                                                    {!['UPDATE_STORE', 'CREATE_PRODUCT', 'UPDATE_COMPONENT_CONTENT'].includes(act.type) && (
+                                                    {act.type === 'SEARCH_IMAGES' && act.results && (
+                                                        <div className="image-search-results">
+                                                            <p>Suggested Images:</p>
+                                                            <div className="results-grid">
+                                                                {act.results.map((res, ridx) => (
+                                                                    <div key={ridx} className="search-result-item" onClick={() => {
+                                                                        // Inform the AI directly with the selected URL
+                                                                        handleSend(null, `I like this one, set it as my store logo: ${res.url}`);
+                                                                        setPendingActions(prev => prev.filter(p => p.id !== act.id));
+                                                                    }}>
+                                                                        <img src={res.thumbnail} alt={res.title} title="Click to use this logo" />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {!['UPDATE_STORE', 'CREATE_PRODUCT', 'UPDATE_COMPONENT_CONTENT', 'SEARCH_IMAGES'].includes(act.type) && (
                                                         <pre>{JSON.stringify(act.data || {}, null, 2)}</pre>
                                                     )}
                                                 </div>

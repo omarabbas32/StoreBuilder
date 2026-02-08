@@ -86,14 +86,15 @@ const AIStoreCreation = () => {
 
             const response = await storeService.aiChat([{ role: 'user', content: prompt }], 'gemini');
 
-            if (response.success && response.message) {
-                // The AI service parses JSON automatically if safeParseJSON is used
-                // But here we need to extract the data from the message or extractedAnswers
-                // For simplicity, we'll assume the AI returns a JSON string in message
+            if (response.success && response.data) {
+                const aiPayload = response.data;
+                const aiMessage = aiPayload.message || '';
+
                 let aiData = {};
                 try {
-                    const jsonMatch = response.message.match(/\{.*\}/s);
-                    aiData = JSON.parse(jsonMatch ? jsonMatch[0] : response.message);
+                    // Try to parse from message string
+                    const jsonMatch = aiMessage.match(/\{.*\}/s);
+                    aiData = JSON.parse(jsonMatch ? jsonMatch[0] : aiMessage);
                 } catch (e) {
                     console.error('Failed to parse AI response', e);
                 }
