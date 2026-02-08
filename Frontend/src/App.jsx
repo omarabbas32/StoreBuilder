@@ -29,6 +29,7 @@ import OrderSuccessPage from './pages/OrderSuccessPage';
 import MyTemplates from './pages/MyTemplates';
 import AIStoreCreation from './pages/AIStoreCreation';
 
+
 // Placeholder components
 const ComponentManager = () => <div style={{ padding: '2rem' }}><h1>Component Manager</h1><p>Coming soon...</p></div>;
 const UnauthorizedPage = () => (

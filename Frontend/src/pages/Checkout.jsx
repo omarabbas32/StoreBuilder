@@ -98,7 +98,9 @@ const Checkout = () => {
 
         if (result.success) {
             clearCart();
-            navigate(`${storePath}/order-success?orderId=${result.data.id}`);
+            // Ensure we use a clean path for redirection
+            const successPath = storePath ? `${storePath}/order-success` : '/order-success';
+            navigate(`${successPath}?orderId=${result.data.id}`);
         } else {
             alert('Error: ' + result.error);
         }
