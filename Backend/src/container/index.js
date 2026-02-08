@@ -32,6 +32,7 @@ const AnalyticsService = require('../services/analytics.service');
 const OnboardingService = require('../services/onboarding.service');
 const PaymentService = require('../services/payment.service');
 const UploadService = require('../services/upload.service');
+const WebhookService = require('../services/webhook.service');
 
 // Import Controllers
 const CartController = require('../controllers/cart.controller');
@@ -46,6 +47,9 @@ const ThemeController = require('../controllers/theme.controller');
 const ComponentController = require('../controllers/component.controller');
 const OnboardingController = require('../controllers/onboarding.controller');
 const MediaController = require('../controllers/media.controller');
+const WebhookController = require('../controllers/webhook.controller');
+const NotificationService = require('../services/notification.service');
+const NotificationController = require('../controllers/notification.controller');
 
 // Infrastructure
 const emailService = new EmailService();
@@ -53,9 +57,11 @@ const uploadService = new UploadService();
 const aiService = new AIService();
 
 // Services
+const webhookService = new WebhookService({ prisma });
+const notificationService = new NotificationService({ prisma });
 const cartService = new CartService({ cartModel, cartItemModel, productModel, prisma });
-const productService = new ProductService({ productModel, storeModel, categoryModel, prisma });
-const orderService = new OrderService({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, prisma });
+const productService = new ProductService({ productModel, storeModel, categoryModel, prisma, webhookService, notificationService });
+const orderService = new OrderService({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, prisma, webhookService, notificationService });
 const storeService = new StoreService({ storeModel, userModel, categoryModel, prisma });
 const authService = new AuthService({ userModel, emailService });
 const categoryService = new CategoryService({ categoryModel, storeModel, prisma });
@@ -66,6 +72,7 @@ const componentService = new ComponentService({ componentModel });
 const paymentService = new PaymentService({ orderModel });
 const analyticsService = new AnalyticsService({ prisma, orderModel, productModel, storeModel, userModel });
 const onboardingService = new OnboardingService({ themeService, componentService, storeService, aiService, productService, categoryService });
+const notificationController = new NotificationController({ notificationService, storeService });
 
 // Controllers
 const cartController = new CartController(cartService);
@@ -80,14 +87,16 @@ const themeController = new ThemeController(themeService);
 const componentController = new ComponentController(componentService);
 const onboardingController = new OnboardingController(onboardingService);
 const mediaController = new MediaController(uploadService, prisma);
+const webhookController = new WebhookController({ webhookService });
 
 const container = {
     cartService, productService, orderService, storeService, authService, categoryService,
     reviewService, customerService, themeService, componentService, emailService,
-    uploadService, aiService, paymentService, analyticsService, onboardingService,
+    uploadService, aiService, paymentService, analyticsService, onboardingService, webhookService,
     cartController, productController, orderController, storeController, authController,
     categoryController, reviewController, customerController, themeController,
-    componentController, onboardingController, mediaController,
+    componentController, onboardingController, mediaController, webhookController,
+    notificationController,
     cartModel, cartItemModel, productModel, userModel, orderModel, orderItemModel,
     storeModel, categoryModel, customerModel, reviewModel, reviewHelpfulVoteModel,
     themeModel, componentModel, prisma

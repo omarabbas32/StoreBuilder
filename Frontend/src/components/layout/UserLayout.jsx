@@ -3,6 +3,7 @@ import { Home, Package, FolderOpen, Palette, LogOut, ExternalLink, ShoppingBag, 
 import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import Breadcrumbs from '../common/Breadcrumbs';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 import './UserLayout.css';
 
 
@@ -92,9 +93,7 @@ const UserLayout = () => {
                         <Breadcrumbs />
                     </div>
                     <div className="topbar-right">
-                        <button className="topbar-icon-btn">
-                            <Bell size={20} />
-                        </button>
+                        <NotificationDropdown />
                         <div className="topbar-user">
                             <div className="user-avatar">
                                 <UserIcon size={20} />

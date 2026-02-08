@@ -10,13 +10,15 @@ const AppError = require('../utils/AppError');
  * - All operations must be atomic (transaction)
  */
 class OrderService {
-    constructor({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, prisma }) {
+    constructor({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, prisma, webhookService, notificationService }) {
         this.orderModel = orderModel;
         this.orderItemModel = orderItemModel;
         this.productModel = productModel;
         this.cartModel = cartModel;
         this.cartItemModel = cartItemModel;
         this.prisma = prisma;
+        this.webhookService = webhookService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -87,9 +89,30 @@ class OrderService {
                 });
 
                 // Decrement stock
+                const newStock = item.product.stock - item.quantity;
                 await this.productModel.update(item.product_id, {
-                    stock: item.product.stock - item.quantity
+                    stock: newStock
                 });
+
+                // Trigger stock.low webhook if stock becomes low
+                if (this.webhookService && newStock <= 5) {
+                    this.webhookService.trigger(storeId, 'stock.low', {
+                        productId: item.product_id,
+                        productName: item.product.name,
+                        currentStock: newStock,
+                        threshold: 5
+                    }).catch(err => console.error('[Webhook] Failed to trigger stock.low from order (cart):', err.message));
+                }
+
+                // Create internal notification for low stock
+                if (this.notificationService && newStock <= 5) {
+                    this.notificationService.createNotification(storeId, {
+                        type: 'stock.low',
+                        title: 'Low Stock Alert',
+                        message: `Product "${item.product.name}" is low on stock (${newStock} remains).`,
+                        metadata: { productId: item.product_id, currentStock: newStock }
+                    }).catch(err => console.error('[Notification] Failed to create low stock notification (cart):', err.message));
+                }
             }
 
             // Clear cart
@@ -99,7 +122,33 @@ class OrderService {
         });
 
         // Return order with items
-        return await this.getOrder(order.id);
+        const fullOrder = await this.getOrder(order.id);
+
+        // Trigger order.created webhook
+        if (this.webhookService) {
+            this.webhookService.trigger(storeId, 'order.created', {
+                orderId: fullOrder.id,
+                orderNumber: fullOrder.id.substring(0, 8).toUpperCase(),
+                customerName: fullOrder.customer_name,
+                customerEmail: fullOrder.customer_email,
+                totalAmount: fullOrder.total_amount,
+                itemsCount: fullOrder.order_items?.length || 0,
+                status: fullOrder.status,
+                createdAt: fullOrder.created_at
+            }).catch(err => console.error('[Webhook] Failed to trigger order.created (cart):', err.message));
+        }
+
+        // Create internal notification for new order
+        if (this.notificationService) {
+            this.notificationService.createNotification(storeId, {
+                type: 'order.created',
+                title: 'New Order Received',
+                message: `Order #${fullOrder.id.substring(0, 8).toUpperCase()} placed by ${fullOrder.customer_name} for $${fullOrder.total_amount}.`,
+                metadata: { orderId: fullOrder.id, totalAmount: fullOrder.total_amount }
+            }).catch(err => console.error('[Notification] Failed to create new order notification (cart):', err.message));
+        }
+
+        return fullOrder;
     }
 
     /**
@@ -169,15 +218,62 @@ class OrderService {
                     unit_price: item.price
                 });
 
+                const newStock = item.product.stock - item.quantity;
                 await this.productModel.update(item.product.id, {
-                    stock: item.product.stock - item.quantity
+                    stock: newStock
                 });
+
+                // Trigger stock.low webhook if stock becomes low
+                if (this.webhookService && newStock <= 5) {
+                    this.webhookService.trigger(storeId, 'stock.low', {
+                        productId: item.product.id,
+                        productName: item.product.name,
+                        currentStock: newStock,
+                        threshold: 5
+                    }).catch(err => console.error('[Webhook] Failed to trigger stock.low from order:', err.message));
+                }
+
+                // Create internal notification for low stock
+                if (this.notificationService && newStock <= 5) {
+                    this.notificationService.createNotification(storeId, {
+                        type: 'stock.low',
+                        title: 'Low Stock Alert',
+                        message: `Product "${item.product.name}" is low on stock (${newStock} remains).`,
+                        metadata: { productId: item.product.id, currentStock: newStock }
+                    }).catch(err => console.error('[Notification] Failed to create low stock notification:', err.message));
+                }
             }
 
             return newOrder;
         });
 
-        return await this.getOrder(order.id);
+        const fullOrder = await this.getOrder(order.id);
+
+        // Trigger order.created webhook
+        if (this.webhookService) {
+            this.webhookService.trigger(storeId, 'order.created', {
+                orderId: fullOrder.id,
+                orderNumber: fullOrder.id.substring(0, 8).toUpperCase(),
+                customerName: fullOrder.customer_name,
+                customerEmail: fullOrder.customer_email,
+                totalAmount: fullOrder.total_amount,
+                itemsCount: fullOrder.order_items?.length || 0,
+                status: fullOrder.status,
+                createdAt: fullOrder.created_at
+            }).catch(err => console.error('[Webhook] Failed to trigger order.created:', err.message));
+        }
+
+        // Create internal notification for new order
+        if (this.notificationService) {
+            this.notificationService.createNotification(storeId, {
+                type: 'order.created',
+                title: 'New Order Received',
+                message: `Order #${fullOrder.id.substring(0, 8).toUpperCase()} placed by ${fullOrder.customer_name} for $${fullOrder.total_amount}.`,
+                metadata: { orderId: fullOrder.id, totalAmount: fullOrder.total_amount }
+            }).catch(err => console.error('[Notification] Failed to create new order notification:', err.message));
+        }
+
+        return fullOrder;
     }
 
     /**
