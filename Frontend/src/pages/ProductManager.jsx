@@ -20,6 +20,7 @@ const ProductManager = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
   const [showForm, setShowForm] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -35,19 +36,26 @@ const ProductManager = () => {
 
   useEffect(() => {
     if (store?.id) {
-      loadData();
+      loadData(pagination.currentPage);
     }
-  }, [store?.id]);
+  }, [store?.id, pagination.currentPage]);
 
-  const loadData = async () => {
+  const loadData = async (page = 1) => {
     setLoading(true);
     const [productsResult, categoriesResult] = await Promise.all([
-      productService.getProducts(store.id),
+      productService.getProducts(store.id, page),
       categoryService.getAll(store.id)
     ]);
 
     if (productsResult.success) {
+      // Backend returns { success: true, data: [], pagination: {} }
       setProducts(productsResult.data || []);
+      if (productsResult.pagination) {
+        setPagination({
+          currentPage: productsResult.pagination.currentPage,
+          totalPages: productsResult.pagination.pages
+        });
+      }
     }
     if (categoriesResult.success) {
       setCategories(categoriesResult.data || []);
@@ -56,9 +64,15 @@ const ProductManager = () => {
   };
 
   const loadProducts = async () => {
-    const result = await productService.getProducts(store.id);
+    const result = await productService.getProducts(store.id, pagination.currentPage);
     if (result.success) {
       setProducts(result.data || []);
+      if (result.pagination) {
+        setPagination({
+          currentPage: result.pagination.currentPage,
+          totalPages: result.pagination.pages
+        });
+      }
     }
   };
 
@@ -216,9 +230,13 @@ const ProductManager = () => {
               Save New Order
             </Button>
           )}
-          <Button onClick={() => setShowForm(!showForm)}>
-            <Plus size={20} />
-            Add Product
+          <Button
+            className={showForm ? "" : "add-product-btn"}
+            variant={showForm ? "secondary" : "primary"}
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? null : <Plus size={20} />}
+            {showForm ? 'Cancel' : 'Add Product'}
           </Button>
         </div>
       </div>
@@ -311,7 +329,7 @@ const ProductManager = () => {
         </Card>
       )}
 
-      <div className="products-list">
+      <div className="products-container">
         {loading ? (
           <PageLoader type="cards" />
         ) : products.length === 0 ? (
@@ -328,9 +346,13 @@ const ProductManager = () => {
           </Card>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="products">
+            <Droppable droppableId="products" direction="vertical">
               {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef}>
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="products-list"
+                >
                   {products.map((product, index) => (
                     <Draggable
                       key={product.id}
@@ -443,6 +465,26 @@ const ProductManager = () => {
           </DragDropContext>
         )}
       </div>
+
+      {pagination.totalPages > 1 && (
+        <div className="pagination-controls" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          <Button
+            variant="secondary"
+            disabled={pagination.currentPage === 1}
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+          >
+            Previous
+          </Button>
+          <span style={{ alignSelf: 'center' }}>Page {pagination.currentPage} of {pagination.totalPages}</span>
+          <Button
+            variant="secondary"
+            disabled={pagination.currentPage === pagination.totalPages}
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* Edit Product Modal */}
       {editingProduct && (

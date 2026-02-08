@@ -1,8 +1,8 @@
 import apiClient from './api';
 
 const productService = {
-    async getProducts(storeId) {
-        return await apiClient.get(`/products/store/${storeId}`);
+    async getProducts(storeId, page = 1, limit = 20) {
+        return await apiClient.get(`/products/store/${storeId}?page=${page}&limit=${limit}`);
     },
 
     async getProductsByCategory(storeId, categoryId) {

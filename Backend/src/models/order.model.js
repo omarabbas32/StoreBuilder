@@ -70,6 +70,12 @@ class OrderModel {
             where: { id }
         });
     }
+
+    async count(where = {}) {
+        return prisma.order.count({
+            where
+        });
+    }
 }
 
 module.exports = new OrderModel();

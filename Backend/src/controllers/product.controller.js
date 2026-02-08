@@ -20,8 +20,12 @@ class ProductController {
     });
 
     getByStore = asyncHandler(async (req, res) => {
-        const results = await this.productService.getProductsByStore(req.params.storeId, req.query);
-        res.status(200).json({ success: true, data: ProductResponseDTO.fromArray(results) });
+        const result = await this.productService.getProductsByStore(req.params.storeId, req.query);
+        res.status(200).json({
+            success: true,
+            data: result.products,
+            pagination: result.pagination
+        });
     });
 
     getById = asyncHandler(async (req, res) => {
@@ -35,8 +39,12 @@ class ProductController {
     });
 
     getAll = asyncHandler(async (req, res) => {
-        const results = await this.productService.getAllProducts(req.query);
-        res.status(200).json({ success: true, data: results });
+        const result = await this.productService.getAllProducts(req.query);
+        res.status(200).json({
+            success: true,
+            data: result.products,
+            pagination: result.pagination
+        });
     });
 
     delete = asyncHandler(async (req, res) => {

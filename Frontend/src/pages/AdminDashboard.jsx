@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Store, Package, Palette, Box } from 'lucide-react';
 import Card from '../components/ui/Card';
+import PageLoader from '../components/ui/PageLoader';
 import adminService from '../services/adminService';
 import './AdminDashboard.css';
 
@@ -60,21 +61,25 @@ const AdminDashboard = () => {
                 <p className="text-muted">Welcome to Storely Admin Panel</p>
             </div>
 
-            <div className="stats-grid">
-                {statCards.map((stat) => (
-                    <Card key={stat.label} className="stat-card">
-                        <div className={`stat-icon stat-icon-${stat.color}`}>
-                            <stat.icon size={24} />
-                        </div>
-                        <div className="stat-content">
-                            <p className="stat-label">{stat.label}</p>
-                            <h2 className="stat-value">
-                                {loading ? '...' : stat.value}
-                            </h2>
-                        </div>
-                    </Card>
-                ))}
-            </div>
+            {loading ? (
+                <PageLoader type="cards" count={4} />
+            ) : (
+                <div className="stats-grid">
+                    {statCards.map((stat) => (
+                        <Card key={stat.label} className="stat-card">
+                            <div className={`stat-icon stat-icon-${stat.color}`}>
+                                <stat.icon size={24} />
+                            </div>
+                            <div className="stat-content">
+                                <p className="stat-label">{stat.label}</p>
+                                <h2 className="stat-value">
+                                    {stat.value}
+                                </h2>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShoppingBag, Eye, CheckCircle, Clock } from 'lucide-react';
+import { ShoppingBag, Eye, CheckCircle, Clock, Copy, Check } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import PageLoader from '../components/ui/PageLoader';
@@ -12,19 +12,33 @@ const OrderManagement = () => {
     const { store } = useAuthStore();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [copiedId, setCopiedId] = useState(null);
+
+    const handleCopyId = (id) => {
+        navigator.clipboard.writeText(id);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
 
     useEffect(() => {
         if (store?.id) {
-            loadOrders();
+            loadOrders(pagination.currentPage);
         }
-    }, [store]);
+    }, [store?.id, pagination.currentPage]);
 
-    const loadOrders = async () => {
+    const loadOrders = async (page = 1) => {
         setLoading(true);
-        const result = await orderService.getStoreOrders(store.id);
+        const result = await orderService.getStoreOrders(store.id, page);
         if (result.success) {
             setOrders(result.data || []);
+            if (result.pagination) {
+                setPagination({
+                    currentPage: result.pagination.currentPage,
+                    totalPages: result.pagination.pages
+                });
+            }
         }
         setLoading(false);
     };
@@ -83,7 +97,19 @@ const OrderManagement = () => {
                                     <tbody>
                                         {orders.map((order) => (
                                             <tr key={order.id} className={selectedOrder?.id === order.id ? 'selected' : ''}>
-                                                <td>#{order.id.substring(0, 8)}</td>
+                                                <td className="order-id-cell">
+                                                    <span className="order-id">#{order.id.substring(0, 8)}</span>
+                                                    <button
+                                                        className="copy-id-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleCopyId(order.id);
+                                                        }}
+                                                        title="Copy Full ID"
+                                                    >
+                                                        {copiedId === order.id ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+                                                    </button>
+                                                </td>
                                                 <td>{order.customerName}</td>
                                                 <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                                                 <td>${parseFloat(order.totalAmount).toFixed(2)}</td>
@@ -158,6 +184,26 @@ const OrderManagement = () => {
                     </div>
                 )}
             </div>
+
+            {pagination.totalPages > 1 && (
+                <div className="pagination-controls" style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                    <Button
+                        variant="secondary"
+                        disabled={pagination.currentPage === 1}
+                        onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                    >
+                        Previous
+                    </Button>
+                    <span style={{ alignSelf: 'center' }}>Page {pagination.currentPage} of {pagination.totalPages}</span>
+                    <Button
+                        variant="secondary"
+                        disabled={pagination.currentPage === pagination.totalPages}
+                        onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                    >
+                        Next
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };

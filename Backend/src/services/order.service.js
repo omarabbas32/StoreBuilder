@@ -195,14 +195,50 @@ class OrderService {
      * Get orders by store
      */
     async getOrdersByStore(storeId, options = {}) {
-        return await this.orderModel.findByStore(storeId, options);
+        const { limit = 20, page = 1 } = options;
+        const offset = (page - 1) * limit;
+
+        const where = { store_id: storeId };
+
+        const [orders, total] = await Promise.all([
+            this.orderModel.findByStore(storeId, { limit, offset }),
+            this.orderModel.count(where)
+        ]);
+
+        return {
+            orders,
+            pagination: {
+                total,
+                pages: Math.ceil(total / limit),
+                currentPage: parseInt(page),
+                limit: parseInt(limit)
+            }
+        };
     }
 
     /**
      * Get orders by customer
      */
     async getOrdersByCustomer(customerId, options = {}) {
-        return await this.orderModel.findByCustomer(customerId, options);
+        const { limit = 20, page = 1 } = options;
+        const offset = (page - 1) * limit;
+
+        const where = { customer_id: customerId };
+
+        const [orders, total] = await Promise.all([
+            this.orderModel.findByCustomer(customerId, { limit, offset }),
+            this.orderModel.count(where)
+        ]);
+
+        return {
+            orders,
+            pagination: {
+                total,
+                pages: Math.ceil(total / limit),
+                currentPage: parseInt(page),
+                limit: parseInt(limit)
+            }
+        };
     }
 
     /**

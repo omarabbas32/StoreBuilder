@@ -106,7 +106,8 @@ class ProductService {
      * Get all products with optional filters
      */
     async getAllProducts(options = {}) {
-        const { limit = 20, offset = 0, categoryId, storeId } = options;
+        const { limit = 20, page = 1, categoryId, storeId } = options;
+        const offset = (page - 1) * limit;
 
         const where = {};
         const activeCategoryId = categoryId || options.category_id;
@@ -115,34 +116,59 @@ class ProductService {
         if (activeCategoryId) where.category_id = activeCategoryId;
         if (activeStoreId) where.store_id = activeStoreId;
 
-        const products = await this.productModel.findMany(where, {
-            orderBy: { created_at: 'desc' },
-            take: parseInt(limit),
-            skip: parseInt(offset)
-        });
+        const [products, total] = await Promise.all([
+            this.productModel.findMany(where, {
+                orderBy: { created_at: 'desc' },
+                take: parseInt(limit),
+                skip: parseInt(offset)
+            }),
+            this.productModel.count(where)
+        ]);
 
-        return ProductResponseDTO.fromArray(products);
+        return {
+            products: ProductResponseDTO.fromArray(products),
+            pagination: {
+                total,
+                pages: Math.ceil(total / limit),
+                currentPage: parseInt(page),
+                limit: parseInt(limit)
+            }
+        };
     }
 
     /**
      * Get products by store
      */
     async getProductsByStore(storeId, options = {}) {
-        const { limit = 20, offset = 0 } = options;
+        const { limit = 20, page = 1 } = options;
+        const offset = (page - 1) * limit;
 
-        const products = await this.productModel.findMany(
-            { store_id: storeId },
-            {
-                orderBy: [
-                    { sort_order: 'asc' },
-                    { created_at: 'desc' }
-                ],
-                take: parseInt(limit),
-                skip: parseInt(offset)
+        const where = { store_id: storeId };
+
+        const [products, total] = await Promise.all([
+            this.productModel.findMany(
+                where,
+                {
+                    orderBy: [
+                        { sort_order: 'asc' },
+                        { created_at: 'desc' }
+                    ],
+                    take: parseInt(limit),
+                    skip: parseInt(offset)
+                }
+            ),
+            this.productModel.count(where)
+        ]);
+
+        return {
+            products: ProductResponseDTO.fromArray(products),
+            pagination: {
+                total,
+                pages: Math.ceil(total / limit),
+                currentPage: parseInt(page),
+                limit: parseInt(limit)
             }
-        );
-
-        return ProductResponseDTO.fromArray(products);
+        };
     }
 
     /**

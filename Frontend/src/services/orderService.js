@@ -13,13 +13,14 @@ const orderService = {
         return await apiClient.post('/orders', payload);
     },
 
-    async getStoreOrders(storeId) {
-        return await apiClient.get(`/orders/store/${storeId}`);
+    async getStoreOrders(storeId, page = 1, limit = 20) {
+        return await apiClient.get(`/orders/store/${storeId}?page=${page}&limit=${limit}`);
     },
 
-    async getMyOrders(storeId = null) {
+    async getMyOrders(storeId = null, page = 1, limit = 20) {
         const config = storeId ? { headers: { 'x-store-id': storeId } } : {};
-        return await apiClient.get('/orders/my-orders', config);
+        const query = `page=${page}&limit=${limit}`;
+        return await apiClient.get(`/orders/my-orders?${query}`, config);
     }
 };
 

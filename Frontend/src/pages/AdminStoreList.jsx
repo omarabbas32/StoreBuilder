@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Store, User, ExternalLink, Search } from 'lucide-react';
 import adminService from '../services/adminService';
 import Card from '../components/ui/Card';
-import Spinner from '../components/ui/Spinner';
+import PageLoader from '../components/ui/PageLoader';
 import './AdminStoreList.css';
 
 const AdminStoreList = () => {
@@ -34,9 +34,14 @@ const AdminStoreList = () => {
 
     if (loading) {
         return (
-            <div className="admin-stores-loading">
-                <Spinner size="lg" />
-                <p>Fetching stores...</p>
+            <div className="admin-stores">
+                <div className="admin-stores-header">
+                    <div>
+                        <h1>Store Management</h1>
+                        <p className="text-muted">View and manage all stores created on the platform</p>
+                    </div>
+                </div>
+                <PageLoader type="cards" count={3} />
             </div>
         );
     }

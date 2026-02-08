@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, DollarSign, TrendingUp, Plus, Store as StoreIcon } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import PageLoader from '../components/ui/PageLoader';
 import GettingStartedChecklist from '../components/dashboard/GettingStartedChecklist';
 import AIAssistant from '../components/dashboard/AIAssistant';
 import storeService from '../services/storeService';
@@ -65,11 +66,11 @@ const UserDashboard = () => {
         let revenue = 0;
 
         if (productsResult.success) {
-            totalProducts = productsResult.data?.length || 0;
+            totalProducts = productsResult.pagination?.total || productsResult.data?.length || 0;
         }
 
         if (ordersResult.success) {
-            totalOrders = ordersResult.data?.length || 0;
+            totalOrders = ordersResult.pagination?.total || ordersResult.data?.length || 0;
             revenue = ordersResult.data?.reduce((sum, order) => sum + parseFloat(order.total_amount), 0) || 0;
         }
 
@@ -90,7 +91,17 @@ const UserDashboard = () => {
     };
 
     if (loading) {
-        return <div className="user-dashboard"><p>Loading...</p></div>;
+        return (
+            <div className="user-dashboard">
+                <div className="dashboard-header">
+                    <div>
+                        <h1>Store Overview</h1>
+                        <p className="text-muted">Manage your online stores</p>
+                    </div>
+                </div>
+                <PageLoader type="cards" count={4} />
+            </div>
+        );
     }
 
     if (stores.length === 0) {
