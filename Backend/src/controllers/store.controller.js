@@ -27,6 +27,10 @@ class StoreController {
     });
 
     getBySlug = asyncHandler(async (req, res) => {
+        console.log('[DEBUG_STORE] getBySlug called for:', req.params.slug);
+        console.log('[DEBUG_STORE] storeService keys:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.storeService)));
+        console.log('[DEBUG_STORE] has getStoreBySlug:', typeof this.storeService.getStoreBySlug);
+
         const result = await this.storeService.getStoreBySlug(req.params.slug);
         res.status(200).json({ success: true, data: new StoreResponseDTO(result) });
     });
