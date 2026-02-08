@@ -99,6 +99,7 @@ router.get('/stores/:storeId/uploads', auth, (req, res, next) => container.media
 router.delete('/stores/:storeId/uploads/:id', auth, (req, res, next) => container.mediaController.delete(req, res, next));
 
 // Generic New API
+router.get('/media/search', (req, res, next) => container.mediaController.searchImages(req, res, next));
 mediaRouter.post('/upload', auth, upload.single('image'), (req, res, next) => container.mediaController.uploadImage(req, res, next));
 mediaRouter.post('/upload-multiple', auth, uploadMultipleImages, (req, res, next) => container.mediaController.uploadMultiple(req, res, next));
 router.use('/media', mediaRouter);

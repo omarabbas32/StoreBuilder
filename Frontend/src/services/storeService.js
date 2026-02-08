@@ -129,7 +129,7 @@ const storeService = {
   },
 
   async aiChat(messages, provider = 'gemini') {
-    return await apiClient.post('/onboarding/ai-chat', { messages, provider });
+    return await apiClient.post('/onboarding/assistant-chat', { messages, provider });
   },
 };
 

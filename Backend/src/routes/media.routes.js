@@ -21,4 +21,9 @@ router.post(
   MediaController.uploadMultipleImages
 );
 
+router.get(
+  "/search",
+  MediaController.searchImages
+);
+
 module.exports = router;

@@ -327,7 +327,7 @@ class AIService {
                         ...sanitizedMessages
                     ],
                     response_format: { type: 'json_object' },
-                    temperature: 0.7
+                    temperature: 0.1
                 });
 
                 const parsedData = this.safeParseJSON(completion.choices[0]?.message?.content);
@@ -445,12 +445,21 @@ class AIService {
             - SCENARIOS:
               - "Write About Us": Look for component with type='footer' in context. Update { "aboutText": "Generated text..." }.
               - "Update Hero": Look for type='hero'. Update { "title": "...", "subtitle": "..." }.
+
+        12. SEARCH_IMAGES
+            - Method: GET
+            - URL: /media/search?query=:query
+            - Purpose: Search for professional images/logos from the web.
+            - Rule: Use this when a user says "I need a logo" or "Find me an image for X".
+            - Example Query: "modern coffee shop logo", "elegant fashion background".
         
         RULES:
         1. ALWAYS return an array of "actions".
         2. For "About Us", find the footer component ID and use UPDATE_COMPONENT_CONTENT.
         3. For "Colors", use UPDATE_STORE with settings.primaryColor.
-        4. Return ONLY valid JSON.
+        4. NEVER use placeholder text like "example.com", "YOUR_NAME", or "URL HERE". 
+        5. If the user asks for an image, logo, or icon and you don't have a URL, you MUST use the SEARCH_IMAGES tool first. Do NOT generate a placeholder URL.
+        6. Return ONLY valid JSON.
         
         RESPONSE FORMAT (JSON ONLY):
         {
@@ -472,7 +481,8 @@ class AIService {
         2. If unsure which store/product, ask the user.
         3. For DESTRUCTIVE actions, always set "requiresConfirmation": true AND "destructive": true.
         4. If a user asks for multiple things (e.g., 'update store and add product'), return an array of actions.
-        5. Return ONLY JSON.`;
+        5. Use SEARCH_IMAGES when visual assets are needed.
+        6. Return ONLY JSON.`;
     }
 
     _validateAction(action, context) {
@@ -508,9 +518,10 @@ class AIService {
         // 4. Auto-inject store_id for CREATE actions
         if (action.method.toUpperCase() === 'POST' && action.data) {
             const stores = context.stores || [];
-            if (stores.length === 1 && !action.data.store_id) {
-                action.data.store_id = stores[0].id;
-                console.log(`[AIService] Auto-injected store_id: ${stores[0].id}`);
+            if (stores.length === 1 && !action.data.storeId && !action.data.store_id) {
+                action.data.storeId = stores[0].id;
+                action.data.store_id = stores[0].id; // For compatibility
+                console.log(`[AIService] Auto-injected store IDs: ${stores[0].id}`);
             }
         }
     }

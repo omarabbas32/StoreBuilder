@@ -21,7 +21,8 @@ const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: pr
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const logo = propLogo || config?.logo;
+    const FALLBACK_LOGO = 'https://placehold.co/150x50/3b82f6/ffffff/STORELY';
+    const logo = propLogo || config?.logo || FALLBACK_LOGO;
     const displayName = config?.storeName || storeName;
     const showCart = config?.showCart !== false;
     const menuItems = Array.isArray(config?.menuItems)

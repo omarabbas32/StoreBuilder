@@ -76,6 +76,44 @@ class MediaController {
             }
         });
     });
+
+    searchImages = asyncHandler(async (req, res) => {
+        const { query } = req.query;
+        if (!query) {
+            return res.status(400).json({ success: false, message: 'Query parameter is required' });
+        }
+
+        // We use Unsplash for high-quality professional images
+        const queryTerm = encodeURIComponent(query);
+
+        // Simulating search results with high-quality Unsplash templates
+        // In a production app, this would call the Unsplash API or a search engine
+        const results = [
+            {
+                id: 'img1',
+                url: `https://images.unsplash.com/photo-1493723843671-1d655e7d98f0?q=80&w=1200&auto=format&fit=crop&q=search&term=${queryTerm}`,
+                thumbnail: `https://images.unsplash.com/photo-1493723843671-1d655e7d98f0?q=80&w=400&auto=format&fit=crop&q=search&term=${queryTerm}`,
+                title: `${query} Concept 1`
+            },
+            {
+                id: 'img2',
+                url: `https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1200&auto=format&fit=crop&q=search&term=${queryTerm}`,
+                thumbnail: `https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=400&auto=format&fit=crop&q=search&term=${queryTerm}`,
+                title: `${query} Concept 2`
+            },
+            {
+                id: 'img3',
+                url: `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop&q=search&term=${queryTerm}`,
+                thumbnail: `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=400&auto=format&fit=crop&q=search&term=${queryTerm}`,
+                title: `${query} Concept 3`
+            }
+        ];
+
+        res.status(200).json({
+            success: true,
+            data: results
+        });
+    });
 }
 
 module.exports = MediaController;

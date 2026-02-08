@@ -51,13 +51,13 @@ import toast from 'react-hot-toast';
 import './StoreCustomizer.css';
 
 const LIBRARY_ASSETS = [
-    { id: 'asset-1', url: '/assets/library/asset-1.png', name: 'Premium Abstract' },
-    { id: 'asset-2', url: '/assets/library/asset-2.png', name: 'Modern Shopping' },
-    { id: 'asset-3', url: '/assets/library/asset-3.png', name: 'Elegant Fashion' },
-    { id: 'asset-4', url: '/assets/library/asset-4.png', name: 'High-Tech Wave' }
+    { id: 'asset-1', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1200', name: 'Premium Abstract' },
+    { id: 'asset-2', url: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=1200', name: 'Modern Shopping' },
+    { id: 'asset-3', url: 'https://images.unsplash.com/photo-1445205170230-053b830c6050?q=80&w=1200', name: 'Elegant Fashion' },
+    { id: 'asset-4', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200', name: 'High-Tech Wave' }
 ];
 
-// --- UI Components for the Shopify-Level Customizer ---
+
 
 const Separator = () => <div className="designer-separator" />;
 
@@ -923,7 +923,7 @@ const StoreCustomizer = () => {
         if (!window.confirm(`Are you sure you want to reset the ${type} section to defaults?`)) return;
 
         if (type === 'branding') {
-            updateSettingsField('logo_url', '');
+            updateSettingsField('logo_url', 'https://placehold.co/150x50/3b82f6/ffffff/STORELY');
             updateSettingsField('colorPalette', ['#2563eb']);
             updateSettingsField('primaryColor', '#2563eb');
             toast.success('Branding reset to defaults');
@@ -944,7 +944,7 @@ const StoreCustomizer = () => {
                 subtitle: 'Discover amazing products',
                 ctaText: 'Shop Now',
                 layout: 'centered',
-                image: ''
+                image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200'
             };
             Object.entries(defaults).forEach(([field, value]) => {
                 updateComponentContent(heroComponent.id, field, value);
