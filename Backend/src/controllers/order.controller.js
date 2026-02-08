@@ -28,8 +28,12 @@ class OrderController {
     });
 
     getByStore = asyncHandler(async (req, res) => {
-        const results = await this.orderService.getOrdersByStore(req.params.storeId, req.query);
-        res.status(200).json({ success: true, data: OrderResponseDTO.fromArray(results) });
+        const result = await this.orderService.getOrdersByStore(req.params.storeId, req.query);
+        res.status(200).json({
+            success: true,
+            data: OrderResponseDTO.fromArray(result.orders),
+            pagination: result.pagination
+        });
     });
 
     updateStatus = asyncHandler(async (req, res) => {
@@ -38,8 +42,12 @@ class OrderController {
     });
 
     getMyOrders = asyncHandler(async (req, res) => {
-        const results = await this.orderService.getOrdersByCustomer(req.user.id, req.query);
-        res.status(200).json({ success: true, data: OrderResponseDTO.fromArray(results) });
+        const result = await this.orderService.getOrdersByCustomer(req.user.id, req.query);
+        res.status(200).json({
+            success: true,
+            data: OrderResponseDTO.fromArray(result.orders),
+            pagination: result.pagination
+        });
     });
 }
 

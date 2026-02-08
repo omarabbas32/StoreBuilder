@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircle, Package, ArrowRight, Home } from 'lucide-react';
+import { CheckCircle, Package, ArrowRight, Home, Copy, Check } from 'lucide-react';
 import storeService from '../services/storeService';
 import StorefrontNavbar from '../components/storefront/StorefrontNavbar';
 import useCartStore from '../store/cartStore';
@@ -14,6 +14,7 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
     const [store, setStore] = useState(null);
     const [availableComponents, setAvailableComponents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
     const initializeSession = useCartStore(state => state.initializeSession);
     const storePath = useStorePath();
 
@@ -41,6 +42,12 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
             setAvailableComponents(componentsResult.data || []);
         }
         setLoading(false);
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(orderId);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     if (loading) return <div className="order-success-loading">Loading...</div>;
@@ -87,6 +94,13 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
                         <div className="order-id-box">
                             <Package size={20} />
                             <span>Order ID: <strong>#{orderId}</strong></span>
+                            <button
+                                className="copy-btn-inline"
+                                onClick={handleCopy}
+                                title="Copy ID"
+                            >
+                                {copied ? <Check size={16} className="text-success" /> : <Copy size={16} />}
+                            </button>
                         </div>
                     )}
 

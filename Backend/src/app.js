@@ -8,8 +8,18 @@ const routes = require('./routes/index');
 const { errorHandler } = require('./middleware/errorHandler');
 const tenantMiddleware = require('./middleware/tenant');
 
+const { v4: uuidv4 } = require('uuid');
+
 // Create Express app
 const app = express();
+
+// Request ID Middleware
+app.use((req, res, next) => {
+    const requestId = req.headers['x-request-id'] || uuidv4();
+    req.id = requestId;
+    res.setHeader('X-Request-ID', requestId);
+    next();
+});
 
 // Middleware
 app.use(helmet());

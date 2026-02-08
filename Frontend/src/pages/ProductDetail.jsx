@@ -9,6 +9,7 @@ import Card from '../components/ui/Card';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ReviewList from '../components/review/ReviewList';
 import ReviewForm from '../components/review/ReviewForm';
+import RecentlyViewed from '../components/storefront/RecentlyViewed';
 import { useStorePath } from '../hooks/useStorePath';
 import { formatImageUrl } from '../utils/imageUtils';
 import useCartStore from '../store/cartStore';
@@ -54,6 +55,24 @@ const ProductDetail = () => {
         if (reviewsResult.success) {
             // Backend returns { reviews: [], pagination: {} }
             setReviews(reviewsResult.data?.reviews || reviewsResult.data || []);
+        }
+
+        // Add to recently viewed
+        if (productResult.success) {
+            const p = productResult.data;
+            const recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+            const newItem = {
+                id: p.id || p._id,
+                name: p.name,
+                price: p.price,
+                image: p.images?.[0],
+                timestamp: Date.now()
+            };
+
+            // Remove if already exists and add to front
+            const filtered = recentlyViewed.filter(item => item.id !== newItem.id);
+            const updated = [newItem, ...filtered].slice(0, 10); // Keep last 10
+            localStorage.setItem('recentlyViewed', JSON.stringify(updated));
         }
 
         setLoading(false);
@@ -157,6 +176,8 @@ const ProductDetail = () => {
                         </div>
                     </div>
                 </div>
+
+                <RecentlyViewed currentProductId={productId} />
             </div>
         </div>
     );

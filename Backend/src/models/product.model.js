@@ -38,6 +38,12 @@ class ProductModel {
             where: { id }
         });
     }
+
+    async count(where = {}) {
+        return prisma.product.count({
+            where
+        });
+    }
 }
 
 module.exports = new ProductModel();
