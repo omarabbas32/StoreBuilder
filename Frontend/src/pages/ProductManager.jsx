@@ -6,6 +6,7 @@ import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
 import ImageUpload from "../components/ui/ImageUpload";
 import MultiImageUpload from "../components/ui/MultiImageUpload";
+import PageLoader from "../components/ui/PageLoader";
 import productService from "../services/productService";
 import categoryService from "../services/categoryService";
 import useAuthStore from "../store/authStore";
@@ -113,7 +114,7 @@ const ProductManager = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    
+
     const submissionData = {
       ...formData,
       price: parseFloat(formData.price) || 0,
@@ -312,7 +313,7 @@ const ProductManager = () => {
 
       <div className="products-list">
         {loading ? (
-          <p>Loading products...</p>
+          <PageLoader type="cards" />
         ) : products.length === 0 ? (
           <Card className="empty-state-card">
             <div className="empty-state-icon">📦</div>
@@ -413,8 +414,8 @@ const ProductManager = () => {
                               </div>
                             </div>
                             <div className="product-actions">
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => handleEditClick(product)}
                                 title="Edit product"
@@ -449,7 +450,7 @@ const ProductManager = () => {
           <Card className="edit-modal">
             <div className="modal-header">
               <h2>Edit Product</h2>
-              <button 
+              <button
                 className="modal-close"
                 onClick={closeEditModal}
                 type="button"

@@ -77,8 +77,8 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
         setIsCartOpen(true);
     };
 
-    if (loading) return <div className="category-products-loading">جاري التحميل...</div>;
-    if (error) return <div className="category-products-error"><h1>خطأ</h1><p>{error}</p></div>;
+    if (loading) return <div className="category-products-loading">Loading...</div>;
+    if (error) return <div className="category-products-error"><h1>Error</h1><p>{error}</p></div>;
 
     const brandColor = store?.settings?.primaryColor || '#2563eb';
     const components = store?.settings?.components || [];
@@ -101,9 +101,9 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
                     <div className="container">
                         <Link to={storePath} className="navbar-brand">{store.name}</Link>
                         <div className="navbar-links">
-                            <Link to={storePath}>الرئيسية</Link>
-                            <Link to={`${storePath}/categories`}>التصنيفات</Link>
-                            <Link to={`${storePath}/cart`}>السلة</Link>
+                            <Link to={storePath}>Home</Link>
+                            <Link to={`${storePath}/categories`}>Categories</Link>
+                            <Link to={`${storePath}/cart`}>Cart</Link>
                         </div>
                     </div>
                 </nav>
@@ -141,9 +141,9 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
                 {products.length === 0 ? (
                     <div className="no-products">
                         <Package size={64} className="empty-icon" />
-                        <p>لا توجد منتجات في هذا التصنيف</p>
+                        <p>No products found in this category</p>
                         <Link to={`${storePath}/categories`} className="back-btn" style={{ backgroundColor: brandColor }}>
-                            تصفح التصنيفات الأخرى
+                            Browse other categories
                         </Link>
                     </div>
                 ) : (
@@ -172,7 +172,7 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
                                     disabled={product.stock <= 0}
                                 >
                                     <ShoppingCart size={18} />
-                                    {product.stock <= 0 ? 'غير متوفر' : 'أضف للسلة'}
+                                    {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                                 </button>
                             </Card>
                         ))}

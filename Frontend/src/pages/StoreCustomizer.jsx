@@ -91,7 +91,7 @@ const AccordionSection = ({ id, title, description, icon, children, openSections
     );
 };
 
-const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, undo, redo, historyIndex, historyLength, onReset }) => (
+const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, undo, redo, historyIndex, historyLength, onReset, justSaved }) => (
     <div className="sticky-editor-bar">
         <div className="editor-title">
             <h2>{storeName}</h2>
@@ -112,12 +112,22 @@ const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, undo,
             </button>
             <Button
                 onClick={handleSave}
-                className="save-btn-modern"
+                className={`save-btn-modern ${justSaved ? 'success' : ''}`}
                 size="sm"
                 loading={saving}
-                disabled={saving || !hasUnsavedChanges}
+                disabled={saving || (!hasUnsavedChanges && !justSaved)}
             >
-                Save Design
+                {justSaved ? (
+                    <>
+                        <Check size={18} />
+                        Saved!
+                    </>
+                ) : (
+                    <>
+                        <Save size={18} />
+                        
+                    </>
+                )}
             </Button>
         </div>
     </div>
@@ -286,6 +296,7 @@ const StoreCustomizer = () => {
         footer: false,
         assets: false
     });
+    const [justSaved, setJustSaved] = useState(false);
 
     const toggleSection = (section) => {
         setOpenSections(prev => ({
@@ -632,6 +643,8 @@ const StoreCustomizer = () => {
             setAuthStore({ ...store, settings: finalSettings });
             setHasUnsavedChanges(false);
             clearDraft(); // Clear draft after successful save
+            setJustSaved(true);
+            setTimeout(() => setJustSaved(false), 2000);
             toast.success('Design saved successfully!');
         } catch (error) {
             console.error('Error saving store:', error);
@@ -1167,6 +1180,7 @@ const StoreCustomizer = () => {
                         hasUnsavedChanges={hasUnsavedChanges}
                         saving={saving}
                         handleSave={handleSave}
+                        justSaved={justSaved}
                         undo={undo}
                         redo={redo}
                         historyIndex={historyIndex}

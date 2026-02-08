@@ -429,6 +429,13 @@ const Storefront = ({ slug: slugProp }) => {
                 />
             )}
 
+            {/* Hero Section - Full Width */}
+            {activeComponents
+                .filter(c => !c.disabled)
+                .filter(c => c.type === 'hero' || (c.name && c.name.toLowerCase().includes('hero')))
+                .map(comp => renderComponent(comp))}
+
+            {/* Main Content with Sidebar */}
             <main className={sidebarConfig ? "storefront-main-with-sidebar container" : "container"}>
                 {sidebarConfig && (
                     <StorefrontSidebar
@@ -440,7 +447,8 @@ const Storefront = ({ slug: slugProp }) => {
                 <div className="storefront-content">
                     {activeComponents
                         .filter(c => !c.disabled)
-                        .filter(c => !['navigation', 'navbar', 'footer', 'sidebar'].includes(c.type))
+                        .filter(c => !['navigation', 'navbar', 'footer', 'sidebar', 'hero'].includes(c.type))
+                        .filter(c => !(c.name && c.name.toLowerCase().includes('hero')))
                         .map(comp => {
                             // Filter products for the product grid if search is active
                             if (searchQuery.trim() && (comp.type === 'product-grid' || comp.type === 'grid' || (comp.name && comp.name.toLowerCase().includes('product')))) {
@@ -449,8 +457,6 @@ const Storefront = ({ slug: slugProp }) => {
                                     p.name.toLowerCase().includes(query) ||
                                     (p.description && p.description.toLowerCase().includes(query))
                                 );
-                                // Temporary mock for filtered products passing to renderComponent
-                                // Note: In a real implementation, we'd pass 'products' as a prop to renderComponent or use a local filtered variable
                                 return renderComponent(comp, filtered);
                             }
                             return renderComponent(comp);

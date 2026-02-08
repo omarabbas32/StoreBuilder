@@ -43,7 +43,7 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
         setLoading(false);
     };
 
-    if (loading) return <div className="order-success-loading">جاري التحميل...</div>;
+    if (loading) return <div className="order-success-loading">Loading...</div>;
 
     const brandColor = store?.settings?.primaryColor || '#2563eb';
     const components = store?.settings?.components || [];
@@ -66,9 +66,9 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
                     <div className="container">
                         <Link to={storePath} className="navbar-brand">{store?.name || 'Store'}</Link>
                         <div className="navbar-links">
-                            <Link to={storePath}>الرئيسية</Link>
-                            <Link to={`${storePath}/categories`}>التصنيفات</Link>
-                            <Link to={`${storePath}/cart`}>السلة</Link>
+                            <Link to={storePath}>Home</Link>
+                            <Link to={`${storePath}/categories`}>Categories</Link>
+                            <Link to={`${storePath}/cart`}>Cart</Link>
                         </div>
                     </div>
                 </nav>
@@ -80,13 +80,13 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
                         <CheckCircle size={64} style={{ color: brandColor }} />
                     </div>
 
-                    <h1>تم تأكيد طلبك بنجاح!</h1>
-                    <p className="success-message">شكراً لك على طلبك. سنتواصل معك قريباً لتأكيد التفاصيل.</p>
+                    <h1>Order Confirmed Successfully!</h1>
+                    <p className="success-message">Thank you for your order. We will contact you shortly to confirm the details.</p>
 
                     {orderId && (
                         <div className="order-id-box">
                             <Package size={20} />
-                            <span>رقم الطلب: <strong>#{orderId}</strong></span>
+                            <span>Order ID: <strong>#{orderId}</strong></span>
                         </div>
                     )}
 
@@ -94,22 +94,22 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
                         <div className="detail-item">
                             <span className="detail-icon">📧</span>
                             <div>
-                                <strong>تأكيد بالبريد الإلكتروني</strong>
-                                <p>سيتم إرسال تفاصيل الطلب إلى بريدك الإلكتروني</p>
+                                <strong>Email Confirmation</strong>
+                                <p>Order details will be sent to your email</p>
                             </div>
                         </div>
                         <div className="detail-item">
                             <span className="detail-icon">🚚</span>
                             <div>
-                                <strong>التوصيل</strong>
-                                <p>سيتم التواصل معك لتحديد موعد التوصيل</p>
+                                <strong>Delivery</strong>
+                                <p>We will contact you to schedule delivery</p>
                             </div>
                         </div>
                         <div className="detail-item">
                             <span className="detail-icon">💳</span>
                             <div>
-                                <strong>الدفع عند الاستلام</strong>
-                                <p>ادفع نقداً عند استلام طلبك</p>
+                                <strong>Cash on Delivery</strong>
+                                <p>Pay cash upon delivery</p>
                             </div>
                         </div>
                     </div>
@@ -121,10 +121,10 @@ const OrderSuccessPage = ({ slug: slugProp }) => {
                             style={{ backgroundColor: brandColor }}
                         >
                             <Home size={18} />
-                            العودة للرئيسية
+                            Back to Home
                         </Link>
                         <Link to={`${storePath}/categories`} className="secondary-btn">
-                            متابعة التسوق
+                            Continue Shopping
                             <ArrowRight size={18} />
                         </Link>
                     </div>
