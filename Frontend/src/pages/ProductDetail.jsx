@@ -79,7 +79,8 @@ const ProductDetail = () => {
     };
 
     const handleAddToCart = () => {
-        addItem(product, 1);
+        const storeId = product.storeId || product.store_id;
+        addItem({ ...product, storeId }, 1);
         setAddToCartMessage('Added to cart!');
         setTimeout(() => setAddToCartMessage(''), 2000);
     };

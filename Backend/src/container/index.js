@@ -61,7 +61,7 @@ const webhookService = new WebhookService({ prisma });
 const notificationService = new NotificationService({ prisma });
 const cartService = new CartService({ cartModel, cartItemModel, productModel, prisma });
 const productService = new ProductService({ productModel, storeModel, categoryModel, prisma, webhookService, notificationService });
-const orderService = new OrderService({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, prisma, webhookService, notificationService });
+const orderService = new OrderService({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, storeModel, prisma, webhookService, notificationService });
 const storeService = new StoreService({ storeModel, userModel, categoryModel, prisma });
 const authService = new AuthService({ userModel, emailService });
 const categoryService = new CategoryService({ categoryModel, storeModel, prisma });
@@ -93,6 +93,7 @@ const container = {
     cartService, productService, orderService, storeService, authService, categoryService,
     reviewService, customerService, themeService, componentService, emailService,
     uploadService, aiService, paymentService, analyticsService, onboardingService, webhookService,
+    notificationService,
     cartController, productController, orderController, storeController, authController,
     categoryController, reviewController, customerController, themeController,
     componentController, onboardingController, mediaController, webhookController,

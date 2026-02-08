@@ -10,12 +10,13 @@ const AppError = require('../utils/AppError');
  * - All operations must be atomic (transaction)
  */
 class OrderService {
-    constructor({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, prisma, webhookService, notificationService }) {
+    constructor({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, storeModel, prisma, webhookService, notificationService }) {
         this.orderModel = orderModel;
         this.orderItemModel = orderItemModel;
         this.productModel = productModel;
         this.cartModel = cartModel;
         this.cartItemModel = cartItemModel;
+        this.storeModel = storeModel;
         this.prisma = prisma;
         this.webhookService = webhookService;
         this.notificationService = notificationService;
@@ -30,6 +31,7 @@ class OrderService {
      * - Cart is cleared after order
      */
     async createOrderFromCart(dto, customerId, sessionId) {
+        console.log('[DEBUG_ORDER_SERVICE] createOrderFromCart DTO:', JSON.stringify(dto, null, 2));
         const { storeId, shippingAddress, notes, customerName, customerEmail, customerPhone } = dto;
 
         // Business Rule 1: Get cart
@@ -159,6 +161,7 @@ class OrderService {
      * - Stock is decremented atomically
      */
     async createOrder(dto) {
+        console.log('[DEBUG_ORDER_SERVICE] createOrder DTO:', JSON.stringify(dto, null, 2));
         const { storeId, items, customerId, shippingAddress, notes, customerName, customerEmail, customerPhone } = dto;
 
         // Business Rule 1: Items must exist

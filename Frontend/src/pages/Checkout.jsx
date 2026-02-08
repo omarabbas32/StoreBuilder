@@ -9,6 +9,7 @@ import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import storeService from '../services/storeService';
 import { useStorePath } from '../hooks/useStorePath';
+import { getSubdomain } from '../utils/subdomain';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -36,13 +37,30 @@ const Checkout = () => {
     }, [items, orderComplete]);
 
     useEffect(() => {
-        if (slug && !['checkout', 'demo', 'cart'].includes(slug)) {
-            loadStore();
-        }
-    }, [slug]);
+        const subdomain = getSubdomain();
+        const activeSlug = slug || subdomain;
 
-    const loadStore = async () => {
-        const result = await storeService.getStoreBySlugOrId(slug);
+        if (activeSlug && !['checkout', 'demo', 'cart'].includes(activeSlug)) {
+            loadStoreBySlugOrId(activeSlug);
+        } else if (items.length > 0 && !store) {
+            // Fallback: If no slug/subdomain, try to resolve store from the first item
+            const firstItem = items[0];
+            const possibleStoreId = firstItem.storeId || firstItem.store_id || (firstItem.store?.id || firstItem.store?._id);
+            if (possibleStoreId) {
+                loadStoreById(possibleStoreId);
+            }
+        }
+    }, [slug, items, store]);
+
+    const loadStoreBySlugOrId = async (slugOrId) => {
+        const result = await storeService.getStoreBySlugOrId(slugOrId);
+        if (result.success) {
+            setStore(result.data);
+        }
+    };
+
+    const loadStoreById = async (id) => {
+        const result = await storeService.getStoreById(id);
         if (result.success) {
             setStore(result.data);
         }
@@ -68,10 +86,17 @@ const Checkout = () => {
             (firstItem.store ? (firstItem.store.id || firstItem.store._id) : null);
 
         const storeFromState = store?.id || store?._id;
-        const store_id = storeFromItem || storeFromState;
+        const storeFromSubdomain = getSubdomain(); // If currently on a subdomain
+
+        let store_id = storeFromItem || storeFromState;
+
+        // If still no store_id and we have a subdomain, we can try to find store by subdomain
+        // But store_id should ideally be a UUID.
+        // If storeFromState is populated, it's already the best source.
 
         console.log('[CHECKOUT_DEBUG_DEEP]', {
             slug,
+            subdomain: storeFromSubdomain,
             storeFromState,
             storeFromItem,
             resolvedId: store_id,
@@ -85,7 +110,12 @@ const Checkout = () => {
             ...formData
         };
 
-        console.log('[CHECKOUT_SUBMIT]', { orderData, itemsCount: items.length });
+        console.log('[CHECKOUT_SUBMIT_DEEP]', {
+            orderData,
+            itemsCount: items.length,
+            itemsSamples: items.map(i => ({ id: i.id || i._id, storeId: i.storeId || i.store_id })),
+            resolvedStoreId: store_id
+        });
 
         if (!store_id) {
             alert('Error: Store ID could not be identified. Please try returning to the store and adding items again.');

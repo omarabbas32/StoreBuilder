@@ -26,11 +26,13 @@ class OnboardingService {
 
         // Enrich context with Products, Categories, AND Components for EACH store
         const enrichedStores = await Promise.all(stores.map(async (store) => {
-            const [products, categories, components] = await Promise.all([
+            const [productsResult, categories, components] = await Promise.all([
                 this.productService.getProductsByStore(store.id),
                 this.categoryService.getCategoriesByStore(store.id),
                 this.componentService.getActiveComponents() // Get all definitions
             ]);
+
+            const products = productsResult?.products || [];
 
             // Filter components to only those active for this store (if store tracks IDs)
             // Or just send all active component definitions if the store uses them broadly.
