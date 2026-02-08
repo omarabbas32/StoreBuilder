@@ -361,12 +361,19 @@ class AIService {
 
     _buildRichContext(context) {
         const stores = context.stores || [];
-        const richContext = stores.map(s => `
+        const richContext = (Array.isArray(stores) ? stores : []).map(s => {
+            const productsList = Array.isArray(s.products) ? s.products :
+                (s.products?.products && Array.isArray(s.products.products) ? s.products.products : []);
+            const categoriesList = Array.isArray(s.categories) ? s.categories : [];
+            const componentsList = Array.isArray(s.components) ? s.components : [];
+
+            return `
         STORE: ${s.name} (ID: ${s.id})
-        - Products: ${(s.products || []).map(p => `${p.name} ($${p.price}) [ID: ${p.id}]`).join(', ')}
-        - Categories: ${(s.categories || []).map(c => `${c.name} [ID: ${c.id}]`).join(', ')}
-        - Components: ${(s.components || []).map(c => `${c.type} [ID: ${c.id}]`).join(', ')}
-        `).join('\n');
+        - Products: ${productsList.map(p => `${p.name} ($${p.price}) [ID: ${p.id}]`).join(', ')}
+        - Categories: ${categoriesList.map(c => `${c.name} [ID: ${c.id}]`).join(', ')}
+        - Components: ${componentsList.map(c => `${c.type} [ID: ${c.id}]`).join(', ')}
+        `;
+        }).join('\n');
 
         return `
         User ID: ${context.user?.id}
@@ -502,11 +509,13 @@ class AIService {
             const urlIds = action.url.match(uuidRegex) || [];
 
             const stores = context.stores || [];
-            const userOwnedIds = new Set(stores.flatMap(s => [
-                s.id,
-                ...(s.products || []).map(p => p.id),
-                ...(s.categories || []).map(c => c.id)
-            ]));
+            const userOwnedIds = new Set((Array.isArray(stores) ? stores : []).flatMap(s => {
+                const pIds = Array.isArray(s.products) ? s.products.map(p => p.id) :
+                    (s.products?.products ? s.products.products.map(p => p.id) : []);
+                const cIds = Array.isArray(s.categories) ? s.categories.map(c => c.id) : [];
+
+                return [s.id, ...pIds, ...cIds];
+            }));
 
             for (const id of urlIds) {
                 if (!userOwnedIds.has(id)) {

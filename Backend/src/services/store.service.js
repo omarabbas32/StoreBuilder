@@ -186,6 +186,21 @@ class StoreService {
     }
 
     /**
+     * Get store by ID with ownership check
+     * Used by controllers to verify store belongs to user
+     */
+    async getById(storeId, ownerId) {
+        const store = await this.storeModel.findById(storeId);
+        if (!store) {
+            throw new AppError('Store not found', 404);
+        }
+        if (ownerId && store.owner_id !== ownerId) {
+            throw new AppError('You do not own this store', 403);
+        }
+        return store;
+    }
+
+    /**
      * Get stores by owner
      */
     async getStoresByOwner(ownerId) {

@@ -35,6 +35,9 @@ class NotificationController {
             return res.status(400).json({ status: 'error', message: 'storeId is required' });
         }
 
+        // Verify ownership
+        await this.storeService.getById(storeId, req.user.id);
+
         await this.notificationService.markAsRead(id, storeId);
 
         res.status(200).json({
@@ -49,6 +52,9 @@ class NotificationController {
         if (!storeId) {
             return res.status(400).json({ status: 'error', message: 'storeId is required' });
         }
+
+        // Verify ownership
+        await this.storeService.getById(storeId, req.user.id);
 
         await this.notificationService.markAllAsRead(storeId);
 
@@ -65,6 +71,9 @@ class NotificationController {
         if (!storeId) {
             return res.status(400).json({ status: 'error', message: 'storeId is required' });
         }
+
+        // Verify ownership
+        await this.storeService.getById(storeId, req.user.id);
 
         await this.notificationService.deleteNotification(id, storeId);
 
