@@ -511,7 +511,7 @@ class AIService {
             const stores = context.stores || [];
             const userOwnedIds = new Set((Array.isArray(stores) ? stores : []).flatMap(s => {
                 const pIds = Array.isArray(s.products) ? s.products.map(p => p.id) :
-                    (s.products?.products ? s.products.products.map(p => p.id) : []);
+                    (s.products?.products && Array.isArray(s.products.products) ? s.products.products : []);
                 const cIds = Array.isArray(s.categories) ? s.categories.map(c => c.id) : [];
 
                 return [s.id, ...pIds, ...cIds];
