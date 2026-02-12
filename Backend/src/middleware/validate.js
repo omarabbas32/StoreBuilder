@@ -1,3 +1,5 @@
+const logger = require('../utils/logger');
+
 /**
  * Generic Validation Middleware
  * Validates request data against Zod schema
@@ -26,6 +28,10 @@ const validate = (schema, source = 'body') => {
             }
 
             // Parse and validate
+            if (!schema || typeof schema.safeParse !== 'function') {
+                console.error('[VALIDATE_ERROR] Schema is invalid:', schema);
+                throw new Error('Invalid validation schema passed to middleware');
+            }
             const result = schema.safeParse(dataToValidate);
 
             if (!result.success) {
@@ -49,6 +55,12 @@ const validate = (schema, source = 'body') => {
             req.validatedData = result.data;
             next();
         } catch (error) {
+            logger.error('[VALIDATE_MIDDLEWARE_CRASH]', {
+                error: error.message,
+                stack: error.stack,
+                body: req.body
+            });
+
             return res.status(500).json({
                 success: false,
                 message: 'Validation error',

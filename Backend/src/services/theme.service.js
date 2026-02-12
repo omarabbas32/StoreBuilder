@@ -19,10 +19,14 @@ class ThemeService {
      * For user theme selection
      */
     async getActiveThemes(userId = null) {
-        // Implementation depends on Theme model's findActive method
-        // This would need to be implemented in theme.model.js
         return await this.themeModel.findMany(
-            { is_active: true },
+            {
+                is_active: true,
+                OR: [
+                    { user_id: null },
+                    { user_id: userId }
+                ]
+            },
             { orderBy: { name: 'asc' } }
         );
     }
@@ -42,7 +46,7 @@ class ThemeService {
             name: dto.name,
             description: dto.description || null,
             config: dto.config || {},
-            preview_url: dto.previewUrl || null,
+            screenshot_url: dto.screenshot_url || dto.preview_url || dto.previewUrl || null,
             is_active: dto.isActive ?? true,
             user_id: null // Global theme
         });
@@ -64,7 +68,7 @@ class ThemeService {
             name: dto.name,
             description: dto.description || null,
             config: dto.config || {},
-            preview_url: dto.previewUrl || null,
+            screenshot_url: dto.screenshot_url || dto.preview_url || dto.previewUrl || null,
             is_active: true,
             user_id: userId
         });

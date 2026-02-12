@@ -248,11 +248,20 @@
     cursor: not-allowed;
 }
 
-.toolbar-btn.dark {
-    background: #f8fafc;
+.toolbar-btn.glass {
+    background: #fff;
+    border: 1px solid var(--designer-border);
+    color: var(--designer-text);
 }
 
-.toolbar-divider {
+.toolbar-btn.glass:hover {
+    background: var(--designer-bg);
+    border-color: var(--designer-accent);
+    color: var(--designer-accent);
+}
+
+.toolbar-divider,
+.toolbar-divider-v {
     width: 1px;
     height: 24px;
     background: #e2e8f0;
