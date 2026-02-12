@@ -9,7 +9,7 @@ const createStoreSchema = z.object({
     slug: z.string().regex(/^[a-z0-9-]+$/, { message: 'Slug must contain only lowercase letters, numbers, and hyphens' }),
     description: z.string().optional(),
     tagline: z.string().max(255).optional(),
-    business_hours: z.object({}).passthrough().optional(),
+    business_hours: z.any().optional(),
     contact_email: z.string().email().optional().or(z.literal('')),
     contact_phone: z.string().optional(),
     address: z.string().optional(),
@@ -18,7 +18,7 @@ const createStoreSchema = z.object({
     twitter_url: z.string().optional(),
     linkedin_url: z.string().optional(),
     tiktok_url: z.string().optional(),
-    settings: z.object({}).passthrough().optional()
+    settings: z.any().optional()
 });
 
 const updateStoreSchema = z.object({
@@ -26,7 +26,7 @@ const updateStoreSchema = z.object({
     slug: z.string().regex(/^[a-z0-9-]+$/).optional(),
     description: z.string().optional(),
     tagline: z.string().max(255).optional(),
-    business_hours: z.object({}).passthrough().optional(),
+    business_hours: z.any().optional(),
     contact_email: z.string().email().optional().or(z.literal('')),
     contact_phone: z.string().optional(),
     address: z.string().optional(),
@@ -35,7 +35,7 @@ const updateStoreSchema = z.object({
     twitter_url: z.string().optional(),
     linkedin_url: z.string().optional(),
     tiktok_url: z.string().optional(),
-    settings: z.object({}).passthrough().optional()
+    settings: z.any().optional()
 });
 
 module.exports = {

@@ -9,6 +9,10 @@ const { upload, uploadMultipleImages } = require('../middleware/upload');
 const { registerSchema, loginSchema } = require('../validators/auth.validator');
 const { createStoreSchema, updateStoreSchema } = require('../validators/store.validator');
 const { createProductSchema, updateProductSchema } = require('../validators/product.validator');
+const { createCategorySchema, updateCategorySchema } = require('../validators/category.validator');
+const { createOrderSchema } = require('../validators/order.validator');
+const themeValidators = require('../validators/theme.validator');
+const { createThemeSchema, updateThemeSchema, createTemplateSchema } = themeValidators;
 
 /**
  * Clean Module Routes
@@ -44,7 +48,6 @@ productRouter.delete('/:id', auth, (req, res, next) => container.productControll
 router.use('/products', productRouter);
 
 // Categories
-const { createCategorySchema, updateCategorySchema } = require('../validators/category.validator');
 const categoryRouter = express.Router();
 categoryRouter.get('/store/:storeId', (req, res, next) => container.categoryController.getByStore(req, res, next));
 categoryRouter.get('/:id', (req, res, next) => container.categoryController.getById(req, res, next));
@@ -59,7 +62,6 @@ customerRouter.get('/me', auth, (req, res, next) => container.customerController
 router.use('/customers', customerRouter);
 
 // Orders
-const { createOrderSchema } = require('../validators/order.validator');
 const orderRouter = express.Router();
 orderRouter.get('/store/:storeId', auth, (req, res, next) => container.orderController.getByStore(req, res, next));
 orderRouter.get('/my-orders', auth, (req, res, next) => container.orderController.getMyOrders(req, res, next));
@@ -74,7 +76,19 @@ router.use('/reviews', reviewRouter);
 
 // Themes
 const themeRouter = express.Router();
-themeRouter.get('/', (req, res, next) => container.themeController.getAll(req, res, next));
+
+// Public: Get all active themes (requires auth to get user-specific templates)
+themeRouter.get('/', auth, (req, res, next) => container.themeController.getAll(req, res, next));
+
+// User: Create custom template from existing store design
+themeRouter.post('/', auth, validate(createTemplateSchema), (req, res, next) => container.themeController.createTemplate(req, res, next));
+
+// Admin: Manage global themes
+themeRouter.get('/admin', auth, (req, res, next) => container.themeController.adminGetAll(req, res, next));
+themeRouter.post('/admin', auth, validate(createThemeSchema), (req, res, next) => container.themeController.create(req, res, next));
+themeRouter.put('/:id', auth, validate(updateThemeSchema), (req, res, next) => container.themeController.update(req, res, next));
+themeRouter.delete('/:id', auth, (req, res, next) => container.themeController.delete(req, res, next));
+
 router.use('/themes', themeRouter);
 
 // Components

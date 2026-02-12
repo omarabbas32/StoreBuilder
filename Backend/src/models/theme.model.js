@@ -21,7 +21,7 @@ class ThemeModel {
     }
 
     async create(data) {
-        return prisma.theme.create({
+        return await prisma.theme.create({
             data
         });
     }

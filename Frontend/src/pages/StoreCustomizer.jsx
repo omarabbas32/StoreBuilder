@@ -42,6 +42,7 @@ import ColorPalettePicker from '../components/ui/ColorPalettePicker';
 import AssetLibrary from '../components/ui/AssetLibrary';
 import SortableComponentItem from '../components/ui/SortableComponentItem';
 import ProductPicker from '../components/ui/ProductPicker';
+import TemplatePicker from '../components/ui/TemplatePicker';
 import AIAssistant from '../components/dashboard/AIAssistant';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { debounce } from '../utils/debounce';
@@ -91,7 +92,7 @@ const AccordionSection = ({ id, title, description, icon, children, openSections
     );
 };
 
-const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, undo, redo, historyIndex, historyLength, onReset, justSaved }) => (
+const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, handleSaveAsTemplate, undo, redo, historyIndex, historyLength, onReset, justSaved, setShowTemplatePicker }) => (
     <div className="sticky-editor-bar">
         <div className="editor-title">
             <h2>{storeName}</h2>
@@ -100,13 +101,20 @@ const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, undo,
             </div>
         </div>
         <div className="editor-actions">
-            <button className="toolbar-btn" onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)">
+            <button className="toolbar-btn glass" onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)">
                 <Undo size={18} />
             </button>
-            <button className="toolbar-btn" onClick={redo} disabled={historyIndex >= historyLength - 1} title="Redo (Ctrl+Y)">
+            <button className="toolbar-btn glass" onClick={redo} disabled={historyIndex >= historyLength - 1} title="Redo (Ctrl+Y)">
                 <Redo size={18} />
             </button>
             <div className="toolbar-divider-v" />
+            <button className="toolbar-btn glass" onClick={() => setShowTemplatePicker(true)} title="Browse and apply templates">
+                <Layout size={18} />
+                <span className="btn-label-sm">Templates</span>
+            </button>
+            <button className="toolbar-btn glass" onClick={handleSaveAsTemplate} title="Save current design as a new template">
+                <Copy size={18} />
+            </button>
             <button className="toolbar-btn glass" onClick={onReset} title="Reset all to defaults">
                 <X size={18} />
             </button>
@@ -125,7 +133,7 @@ const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, undo,
                 ) : (
                     <>
                         <Save size={18} />
-                        
+
                     </>
                 )}
             </Button>
@@ -297,6 +305,7 @@ const StoreCustomizer = () => {
         assets: false
     });
     const [justSaved, setJustSaved] = useState(false);
+    const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
     const toggleSection = (section) => {
         setOpenSections(prev => ({
@@ -663,8 +672,8 @@ const StoreCustomizer = () => {
             const result = await themeService.saveAsTemplate({
                 name: templateName,
                 description: `Custom design saved from ${store.name}`,
-                config: store.settings,
-                screenshot_url: settings.logo_url // Use logo as temporary screenshot
+                config: store.settings || {},
+                screenshot_url: store.settings?.logo_url // Use logo as temporary screenshot
             });
 
             if (result.success) {
@@ -677,6 +686,27 @@ const StoreCustomizer = () => {
             toast.error('Failed to save template');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const applyTemplate = (template) => {
+        if (!window.confirm(`Are you sure you want to apply "${template.name}"? This will overwrite your current design settings.`)) {
+            return;
+        }
+
+        try {
+            const newSettings = template.config || {};
+            setStore(prev => ({
+                ...prev,
+                settings: newSettings
+            }));
+            setAuthStore({ ...store, settings: newSettings });
+            setHasUnsavedChanges(true);
+            setShowTemplatePicker(false);
+            toast.success(`Template "${template.name}" applied successfully!`);
+        } catch (error) {
+            console.error('Error applying template:', error);
+            toast.error('Failed to apply template');
         }
     };
 
@@ -760,6 +790,16 @@ const StoreCustomizer = () => {
             }
         }));
         setHasUnsavedChanges(true);
+    };
+
+    const getCurrentlySelectedIds = () => {
+        const currentSettings = store?.settings || { components: [], componentContent: {} };
+        const componentsList = (currentSettings.components && currentSettings.components.length > 0)
+            ? currentSettings.components
+            : availableComponents;
+        const grid = componentsList.find(c => c.id === activePickerComponentId) || componentsList.find(c => c.type === 'product-grid' || c.type === 'grid');
+        const content = currentSettings.componentContent?.[grid?.id] || {};
+        return Array.isArray(content.selectedProductIds) ? content.selectedProductIds.map(String) : [];
     };
 
     // Listen for inline edit updates from preview iframe
@@ -1180,11 +1220,13 @@ const StoreCustomizer = () => {
                         hasUnsavedChanges={hasUnsavedChanges}
                         saving={saving}
                         handleSave={handleSave}
+                        handleSaveAsTemplate={handleSaveAsTemplate}
                         justSaved={justSaved}
                         undo={undo}
                         redo={redo}
                         historyIndex={historyIndex}
                         historyLength={history.length}
+                        setShowTemplatePicker={setShowTemplatePicker}
                         onReset={() => {
                             if (window.confirm('Are you sure you want to reset ALL settings to defaults? This cannot be undone.')) {
                                 // Full reset logic
@@ -1833,17 +1875,20 @@ const StoreCustomizer = () => {
             {/* Asset Library Modal */}
             {showProductPicker && (
                 <ProductPicker
-                    isOpen={showProductPicker}
-                    onClose={() => setShowProductPicker(false)}
                     products={allProducts}
-                    selectedIds={selectedProductIds}
-                    onToggle={(pid) => toggleProductSelection(pid, activePickerComponentId)}
+                    selectedIds={getCurrentlySelectedIds()}
+                    onToggle={(id) => toggleProductSelection(id, activePickerComponentId)}
+                    onClose={() => setShowProductPicker(false)}
                 />
             )}
 
-
-
-
+            {showTemplatePicker && (
+                <TemplatePicker
+                    onSelect={applyTemplate}
+                    onClose={() => setShowTemplatePicker(false)}
+                    currentConfig={store?.settings}
+                />
+            )}
             {showAssetModal && (
                 <div className="asset-modal-overlay" onClick={() => setShowAssetModal(false)}>
                     <div className="asset-modal-content" onClick={(e) => e.stopPropagation()}>
