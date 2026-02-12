@@ -9,7 +9,7 @@ const createReviewSchema = z.object({
     product_id: z.string().uuid().optional(),
     orderId: z.string().uuid().optional().nullable(),
     order_id: z.string().uuid().optional().nullable(),
-    rating: z.number().int().min(1).max(5),
+    rating: z.coerce.number().int().min(1).max(5), // Use coerce to handle string/number
     title: z.string().min(1).max(100),
     comment: z.string().min(1).max(1000),
     images: z.array(z.string().url()).optional()

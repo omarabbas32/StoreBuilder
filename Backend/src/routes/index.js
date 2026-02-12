@@ -57,10 +57,6 @@ categoryRouter.delete('/:id', auth, (req, res, next) => container.categoryContro
 router.use('/categories', categoryRouter);
 
 // Customers
-const customerRouter = express.Router();
-customerRouter.get('/me', auth, (req, res, next) => container.customerController.getByUserId(req, res, next));
-router.use('/customers', customerRouter);
-
 // Orders
 const orderRouter = express.Router();
 orderRouter.get('/store/:storeId', auth, (req, res, next) => container.orderController.getByStore(req, res, next));
@@ -71,7 +67,14 @@ router.use('/orders', orderRouter);
 
 // Reviews
 const reviewRouter = express.Router();
-reviewRouter.post('/', auth, (req, res, next) => container.reviewController.create(req, res, next));
+const { reviewRateLimiter, duplicateReviewCheck } = require('../middleware/reviewRateLimiter');
+reviewRouter.get('/product/:productId', (req, res, next) => container.reviewController.getByProduct(req, res, next));
+reviewRouter.get('/store/:storeId', auth, (req, res, next) => container.reviewController.getByStore(req, res, next));
+reviewRouter.post('/', reviewRateLimiter, duplicateReviewCheck, (req, res, next) => container.reviewController.create(req, res, next));
+reviewRouter.post('/:id/helpful', (req, res, next) => container.reviewController.markHelpful(req, res, next));
+reviewRouter.put('/:id/status', auth, (req, res, next) => container.reviewController.updateStatus(req, res, next));
+reviewRouter.put('/:id/response', auth, (req, res, next) => container.reviewController.addResponse(req, res, next));
+reviewRouter.delete('/:id', auth, (req, res, next) => container.reviewController.delete(req, res, next));
 router.use('/reviews', reviewRouter);
 
 // Themes

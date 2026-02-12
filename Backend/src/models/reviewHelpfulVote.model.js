@@ -7,12 +7,12 @@ const prisma = require('../db/prismaClient');
  * - No duplicate checking logic (moved to service)
  */
 class ReviewHelpfulVoteModel {
-    async findByReviewAndCustomer(reviewId, customerId) {
+    async findByReviewAndIp(reviewId, ipAddress) {
         return prisma.reviewHelpfulVote.findUnique({
             where: {
-                review_id_customer_id: {
-                    review_id: reviewId,
-                    customer_id: customerId
+                reviewId_ipAddress: {
+                    reviewId: reviewId,
+                    ipAddress: ipAddress
                 }
             }
         });
@@ -20,7 +20,7 @@ class ReviewHelpfulVoteModel {
 
     async findByReview(reviewId) {
         return prisma.reviewHelpfulVote.findMany({
-            where: { review_id: reviewId }
+            where: { reviewId: reviewId }
         });
     }
 
@@ -30,12 +30,12 @@ class ReviewHelpfulVoteModel {
         });
     }
 
-    async delete(reviewId, customerId) {
+    async delete(reviewId, ipAddress) {
         return prisma.reviewHelpfulVote.delete({
             where: {
-                review_id_customer_id: {
-                    review_id: reviewId,
-                    customer_id: customerId
+                reviewId_ipAddress: {
+                    reviewId: reviewId,
+                    ipAddress: ipAddress
                 }
             }
         });

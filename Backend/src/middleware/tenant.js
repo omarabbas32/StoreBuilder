@@ -1,50 +1,55 @@
-const StoreService = require('../services/store.service');
+const container = require('../container');
 const { NotFoundError } = require('../utils/errors');
 
 /**
  * Middleware to extract subdomain and identify the tenant (Store)
  */
 const tenantMiddleware = async (req, res, next) => {
+    console.log(`[DEBUG_TENANT] Request for host: ${req.headers.host}`);
     try {
         const host = req.headers.host;
         if (!host) {
             return next();
         }
 
-        // Handle localhost development
-        // Example: store1.localhost:3000 or localhost:3000
+        // reserved info
+        const reservedSubdomains = ['www', 'api', 'admin', 'localhost', '127', '0', '::1'];
+
+        // Handle IP addresses (don't treat them as subdomains)
+        const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host.split(':')[0]) || host.includes('[::1]');
+        if (isIP) {
+            req.store = null;
+            req.tenant = null;
+            return next();
+        }
+
         const parts = host.split('.');
         let subdomain = null;
 
         if (host.includes('localhost')) {
-            // If it's something like store1.localhost:3000
             if (parts.length > 1) {
                 subdomain = parts[0];
             }
         } else {
-            // For production domains like store1.storely.com
-            // We assume the base domain has 2 parts (storely.com)
             if (parts.length > 2) {
                 subdomain = parts[0];
             }
         }
 
-        // Reserved subdomains to ignore
-        const reservedSubdomains = ['www', 'api', 'admin'];
         if (!subdomain || reservedSubdomains.includes(subdomain.toLowerCase())) {
             req.store = null;
             req.tenant = null;
             return next();
         }
 
-        // Find store by slug (subdomain)
+        // Find store by slug (subdomain) using the container's service
         try {
-            const store = await StoreService.getStoreBySlug(subdomain.toLowerCase());
+            const store = await container.storeService.getStoreBySlug(subdomain.toLowerCase());
             req.store = store;
-            req.tenant = store.id; // UUID or ID of the store
+            req.tenant = store.id;
             next();
         } catch (error) {
-            if (error instanceof NotFoundError) {
+            if (error.statusCode === 404) {
                 return res.status(404).json({
                     success: false,
                     message: `Store '${subdomain}' not found`,

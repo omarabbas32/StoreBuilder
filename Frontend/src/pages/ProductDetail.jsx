@@ -53,8 +53,8 @@ const ProductDetail = () => {
         }
 
         if (reviewsResult.success) {
-            // Backend returns { reviews: [], pagination: {} }
-            setReviews(reviewsResult.data?.reviews || reviewsResult.data || []);
+            // reviewsResult.data is { data: [reviews], pagination: {} }
+            setReviews(reviewsResult.data?.data || []);
         }
 
         // Add to recently viewed
