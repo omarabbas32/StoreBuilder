@@ -21,16 +21,13 @@ model CartItem {
 
 model Cart {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id String?    @db.Uuid
   session_id  String?    @db.VarChar(255)
   created_at  DateTime?  @default(now()) @db.Timestamp(6)
   updated_at  DateTime?  @default(now()) @db.Timestamp(6)
   store_id    String?    @db.Uuid
   cart_items  CartItem[]
-  customer    Customer?  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   store       Store?     @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([customer_id, store_id], map: "unique_customer_store_cart")
   @@unique([session_id, store_id], map: "unique_session_store_cart")
   @@index([store_id], map: "idx_carts_store")
   @@map("carts")
@@ -68,21 +65,6 @@ model Component {
   @@map("components")
 }
 
-model Customer {
-  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id              String?             @db.Uuid
-  phone                String?             @db.VarChar(50)
-  address              String?
-  created_at           DateTime?           @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?           @default(now()) @db.Timestamp(6)
-  carts                Cart[]
-  user                 User?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  orders               Order[]
-  product_reviews      ProductReview[]
-  review_helpful_votes ReviewHelpfulVote[]
-
-  @@map("customers")
-}
 
 model Migration {
   id          Int       @id @default(autoincrement())
@@ -108,7 +90,6 @@ model OrderItem {
 model Order {
   id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   store_id         String?         @db.Uuid
-  customer_id      String?         @db.Uuid
   total_amount     Decimal         @db.Decimal(10, 2)
   status           String?         @default("pending") @db.VarChar(50)
   created_at       DateTime?       @default(now()) @db.Timestamp(6)
@@ -119,7 +100,6 @@ model Order {
   shipping_address String?
   notes            String?
   order_items      OrderItem[]
-  customer         Customer?       @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
   store            Store?          @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_reviews  ProductReview[]
 
@@ -127,33 +107,33 @@ model Order {
 }
 
 model ProductReview {
-  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id           String?             @db.Uuid
-  store_id             String?             @db.Uuid
-  customer_id          String?             @db.Uuid
-  order_id             String?             @db.Uuid
-  rating               Int
-  title                String?             @db.VarChar(255)
-  comment              String?
-  images               Json?               @default("[]")
-  status               String?             @default("pending") @db.VarChar(20)
-  is_verified_purchase Boolean?            @default(false)
-  owner_response       String?
-  owner_response_at    DateTime?           @db.Timestamp(6)
-  helpful_count        Int?                @default(0)
-  created_at           DateTime?           @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?           @default(now()) @db.Timestamp(6)
-  customer             Customer?           @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
-  order                Order?              @relation(fields: [order_id], references: [id], onUpdate: NoAction)
-  product              Product?            @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  store                Store?              @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  review_helpful_votes ReviewHelpfulVote[]
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId          String?             @map("product_id") @db.Uuid
+  storeId            String?             @map("store_id") @db.Uuid
+  ipAddress          String?             @map("ip_address") @db.VarChar(45)
+  orderId            String?             @map("order_id") @db.Uuid
+  rating             Int
+  title              String?             @db.VarChar(255)
+  comment            String?
+  images             Json?               @default("[]")
+  status             String?             @default("pending") @db.VarChar(20)
+  isVerifiedPurchase Boolean?            @default(false) @map("is_verified_purchase")
+  ownerResponse      String?             @map("owner_response")
+  ownerResponseAt    DateTime?           @map("owner_response_at") @db.Timestamp(6)
+  helpfulCount       Int?                @default(0) @map("helpful_count")
+  createdAt          DateTime?           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime?           @default(now()) @map("updated_at") @db.Timestamp(6)
+  order              Order?              @relation(fields: [orderId], references: [id], onUpdate: NoAction)
+  product            Product?            @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  store              Store?              @relation(fields: [storeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reviewHelpfulVotes ReviewHelpfulVote[]
 
-  @@index([customer_id], map: "idx_reviews_customer")
-  @@index([product_id, status], map: "idx_reviews_product")
+  @@index([productId, status], map: "idx_reviews_product")
   @@index([rating], map: "idx_reviews_rating")
   @@index([status], map: "idx_reviews_status")
-  @@index([store_id], map: "idx_reviews_store")
+  @@index([storeId], map: "idx_reviews_store")
+  @@index([ipAddress, createdAt], map: "idx_reviews_ip_date")
+  @@unique([ipAddress, productId], map: "unique_ip_product")
   @@map("product_reviews")
 }
 
@@ -182,14 +162,13 @@ model Product {
 }
 
 model ReviewHelpfulVote {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  review_id      String?        @db.Uuid
-  customer_id    String?        @db.Uuid
-  created_at     DateTime?      @default(now()) @db.Timestamp(6)
-  customer       Customer?      @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  product_review ProductReview? @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewId      String?        @map("review_id") @db.Uuid
+  ipAddress     String?        @map("ip_address") @db.VarChar(45)
+  createdAt     DateTime?      @default(now()) @map("created_at") @db.Timestamp(6)
+  productReview ProductReview? @relation(fields: [reviewId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([review_id, customer_id])
+  @@unique([reviewId, ipAddress])
   @@map("review_helpful_votes")
 }
 
@@ -284,7 +263,6 @@ model User {
   verification_token String?    @db.VarChar(255)
   reset_token        String?    @db.VarChar(255)
   reset_expires      DateTime?  @db.Timestamp(6)
-  customers          Customer[]
   stores             Store[]
   themes             Theme[]
 

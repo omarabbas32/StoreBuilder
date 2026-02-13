@@ -24,10 +24,10 @@ class ReviewService {
      * Create review
      * Business Rules:
      * - Product must exist
-     * - Customer should have purchased the product (optional enforcement)
-     * - One review per customer per product
+     * - IP-based rate limiting (handled by middleware)
+     * - One review per IP per product (handled by middleware)
      */
-    async createReview(dto, customerId) {
+    async createReview(dto, ipAddress) {
         const { productId, rating, title, comment, images, orderId } = dto;
 
         // Business Rule 1: Product must exist
@@ -41,18 +41,18 @@ class ReviewService {
             throw new AppError('Rating must be between 1 and 5', 400);
         }
 
-        // Create review
+        // Create review with IP address
         const review = await this.reviewModel.create({
-            product_id: productId,
-            store_id: product.store_id || null, // Store_id is optional
-            customer_id: customerId,
-            order_id: orderId || null,
+            productId: productId,
+            storeId: product.store_id || null,
+            ipAddress: ipAddress,
+            orderId: orderId || null,
             rating: parseInt(rating),
             title,
             comment,
             images: images || [],
-            status: 'pending', // Requires approval
-            is_verified_purchase: !!orderId
+            status: 'approved', // Auto-approve anonymous reviews
+            isVerifiedPurchase: !!orderId
         });
 
         return review;
@@ -68,11 +68,28 @@ class ReviewService {
         const reviews = await this.reviewModel.findByProduct(productId, {
             limit,
             offset,
-            status,
-            includeCustomer: true
+            status
         });
 
         const total = await this.reviewModel.countByProduct(productId, status);
+
+        return new PaginationDTO(reviews, total, page, limit);
+    }
+
+    /**
+     * Get reviews by store
+     */
+    async getStoreReviews(storeId, options = {}) {
+        const { page = 1, limit = 20, status = null } = options;
+        const offset = (page - 1) * limit;
+
+        const reviews = await this.reviewModel.findByStore(storeId, {
+            limit,
+            offset,
+            status
+        });
+
+        const total = await this.reviewModel.countByStore(storeId, status);
 
         return new PaginationDTO(reviews, total, page, limit);
     }
@@ -140,19 +157,19 @@ class ReviewService {
     /**
      * Mark review as helpful
      * Business Rules:
-     * - Customer can only vote once per review
+     * - IP-based voting (one vote per review per IP)
      * - Must be atomic (transaction)
      */
-    async markHelpful(reviewId, customerId) {
+    async markHelpful(reviewId, ipAddress) {
         const review = await this.reviewModel.findById(reviewId);
         if (!review) {
             throw new AppError('Review not found', 404);
         }
 
         // Business Rule: Check if already voted
-        const existingVote = await this.reviewHelpfulVoteModel.findByReviewAndCustomer(
+        const existingVote = await this.reviewHelpfulVoteModel.findByReviewAndIp(
             reviewId,
-            customerId
+            ipAddress
         );
 
         if (existingVote) {
@@ -163,7 +180,7 @@ class ReviewService {
         await this.prisma.$transaction(async (tx) => {
             await this.reviewHelpfulVoteModel.create({
                 review_id: reviewId,
-                customer_id: customerId
+                ip_address: ipAddress
             });
 
             await this.reviewModel.incrementHelpfulCount(reviewId);
