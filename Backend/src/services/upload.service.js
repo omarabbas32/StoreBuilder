@@ -1,3 +1,4 @@
+const cloudinary = require('cloudinary').v2;
 const AppError = require('../utils/AppError');
 
 /**
@@ -8,8 +9,34 @@ const AppError = require('../utils/AppError');
  */
 class UploadService {
     constructor() {
-        // Cloudinary is already configured via multer middleware
-        // this.cloudinary = require('cloudinary').v2;
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET
+        });
+    }
+
+    /**
+     * Upload buffer to Cloudinary (used for AI generated images)
+     */
+    async uploadBuffer(buffer, folder = 'storely/ai-generated', contentType = 'image/png') {
+        try {
+            const base64 = buffer.toString('base64');
+            const dataUrl = `data:${contentType};base64,${base64}`;
+            const result = await cloudinary.uploader.upload(dataUrl, {
+                folder,
+                resource_type: 'image'
+            });
+            return {
+                url: result.secure_url,
+                publicId: result.public_id,
+                size: result.bytes,
+                format: result.format
+            };
+        } catch (error) {
+            console.error('[UploadService] Cloudinary buffer upload failed:', error);
+            throw new AppError('Cloudinary upload failed', 500);
+        }
     }
 
     /**

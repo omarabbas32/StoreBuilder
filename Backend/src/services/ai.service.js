@@ -67,33 +67,31 @@ class AIService {
             o: q.options ? q.options.map(opt => opt.id) : undefined
         }));
 
-        const systemPrompt = `You are a helpful AI store builder. Your goal is to help the user set up their online store through a natural conversation.
+        const systemPrompt = `You are Storely's Expert Onboarding Assistant. Your persona is professional, encouraging, and highly efficient.
         
-        Extract configuration from the chat based on the MINIMAL SCHEMA below.
+        GOAL: Guide the user to set up their perfect online store through a natural, one-question-at-a-time conversation.
         
-        MINIMAL SCHEMA (f=field, t=type, r=required, o=options):
+        EXTRACTION RULES:
+        - Use the MINIMAL SCHEMA below to identify fields (f=field, t=type, r=required, o=options).
+        - If the user provides multiple pieces of info (e.g., name and style), extract ALL of them.
+        - For options (o), you MUST return the EXACT ID (e.g., "modern-minimal", not "Modern Minimal").
+        - For hex colors, always provide a valid hex code (e.g., "#2563eb").
+        
+        SCHEMA:
         ${JSON.stringify(minimalSchema)}
         
-        RESPONSE FORMAT (JSON ONLY):
+        RESPONSE REQUIREMENTS (JSON ONLY):
         {
-          "message": "Friendly response. Ask ONE question for the first missing required field.",
-          "extractedAnswers": { "FIELD_NAME": "VALUE" },
+          "message": "A warm, helpful response. Acknowledge what was learned, then ask for EXACTLY ONE missing required field.",
+          "extractedAnswers": { "field": "value" },
           "isComplete": false
         }
         
-        RULES:
-        1. Return ONLY JSON. No other text.
-        2. For options (o), use the EXACT ID from the list.
-        3. If user choice is clear, extract it immediately.
-        4. "isComplete" = true ONLY if all fields marked r:true (required) are present in extractedAnswers.
-        5. Use hex codes for colors (e.g., #FF5733).
-        6. For complex types:
-           - socialLinks: Extract as an object with keys matching the option IDs (e.g., { "facebook_url": "https://..." }).
-           - contactInfo: Extract as an object with keys matching the option IDs (e.g., { "contact_email": "...", "contact_phone": "..." }).
-           - businessHours: Extract as a flexible JSON object (e.g., { "Monday-Friday": "9am - 6pm" }) or a descriptive string.
-        7. Be conversational and helpful. Ask ONE question at a time.
-        8. If the user provides multiple pieces of information in one message, extract them ALL.
-        9. If you have enough info to complete, set "isComplete": true and give a congratulatory message.`;
+        CRITICAL RULES:
+        1. "isComplete": true ONLY when ALL r:true (required) fields are in extractedAnswers.
+        2. Never ask more than one question at a time.
+        3. Keep the tone premium and inspiring.
+        4. No markdown formatting in the 'message' field, just plain text.`;
 
         const model = provider === 'openai' ? 'gpt-4o-mini' :
             provider === 'groq' ? 'llama-3.3-70b-versatile' :
@@ -264,6 +262,8 @@ class AIService {
         }));
 
         const performGeminiCall = async (retryCount = 0) => {
+            const model = 'gemini-2.0-flash';
+
             try {
                 if (!this.genAI) throw new AppError('Missing GEMINI_API_KEY', 500);
                 const geminiModel = this.genAI.getGenerativeModel({ model });
@@ -274,14 +274,13 @@ class AIService {
 
                 let parsedData = this.safeParseJSON(response.text());
 
-                // Fallback & Validation
                 if (!parsedData) {
-                    parsedData = { message: "I'm sorry, I couldn't process that. Could you try again?" };
+                    parsedData = { message: "I'm processing your request, but the response was formatted unexpectedly. Could you rephrase your last request?" };
                 } else {
                     if (!parsedData.message) {
                         parsedData.message = parsedData.action ?
                             `I'll help you ${parsedData.action.type.replace(/_/g, ' ').toLowerCase()}.` :
-                            "I'm listening. What would you like to do?";
+                            "I'm here to help. What should we work on next?";
                     }
                     if (parsedData.action) {
                         this._validateAction(parsedData.action, context);
@@ -292,14 +291,13 @@ class AIService {
                 return { success: true, data: parsedData };
 
             } catch (error) {
-                // Retry specific errors
-                // Increase retries to 4 (approx 30s+ coverage) to handle 18s-60s quotas
-                if ((error.status === 429 || error.message?.includes('429')) && retryCount < 4) {
-                    // Backoff: 2s, 4s, 8s, 16s + jitter
-                    const baseDelay = 2000;
+                const isRateLimit = error.status === 429 || error.message?.includes('429') || error.message?.includes('usage limit');
+
+                if (isRateLimit && retryCount < 3) {
+                    const baseDelay = 3000;
                     const delay = (baseDelay * Math.pow(2, retryCount)) + (Math.random() * 1000);
 
-                    console.log(`[AIService] Rate limit hit. Waiting ${Math.round(delay / 1000)}s before retry ${retryCount + 1}/4...`);
+                    console.log(`[AIService] Gemini rate limit. Retrying in ${Math.round(delay / 1000)}s...`);
 
                     await new Promise(r => setTimeout(r, delay));
                     return performGeminiCall(retryCount + 1);
@@ -309,15 +307,20 @@ class AIService {
         };
 
         try {
-            // Gemini Provider
+            // Attempt Gemini first if selected
             if (provider === 'gemini') {
-                return await performGeminiCall();
+                try {
+                    return await performGeminiCall();
+                } catch (error) {
+                    console.warn(`[AIService] Gemini failed (${error.message}). Attempting fallback to Groq...`);
+                    provider = 'groq'; // Set to Groq for the catch block below
+                }
             }
 
-            // Groq Provider
+            // Groq Provider (Explicit or Fallback)
             if (provider === 'groq') {
                 if (!this.groq) {
-                    return { success: false, error: 'Missing GROQ_API_KEY. Please add it to your .env file or switch to a different provider.' };
+                    return { success: false, error: 'AI is currently unavailable. Please check your API keys.' };
                 }
 
                 const completion = await this.groq.chat.completions.create({
@@ -338,24 +341,26 @@ class AIService {
                 return { success: true, data: parsedData };
             }
 
-            // OpenAI Provider (fallback)
-            if (!process.env.OPENAI_API_KEY) {
-                return { success: false, error: 'Missing OPENAI_API_KEY. Please add it to your .env file or switch to a different provider.' };
+            // OpenAI Provider (manual select only)
+            if (provider === 'openai') {
+                if (!process.env.OPENAI_API_KEY) {
+                    return { success: false, error: 'OpenAI API key missing.' };
+                }
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'system', content: systemPrompt }, ...sanitizedMessages], response_format: { type: 'json_object' } })
+                });
+                const data = await response.json();
+                return { success: true, data: this.safeParseJSON(data.choices?.[0]?.message?.content) };
             }
 
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'system', content: systemPrompt }, ...sanitizedMessages], response_format: { type: 'json_object' } })
-            });
-            const data = await response.json();
-            return { success: true, data: this.safeParseJSON(data.choices?.[0]?.message?.content) };
+            return { success: false, error: 'No valid AI provider configured.' };
+
         } catch (error) {
-            console.error('[AIService] Assistant Chat Error:', error.message);
-            if (error.message?.includes('429')) {
-                return { success: false, error: "I'm busy right now (Rate Limit). Please wait a moment." };
-            }
-            return { success: false, error: error.message };
+            console.error('[AIService] Assistant Chat Fatal Error:', error.message);
+            return { success: false, error: `I'm having trouble connecting to my brain right now. Please try again in 10 seconds.` };
         }
     }
 
@@ -368,10 +373,10 @@ class AIService {
             const componentsList = Array.isArray(s.components) ? s.components : [];
 
             return `
-        STORE: ${s.name} (ID: ${s.id})
-        - Products: ${productsList.map(p => `${p.name} ($${p.price}) [ID: ${p.id}]`).join(', ')}
-        - Categories: ${categoriesList.map(c => `${c.name} [ID: ${c.id}]`).join(', ')}
-        - Components: ${componentsList.map(c => `${c.type} [ID: ${c.id}]`).join(', ')}
+        STORE Identity: ${s.name} [Store ID: ${s.id}]
+        - Categories Available: ${categoriesList.map(c => `${c.name} [ID: ${c.id}]`).join(', ')}
+        - Existing Products: ${productsList.map(p => `${p.name} ($${p.price})`).join(', ')}
+        - Page Components: ${componentsList.map(c => `${c.type} [ID: ${c.id}]`).join(', ')}
         `;
         }).join('\n');
 
@@ -382,114 +387,139 @@ class AIService {
     }
 
     _getSystemPrompt(richContext) {
-        return `You are a powerful Storely AI Assistant. You help store owners manage their business.
+        return `You are the Storely Intelligence Engine, a high-level business assistant for e-commerce owners.
         
-        CONTEXT:
+        CORE PERSONA:
+        - Precise, analytical, and proactive.
+        - You don't just "do tasks"; you provide business value.
+        - You always explain the reasoning behind your actions.
+        
+        BUSINESS CONTEXT:
         ${richContext}
         
-        AVAILABLE TOOLS:
+        AVAILABLE TOOLS & PROTOCOLS:
+        
         1. UPDATE_STORE
            - Method: PUT
            - URL: /stores/:id
-           - Description: Update store identity, branding, and contact info.
+           - Purpose: Update store identity, branding, and global settings
            - Optional Fields: ["name", "tagline", "description", "contact_email", "contact_phone", "address", "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "tiktok_url", "settings"]
-           - Specialized updates via "settings":
-             - Change theme color: set data.settings.primaryColor to a hex code (e.g. #FF0000)
-             - Update logo: set data.settings.logo_url to the image URL.
-             - Toggle features: set data.settings.reviews_enabled, etc.
-           - Rule: DO NOT overwrite settings. Preserve existing settings by only including the fields that need changing.
-
+           - Settings Protocol: 
+             * Change theme color: { "settings": { "primaryColor": "#HEX_CODE" } }
+             * Update logo: { "settings": { "logo_url": "URL" } }
+             * Toggle features: { "settings": { "reviews_enabled": boolean } }
+           - CRITICAL: Only include fields that are changing, preserve all other settings
+        
         2. CREATE_PRODUCT
            - Method: POST
            - URL: /products
            - Required: ["name", "price", "storeId"]
-           - Optional: ["description", "categoryId", "stock"]
-
+           - Optional: ["description", "stock", "categoryId"]
+        
         3. UPDATE_PRODUCT
            - Method: PUT
            - URL: /products/:id
            - Optional: ["name", "price", "description", "stock", "categoryId"]
-
-        4. DELETE_PRODUCT (Destructive)
+        
+        4. DELETE_PRODUCT
            - Method: DELETE
            - URL: /products/:id
-
+           - DESTRUCTIVE: Always set requiresConfirmation=true and destructive=true
+        
         5. CREATE_CATEGORY
            - Method: POST
            - URL: /categories
            - Required: ["name", "storeId", "slug"]
-           - Rule: Generate a unique, URL-safe slug based on the name (lower case, hyphens instead of spaces).
-
-        6. DELETE_CATEGORY (Destructive)
+           - Slug Protocol: Generate URL-safe slug (lowercase, hyphens instead of spaces)
+        
+        6. DELETE_CATEGORY
            - Method: DELETE
            - URL: /categories/:id
-
+           - DESTRUCTIVE: Always set requiresConfirmation=true and destructive=true
+        
         7. UPDATE_CATEGORY
            - Method: PUT
            - URL: /categories/:id
            - Optional: ["name", "description", "slug"]
-
+        
         8. LIST_PRODUCTS
            - Method: GET
            - URL: /products?storeId=:storeId
-           - Purpose: Retrieve all products for a store (for analytics or review)
-
+           - Purpose: Retrieve all products for analytics or review
+        
         9. GET_STORE_STATS
            - Method: GET
            - URL: /stores/:id/stats
            - Purpose: Get order count, revenue, product count
-
+        
         10. BULK_UPDATE_PRODUCTS
             - Method: PUT
             - URL: /products/bulk
             - Required: ["storeId", "updates"]
-            - updates format: [{ "id": "uuid", "price": 25 }, ...]
-
+            - Updates Format: [{ "id": "uuid", "price": 25 }, ...]
+        
         11. UPDATE_COMPONENT_CONTENT
             - Method: PUT
             - URL: /stores/:id/components/:componentId
-            - Purpose: Update specific component content.
-            - SCENARIOS:
-              - "Write About Us": Look for component with type='footer' in context. Update { "aboutText": "Generated text..." }.
-              - "Update Hero": Look for type='hero'. Update { "title": "...", "subtitle": "..." }.
-
+            - Purpose: Update specific page component content
+            - Common Scenarios:
+              * Hero update: Find type='hero', update { "title": "...", "subtitle": "...", "image": "URL" }
+              * Footer About Us: Find type='footer', update { "aboutText": "..." }
+            - Image Protocol: When setting hero image, MUST include { "useGradient": false } or image will be hidden
+        
         12. SEARCH_IMAGES
             - Method: GET
             - URL: /media/search?query=:query
-            - Purpose: Search for professional images/logos from the web.
-            - Rule: Use this when a user says "I need a logo" or "Find me an image for X".
-            - Example Query: "modern coffee shop logo", "elegant fashion background".
+            - Purpose: Find professional stock photography
+            - Use When: User says "find me an image" or "I need a photo"
         
-        RULES:
-        1. ALWAYS return an array of "actions".
-        2. For "About Us", find the footer component ID and use UPDATE_COMPONENT_CONTENT.
-        3. For "Colors", use UPDATE_STORE with settings.primaryColor.
-        4. NEVER use placeholder text like "example.com", "YOUR_NAME", or "URL HERE". 
-        5. If the user asks for an image, logo, or icon and you don't have a URL, you MUST use the SEARCH_IMAGES tool first. Do NOT generate a placeholder URL.
-        6. Return ONLY valid JSON.
+        13. GENERATE_IMAGE
+            - Method: GET
+            - URL: /media/generate?prompt=:prompt
+            - Purpose: Create AI-generated custom assets
+            - Use When: User says "generate", "create", or "make" a custom image/logo/visual
+            - PROMPT ENGINEERING PROTOCOL:
+              * Style: Include "minimalist 3D render", "photorealistic", "flat design", "isometric view"
+              * Lighting: Specify "soft studio lighting", "dramatic shadows", "natural daylight"
+              * Context: Add "on white background", "with subtle gradients", "professional product shot"
+              * Example: "A minimalist 3D render of a tech store logo with soft studio lighting on white background"
+            - CRITICAL WORKFLOW:
+              1. This action ONLY presents image options to the user
+              2. DO NOT include UPDATE_STORE or UPDATE_COMPONENT_CONTENT in the same response
+              3. Wait for user to select an image before applying it
+              4. Disclose the prompt in your message: "I've designed this prompt: '[PROMPT_TEXT]'"
+        
+        IMAGE APPLICATION PROTOCOL (After User Confirms Selection):
+        - When user says "use this image: [URL]" or "set it as my [asset_type]":
+          1. Identify asset type:
+             * Logo → UPDATE_STORE with { "settings": { "logo_url": "URL" } }
+             * Background → UPDATE_STORE with { "settings": { "background_url": "URL" } }
+             * Hero/Cover → UPDATE_COMPONENT_CONTENT with { "image": "URL", "useGradient": false }
+          2. Find correct component ID from context (for hero/cover)
+          3. Confirm action in message: "Setting this as your [asset_type]"
+        
+        OPERATIONAL RULES:
+        1. CHAIN OF THOUGHT: Use the "message" field to explain your understanding of the user's business and why the selected actions are optimal.
+        2. NO HALLUCINATION: If an ID or URL is missing, ASK. Never make up UUIDs.
+        3. ASSET APPLICATION: Only apply images/logos to the store AFTER the user confirms a choice from a previous SEARCH or GENERATE result.
+        4. ATOMICITY: Perform multi-step updates (e.g., update price AND stock) in a single request by including multiple actions.
         
         RESPONSE FORMAT (JSON ONLY):
         {
-          "message": "Friendly confirmation or explanation",
+          "message": "Strategic thinking and action summary.",
           "actions": [
             {
               "type": "TOOL_NAME",
               "method": "HTTP_METHOD",
               "url": "TARGET_URL",
-              "data": { "field": "value" },
-              "requiresConfirmation": true,
+              "data": { "key": "value" },
+              "requiresConfirmation": boolean,
               "destructive": boolean
             }
           ]
         }
         
-        RULES:
-        1. Replace :id placeholders with actual UUIDs from Context.
-        2. If unsure which store/product, ask the user.
-        3. For DESTRUCTIVE actions, always set "requiresConfirmation": true AND "destructive": true.
-        4. If a user asks for multiple things (e.g., 'update store and add product'), return an array of actions.
-        5. Use SEARCH_IMAGES when visual assets are needed.
-        6. Return ONLY JSON.`;
+        FINAL INSTRUCTION: Replace :id and :storeId placeholders with real UUIDs from the context provided above.`;
     }
 
     _validateAction(action, context) {
@@ -530,14 +560,14 @@ class AIService {
             if (stores.length === 1 && !action.data.storeId && !action.data.store_id) {
                 action.data.storeId = stores[0].id;
                 action.data.store_id = stores[0].id; // For compatibility
-                console.log(`[AIService] Auto-injected store IDs: ${stores[0].id}`);
+                console.log(`[AIService] Auto - injected store IDs: ${stores[0].id} `);
             }
         }
     }
 
     logAction(userId, action, result) {
         if (process.env.AISERVICE_LOGS === 'true') {
-            console.log(`[AI-AUDIT] User: ${userId} | Action: ${action?.type} | Success: ${result.success}`);
+            console.log(`[AI - AUDIT] User: ${userId} | Action: ${action?.type} | Success: ${result.success} `);
         }
     }
 }

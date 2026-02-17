@@ -10,7 +10,7 @@ const { registerSchema, loginSchema } = require('../validators/auth.validator');
 const { createStoreSchema, updateStoreSchema } = require('../validators/store.validator');
 const { createProductSchema, updateProductSchema } = require('../validators/product.validator');
 const { createCategorySchema, updateCategorySchema } = require('../validators/category.validator');
-const { createOrderSchema } = require('../validators/order.validator');
+const { createOrderSchema, updateOrderStatusSchema } = require('../validators/order.validator');
 const themeValidators = require('../validators/theme.validator');
 const { createThemeSchema, updateThemeSchema, createTemplateSchema } = themeValidators;
 
@@ -61,12 +61,16 @@ const customerRouter = express.Router();
 customerRouter.get('/me', auth, (req, res, next) => container.customerController.getByUserId(req, res, next));
 router.use('/customers', customerRouter);
 
+const optionalAuth = require('../middleware/optionalAuth');
+
 // Orders
 const orderRouter = express.Router();
 orderRouter.get('/store/:storeId', auth, (req, res, next) => container.orderController.getByStore(req, res, next));
 orderRouter.get('/my-orders', auth, (req, res, next) => container.orderController.getMyOrders(req, res, next));
-orderRouter.post('/', validate(createOrderSchema), (req, res, next) => container.orderController.create(req, res, next));
-orderRouter.post('/checkout', validate(createOrderSchema), (req, res, next) => container.orderController.createFromCart(req, res, next));
+orderRouter.get('/:id', optionalAuth, (req, res, next) => container.orderController.getById(req, res, next));
+orderRouter.post('/', optionalAuth, validate(createOrderSchema), (req, res, next) => container.orderController.create(req, res, next));
+orderRouter.post('/checkout', optionalAuth, validate(createOrderSchema), (req, res, next) => container.orderController.createFromCart(req, res, next));
+orderRouter.patch('/:id/status', auth, validate(updateOrderStatusSchema), (req, res, next) => container.orderController.updateStatus(req, res, next));
 router.use('/orders', orderRouter);
 
 // Reviews
@@ -105,18 +109,16 @@ onboardingRouter.post('/complete/:id', auth, (req, res, next) => container.onboa
 onboardingRouter.post('/assistant-chat', auth, (req, res, next) => container.onboardingController.assistantChat(req, res, next));
 router.use('/onboarding', onboardingRouter);
 
-// Media (Generic & Store-specific)
-const mediaRouter = express.Router();
+// Media Routes
+router.get('/media/search', (req, res, next) => container.mediaController.searchImages(req, res, next));
+router.get('/media/generate', (req, res, next) => container.mediaController.generateImage(req, res, next));
+router.post('/media/upload', auth, upload.single('image'), (req, res, next) => container.mediaController.uploadImage(req, res, next));
+router.post('/media/upload-multiple', auth, uploadMultipleImages, (req, res, next) => container.mediaController.uploadMultiple(req, res, next));
+
 // Legacy/Specific Support
 router.post('/stores/:storeId/uploads', auth, upload.single('file'), (req, res, next) => container.mediaController.uploadImage(req, res, next));
 router.get('/stores/:storeId/uploads', auth, (req, res, next) => container.mediaController.listByStore(req, res, next));
 router.delete('/stores/:storeId/uploads/:id', auth, (req, res, next) => container.mediaController.delete(req, res, next));
-
-// Generic New API
-router.get('/media/search', (req, res, next) => container.mediaController.searchImages(req, res, next));
-mediaRouter.post('/upload', auth, upload.single('image'), (req, res, next) => container.mediaController.uploadImage(req, res, next));
-mediaRouter.post('/upload-multiple', auth, uploadMultipleImages, (req, res, next) => container.mediaController.uploadMultiple(req, res, next));
-router.use('/media', mediaRouter);
 
 // Cart
 const cartRouter = express.Router();

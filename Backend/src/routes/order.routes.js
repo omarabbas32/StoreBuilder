@@ -28,6 +28,11 @@ router.get('/:id',
     orderController.getById
 );
 
+router.get('/my-orders',
+    auth,
+    orderController.getMyOrders
+);
+
 router.put('/:id/status',
     auth,
     validate(updateOrderStatusSchema),

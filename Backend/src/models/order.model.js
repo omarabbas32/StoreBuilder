@@ -24,9 +24,11 @@ class OrderModel {
     }
 
     async findByStore(storeId, options = {}) {
-        const { limit, offset, includeItems = true } = options;
+        const { limit, offset, includeItems = true, where: customWhere } = options;
+        const where = customWhere || { store_id: storeId };
+
         return prisma.order.findMany({
-            where: { store_id: storeId },
+            where,
             orderBy: { created_at: 'desc' },
             ...(limit && { take: parseInt(limit) }),
             ...(offset && { skip: parseInt(offset) }),
@@ -43,12 +45,21 @@ class OrderModel {
     }
 
     async findByCustomer(customerId, options = {}) {
-        const { limit, offset } = options;
+        const { limit, offset, includeItems = true } = options;
         return prisma.order.findMany({
             where: { customer_id: customerId },
             orderBy: { created_at: 'desc' },
             ...(limit && { take: parseInt(limit) }),
-            ...(offset && { skip: parseInt(offset) })
+            ...(offset && { skip: parseInt(offset) }),
+            ...(includeItems && {
+                include: {
+                    order_items: {
+                        include: {
+                            product: true
+                        }
+                    }
+                }
+            })
         });
     }
 

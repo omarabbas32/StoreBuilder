@@ -10,8 +10,8 @@ const createReviewSchema = z.object({
     orderId: z.string().uuid().optional().nullable(),
     order_id: z.string().uuid().optional().nullable(),
     rating: z.number().int().min(1).max(5),
-    title: z.string().min(1).max(100),
-    comment: z.string().min(1).max(1000),
+    title: z.string().trim().min(1).max(100),
+    comment: z.string().trim().min(1).max(1000),
     images: z.array(z.string().url()).optional()
 }).refine(
     (data) => data.productId || data.product_id,

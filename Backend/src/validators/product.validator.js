@@ -17,7 +17,7 @@ const createProductSchema = z.object({
         .int({ message: 'Stock must be an integer' })
         .min(0, { message: 'Stock cannot be negative' })
         .default(0),
-    categoryId: z.string().uuid({ message: 'Valid category ID is required' }),
+    categoryId: z.string().uuid({ message: 'Valid category ID is required' }).optional(),
     images: z.array(z.string().url()).optional().default([])
 });
 
