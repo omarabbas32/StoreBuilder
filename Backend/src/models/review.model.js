@@ -24,24 +24,10 @@ class ReviewModel {
 
         return prisma.productReview.findMany({
             where: {
-                product_id: productId,
+                productId: productId,
                 ...(status && { status })
             },
-            ...(includeCustomer && {
-                include: {
-                    customer: {
-                        select: {
-                            id: true,
-                            first_name: true,
-                            last_name: true,
-                            user: {
-                                select: { name: true }
-                            }
-                        }
-                    }
-                }
-            }),
-            orderBy: { created_at: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: parseInt(limit),
             skip: parseInt(offset)
         });
@@ -50,7 +36,7 @@ class ReviewModel {
     async countByProduct(productId, status = 'approved') {
         return prisma.productReview.count({
             where: {
-                product_id: productId,
+                productId: productId,
                 ...(status && { status })
             }
         });
@@ -75,11 +61,39 @@ class ReviewModel {
         });
     }
 
+    async findByStore(storeId, options = {}) {
+        const { limit = 20, offset = 0, status = null } = options;
+
+        return prisma.productReview.findMany({
+            where: {
+                storeId: storeId,
+                ...(status && { status })
+            },
+            include: {
+                product: {
+                    select: { name: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: parseInt(limit),
+            skip: parseInt(offset)
+        });
+    }
+
+    async countByStore(storeId, status = null) {
+        return prisma.productReview.count({
+            where: {
+                storeId: storeId,
+                ...(status && { status })
+            }
+        });
+    }
+
     async incrementHelpfulCount(id) {
         return prisma.productReview.update({
             where: { id },
             data: {
-                helpful_count: {
+                helpfulCount: {
                     increment: 1
                 }
             }

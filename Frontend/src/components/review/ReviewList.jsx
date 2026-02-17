@@ -46,9 +46,9 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
                         <Card key={review.id || Math.random()} className="review-card">
                             <div className="review-header">
                                 <div className="user-info">
-                                    <span className="user-name">{review.user_name || review.userName || 'Anonymous'}</span>
+                                    <span className="user-name">{review.user_name || review.userName || review.customerName || 'Anonymous'}</span>
                                     <span className="review-date">
-                                        {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Recently'}
+                                        {review.created_at || review.createdAt ? new Date(review.created_at || review.createdAt).toLocaleDateString() : 'Recently'}
                                     </span>
                                 </div>
                                 <StarRating rating={review.rating || 5} readonly size={16} />
@@ -61,7 +61,7 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
                                     onClick={() => handleHelpful(review.id)}
                                 >
                                     <ThumbsUp size={14} />
-                                    Helpful ({review.helpful_count || 0})
+                                    Helpful ({review.helpful_count || review.helpfulCount || 0})
                                 </button>
                             </div>
                         </Card>

@@ -18,7 +18,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }) => {
         setError(null);
 
         const reviewData = {
-            product_id: productId,
+            productId: productId,
             rating,
             title,
             comment,
