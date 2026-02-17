@@ -36,23 +36,41 @@ class ReviewService {
             throw new AppError('Product not found', 404);
         }
 
-        // Business Rule 2: Validate rating
-        if (rating < 1 || rating > 5) {
+        // Business Rule 2: Validate rating (redundant with validator but good for service safety)
+        const numericRating = parseInt(rating);
+        if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
             throw new AppError('Rating must be between 1 and 5', 400);
         }
 
-        // Create review with IP address
+        // Business Rule 3: Verify order ownership if provided
+        let isVerifiedEntry = !!orderId;
+        if (orderId) {
+            const order = await this.orderModel.findById(orderId);
+            if (!order || order.customer_id !== customerId) {
+                // If order belongs to someone else, we don't allow it to be used for verification
+                // We could throw error, or just null it out. Throwing is safer for API integrity.
+                throw new AppError('Invalid order ID provided for this customer', 403);
+            }
+
+            // Check if product is actually in that order
+            const itemInOrder = order.order_items?.some(item => item.product_id === productId);
+            if (order.order_items && !itemInOrder) {
+                isVerifiedEntry = false;
+            }
+        }
+
+        // Create review
         const review = await this.reviewModel.create({
-            productId: productId,
-            storeId: product.store_id || null,
-            ipAddress: ipAddress,
-            orderId: orderId || null,
-            rating: parseInt(rating),
-            title,
-            comment,
+            product_id: productId,
+            store_id: product.store_id || null,
+            customer_id: customerId,
+            order_id: isVerifiedEntry ? orderId : null,
+            rating: numericRating,
+            title: title.trim(),
+            comment: comment.trim(),
             images: images || [],
-            status: 'approved', // Auto-approve anonymous reviews
-            isVerifiedPurchase: !!orderId
+            status: 'pending',
+            is_verified_purchase: isVerifiedEntry
         });
 
         return review;

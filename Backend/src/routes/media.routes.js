@@ -26,4 +26,9 @@ router.get(
   MediaController.searchImages
 );
 
+router.get(
+  "/generate",
+  MediaController.generateImage
+);
+
 module.exports = router;

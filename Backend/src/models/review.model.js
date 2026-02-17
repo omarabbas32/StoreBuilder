@@ -3,9 +3,9 @@ const prisma = require('../db/prismaClient');
 /**
  * ReviewModel - Pure data access layer for ProductReview
  * RULES:
- * - Only CRUD operations
- * - No vote logic (moved to separate model)
- * - No transaction handling
+ * - Only CRUD and atomic increments
+ * - No complex business logic (moved to service)
+ * - No transaction management here
  */
 class ReviewModel {
     async findById(id) {

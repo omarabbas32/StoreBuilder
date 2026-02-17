@@ -10,13 +10,14 @@ const AppError = require('../utils/AppError');
  * - All operations must be atomic (transaction)
  */
 class OrderService {
-    constructor({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, storeModel, prisma, webhookService, notificationService }) {
+    constructor({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, storeModel, customerModel, prisma, webhookService, notificationService }) {
         this.orderModel = orderModel;
         this.orderItemModel = orderItemModel;
         this.productModel = productModel;
         this.cartModel = cartModel;
         this.cartItemModel = cartItemModel;
         this.storeModel = storeModel;
+        this.customerModel = customerModel;
         this.prisma = prisma;
         this.webhookService = webhookService;
         this.notificationService = notificationService;
@@ -34,9 +35,26 @@ class OrderService {
         console.log('[DEBUG_ORDER_SERVICE] createOrderFromCart DTO:', JSON.stringify(dto, null, 2));
         const { storeId, shippingAddress, notes, customerName, customerEmail, customerPhone } = dto;
 
+        // Resolve Real Customer ID if userId is provided
+        let realCustomerId = null;
+        if (customerId) {
+            const customer = await this.customerModel.findByUserId(customerId);
+            if (!customer) {
+                // Auto-create customer profile if it doesn't exist
+                const newCustomer = await this.customerModel.create({
+                    user_id: customerId,
+                    phone: customerPhone || null,
+                    address: shippingAddress || {}
+                });
+                realCustomerId = newCustomer.id;
+            } else {
+                realCustomerId = customer.id;
+            }
+        }
+
         // Business Rule 1: Get cart
         const cart = customerId
-            ? await this.cartModel.findByCustomerId(customerId, storeId)
+            ? await this.cartModel.findByCustomerId(realCustomerId, storeId)
             : await this.cartModel.findBySessionId(sessionId, storeId);
 
         if (!cart) {
@@ -65,12 +83,11 @@ class OrderService {
             0
         );
 
-        // Business Rule 5: Atomic transaction
         const order = await this.prisma.$transaction(async (tx) => {
             // Create order
             const newOrder = await this.orderModel.create({
                 store_id: storeId,
-                customer_id: customerId || null,
+                customer_id: realCustomerId || null,
                 total_amount: totalAmount,
                 status: 'pending',
                 customer_name: customerName,
@@ -164,6 +181,22 @@ class OrderService {
         console.log('[DEBUG_ORDER_SERVICE] createOrder DTO:', JSON.stringify(dto, null, 2));
         const { storeId, items, customerId, shippingAddress, notes, customerName, customerEmail, customerPhone } = dto;
 
+        // customerId here is actually userId from the token
+        let realCustomerId = null;
+        if (customerId) {
+            const customer = await this.customerModel.findByUserId(customerId);
+            if (!customer) {
+                const newCustomer = await this.customerModel.create({
+                    user_id: customerId,
+                    phone: customerPhone || null,
+                    address: shippingAddress || {}
+                });
+                realCustomerId = newCustomer.id;
+            } else {
+                realCustomerId = customer.id;
+            }
+        }
+
         // Business Rule 1: Items must exist
         if (!items || items.length === 0) {
             throw new AppError('Order must have at least one item', 400);
@@ -202,7 +235,7 @@ class OrderService {
             // Create order
             const newOrder = await this.orderModel.create({
                 store_id: storeId,
-                customer_id: customerId || null,
+                customer_id: realCustomerId || null,
                 total_amount: totalAmount,
                 status: 'pending',
                 customer_name: customerName,
@@ -294,13 +327,29 @@ class OrderService {
      * Get orders by store
      */
     async getOrdersByStore(storeId, options = {}) {
-        const { limit = 20, page = 1 } = options;
+        const { limit = 20, page = 1, status, startDate, endDate } = options;
         const offset = (page - 1) * limit;
 
         const where = { store_id: storeId };
 
+        if (status && status !== 'all') {
+            where.status = status;
+        }
+
+        if (startDate || endDate) {
+            where.created_at = {};
+            if (startDate) {
+                where.created_at.gte = new Date(startDate);
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.created_at.lte = end;
+            }
+        }
+
         const [orders, total] = await Promise.all([
-            this.orderModel.findByStore(storeId, { limit, offset }),
+            this.orderModel.findByStore(storeId, { limit, offset, where }),
             this.orderModel.count(where)
         ]);
 
@@ -322,10 +371,25 @@ class OrderService {
         const { limit = 20, page = 1 } = options;
         const offset = (page - 1) * limit;
 
-        const where = { customer_id: customerId };
+        // Resolve Real Customer ID
+        const customer = await this.customerModel.findByUserId(customerId);
+        if (!customer) {
+            return {
+                orders: [],
+                pagination: {
+                    total: 0,
+                    pages: 0,
+                    currentPage: parseInt(page),
+                    limit: parseInt(limit)
+                }
+            };
+        }
+
+        const realCustomerId = customer.id;
+        const where = { customer_id: realCustomerId };
 
         const [orders, total] = await Promise.all([
-            this.orderModel.findByCustomer(customerId, { limit, offset }),
+            this.orderModel.findByCustomer(realCustomerId, { limit, offset }),
             this.orderModel.count(where)
         ]);
 
@@ -363,6 +427,42 @@ class OrderService {
         }
 
         const updated = await this.orderModel.update(orderId, { status: newStatus });
+
+        // Trigger webhook event
+        if (this.webhookService) {
+            this.webhookService.trigger(order.store_id, `order.${newStatus === 'delivered' ? 'completed' : 'updated'}`, {
+                orderId: order.id,
+                status: newStatus,
+                customerName: order.customer_name,
+                totalAmount: order.total_amount
+            }).catch(err => console.error(`[Webhook] Failed to trigger order.${newStatus}:`, err.message));
+        }
+
+        // Trigger internal notification for specific statuses
+        if (this.notificationService) {
+            let notificationData = null;
+            if (newStatus === 'delivered') {
+                notificationData = {
+                    type: 'order',
+                    title: 'Order Delivered',
+                    message: `Order #${order.id.substring(0, 8)} has been marked as delivered.`,
+                    metadata: { orderId: order.id }
+                };
+            } else if (newStatus === 'cancelled') {
+                notificationData = {
+                    type: 'order',
+                    title: 'Order Cancelled',
+                    message: `Order #${order.id.substring(0, 8)} has been cancelled.`,
+                    metadata: { orderId: order.id }
+                };
+            }
+
+            if (notificationData) {
+                this.notificationService.createNotification(order.store_id, notificationData)
+                    .catch(err => console.error('[Notification] Failed to create status notification:', err.message));
+            }
+        }
+
         return updated;
     }
 }

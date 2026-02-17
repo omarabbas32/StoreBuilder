@@ -18,6 +18,9 @@ class OrderController {
 
     create = asyncHandler(async (req, res) => {
         const dto = CreateOrderRequestDTO.fromRequest(req.validatedData);
+        if (req.user?.id) {
+            dto.customerId = req.user.id;
+        }
         const result = await this.orderService.createOrder(dto);
         res.status(201).json({ success: true, data: new OrderResponseDTO(result) });
     });
