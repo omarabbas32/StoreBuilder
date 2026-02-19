@@ -22,7 +22,7 @@ class CategoryService {
      * - Slug must be unique within store
      */
     async createCategory(dto, ownerId) {
-        const { name, slug, description, storeId, parentId } = dto;
+        const { name, slug, description, image_url, storeId, parentId } = dto;
 
         // Business Rule 1: Store must exist and belong to owner
         const store = await this.storeModel.findById(storeId);
@@ -38,6 +38,7 @@ class CategoryService {
             name,
             slug,
             description: description || null,
+            image_url: image_url || null,
             store_id: storeId,
             parent_id: parentId || null
         });

@@ -1,17 +1,27 @@
-import { ShoppingCart, Menu, X, Search } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useCartStore from '../../store/cartStore';
+import useAuthStore from '../../store/authStore';
+import authService from '../../services/authService';
 import { useStorePath } from '../../hooks/useStorePath';
 import { formatImageUrl } from '../../utils/imageUtils';
+import EditableText from './EditableText';
 import './StorefrontNavbar.css';
 
-const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: propLogo, onSearch, searchQuery }) => {
+const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: propLogo, onSearch, searchQuery, componentId }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const itemCount = useCartStore(state => state.addItem ? state.getItemCount() : 0);
     const storePath = useStorePath();
+    const { isAuthenticated, logout: logoutUserState } = useAuthStore();
+
+    const handleLogout = async () => {
+        await authService.logout();
+        logoutUserState();
+        window.location.href = `${storePath}/login`;
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -22,7 +32,7 @@ const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: pr
     }, []);
 
     const FALLBACK_LOGO = 'https://placehold.co/150x50/3b82f6/ffffff/STORELY';
-    const logo = propLogo || config?.logo || FALLBACK_LOGO;
+    const logo = propLogo || config?.logo;
     const displayName = config?.storeName || storeName;
     const showCart = config?.showCart !== false;
     const menuItems = Array.isArray(config?.menuItems)
@@ -36,7 +46,14 @@ const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: pr
                     {logo ? (
                         <img src={formatImageUrl(logo)} alt={displayName} className="navbar-logo" />
                     ) : (
-                        <span className="navbar-name">{displayName}</span>
+                        <EditableText
+                            componentId={componentId}
+                            field="storeName"
+                            value={displayName}
+                            tag="span"
+                            className="navbar-name"
+                            placeholder="Store Name"
+                        />
                     )}
                 </Link>
 
@@ -97,6 +114,31 @@ const StorefrontNavbar = ({ config, brandColor, storeName, onCartClick, logo: pr
                             </button>
                         </div>
                     )}
+
+                    <div className="navbar-auth">
+                        {isAuthenticated ? (
+                            <div className="nav-dropdown-wrapper">
+                                <button className="account-button" title="My Account">
+                                    <User size={24} />
+                                </button>
+                                <div className="nav-dropdown auth-dropdown">
+                                    <Link to={`${storePath}/profile`} className="dropdown-item">My Profile</Link>
+                                    <Link to={`${storePath}/orders`} className="dropdown-item">My Orders</Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="dropdown-item logout-link"
+                                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <Link to={`${storePath}/login`} className="account-button" title="Login">
+                                <User size={24} />
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </div>
             {/* Mobile Search Bar */}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ShoppingBag, CreditCard, ChevronLeft, CheckCircle } from 'lucide-react';
+import { ShoppingBag, CreditCard, ChevronLeft, CheckCircle, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import orderService from '../services/orderService';
@@ -127,8 +127,11 @@ const Checkout = () => {
         console.log('[CHECKOUT_RESULT]', result);
 
         if (result.success) {
+            setOrderResult(result.data);
+            setOrderComplete(true);
             clearCart();
-            // Ensure we use a clean path for redirection
+
+            // Navigate to success page - the orderComplete=true prevents the empty cart redirect
             const successPath = storePath ? `${storePath}/order-success` : '/order-success';
             navigate(`${successPath}?orderId=${result.data.id}`);
         } else {
@@ -159,6 +162,23 @@ const Checkout = () => {
                     <ChevronLeft size={20} />
                     Back
                 </button>
+
+                <div className="checkout-steps">
+                    <div className="step completed">
+                        <div className="step-number"><CheckCircle size={14} /></div>
+                        <span>Cart</span>
+                    </div>
+                    <div className="step-line active"></div>
+                    <div className="step active">
+                        <div className="step-number">2</div>
+                        <span>Checkout</span>
+                    </div>
+                    <div className="step-line"></div>
+                    <div className="step">
+                        <div className="step-number">3</div>
+                        <span>Success</span>
+                    </div>
+                </div>
 
                 <div className="checkout-grid">
                     <div className="checkout-form-section">
@@ -250,6 +270,21 @@ const Checkout = () => {
                                 <div className="summary-row total">
                                     <span>Total</span>
                                     <span>${getTotal().toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            <div className="trust-badges-checkout">
+                                <div className="badge">
+                                    <ShieldCheck size={18} />
+                                    <span>Verified SSL</span>
+                                </div>
+                                <div className="badge">
+                                    <Truck size={18} />
+                                    <span>Insured Shipping</span>
+                                </div>
+                                <div className="badge">
+                                    <RotateCcw size={18} />
+                                    <span>Easy Returns</span>
                                 </div>
                             </div>
                         </Card>

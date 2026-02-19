@@ -4,6 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import CustomerLoginPage from './pages/CustomerLoginPage';
+import CustomerRegisterPage from './pages/CustomerRegisterPage';
 import AdminLayout from './components/layout/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
 import ThemeManager from './pages/ThemeManager';
@@ -26,8 +28,10 @@ import CategoryProductsPage from './pages/CategoryProductsPage';
 import ProductsPage from './pages/ProductsPage';
 import CartPage from './pages/CartPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
+import MyOrders from './pages/MyOrders';
 import MyTemplates from './pages/MyTemplates';
 import AIStoreCreation from './pages/AIStoreCreation';
+import CustomerProfilePage from './pages/CustomerProfilePage';
 
 
 // Placeholder components
@@ -56,7 +60,11 @@ function App() {
                     <Route path="/category/:categoryId" element={<CategoryProductsPage slug={subdomain} />} />
                     <Route path="/product/:productId" element={<ProductDetail />} />
                     <Route path="/cart" element={<CartPage slug={subdomain} />} />
+                    <Route path="/login" element={<CustomerLoginPage />} />
+                    <Route path="/register" element={<CustomerRegisterPage />} />
                     <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/orders" element={<MyOrders />} />
+                    <Route path="/profile" element={<CustomerProfilePage />} />
                     <Route path="/order-success" element={<OrderSuccessPage slug={subdomain} />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
@@ -78,6 +86,10 @@ function App() {
                     element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
                 />
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+                {/* Customer auth routes */}
+                <Route path="/customer/login" element={<CustomerLoginPage />} />
+                <Route path="/customer/register" element={<CustomerRegisterPage />} />
 
                 {/* Admin routes */}
                 <Route
@@ -106,10 +118,18 @@ function App() {
                     <Route index element={<UserDashboard />} />
                     <Route path="products" element={<ProductManager />} />
                     <Route path="categories" element={<CategoryManager />} />
-                    <Route path="customize" element={<StoreCustomizer />} />
                     <Route path="templates" element={<MyTemplates />} />
                     <Route path="orders" element={<OrderManagement />} />
                 </Route>
+
+                <Route
+                    path="/dashboard/customize"
+                    element={
+                        <ProtectedRoute>
+                            <StoreCustomizer />
+                        </ProtectedRoute>
+                    }
+                />
 
                 {/* Store Creation & Onboarding - Protected but outside dashboard layout */}
                 <Route
@@ -126,6 +146,7 @@ function App() {
 
                 {/* AI Onboarding Preview */}
                 <Route path="/onboarding/preview" element={<Storefront />} />
+
 
                 {/* Global Checkout Route (Should be above greedy /:slug) */}
                 <Route path="/checkout" element={<Checkout />} />
@@ -147,6 +168,10 @@ function App() {
                 <Route path="/s/:slug/cart" element={<CartPage />} />
                 <Route path="/s/:slug/checkout" element={<Checkout />} />
                 <Route path="/s/:slug/order-success" element={<OrderSuccessPage />} />
+                <Route path="/s/:slug/orders" element={<MyOrders />} />
+                <Route path="/s/:slug/profile" element={<CustomerProfilePage />} />
+                <Route path="/s/:slug/login" element={<CustomerLoginPage />} />
+                <Route path="/s/:slug/register" element={<CustomerRegisterPage />} />
                 <Route path="/s/:slug" element={<Storefront />} />
 
                 {/* Preview Routes */}
@@ -157,6 +182,7 @@ function App() {
                 <Route path="/preview/:slug/cart" element={<CartPage />} />
                 <Route path="/preview/:slug/checkout" element={<Checkout />} />
                 <Route path="/preview/:slug/order-success" element={<OrderSuccessPage />} />
+                <Route path="/preview/:slug/profile" element={<CustomerProfilePage />} />
                 <Route path="/preview/:slug" element={<Storefront />} />
 
                 {/* Greedy slug routes (Should be LAST) */}
@@ -167,6 +193,10 @@ function App() {
                 <Route path="/:slug/cart" element={<CartPage />} />
                 <Route path="/:slug/checkout" element={<Checkout />} />
                 <Route path="/:slug/order-success" element={<OrderSuccessPage />} />
+                <Route path="/:slug/orders" element={<MyOrders />} />
+                <Route path="/:slug/profile" element={<CustomerProfilePage />} />
+                <Route path="/:slug/login" element={<CustomerLoginPage />} />
+                <Route path="/:slug/register" element={<CustomerRegisterPage />} />
                 <Route path="/:slug" element={<Storefront />} />
 
                 <Route path="/product/:productId" element={<ProductDetail />} />

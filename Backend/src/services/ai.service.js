@@ -374,8 +374,13 @@ class AIService {
 
             return `
         STORE Identity: ${s.name} [Store ID: ${s.id}]
+        - Tagline: ${s.tagline || 'None'}
+        - Description: ${s.description || 'None'}
+        - Contact: ${s.contact_email || 'None'}, ${s.contact_phone || 'None'}
+        - Address: ${s.address || 'None'}
+        - Socials: FB: ${s.facebook_url || 'None'}, IG: ${s.instagram_url || 'None'}, TW: ${s.twitter_url || 'None'}, LI: ${s.linkedin_url || 'None'}, TT: ${s.tiktok_url || 'None'}
         - Categories Available: ${categoriesList.map(c => `${c.name} [ID: ${c.id}]`).join(', ')}
-        - Existing Products: ${productsList.map(p => `${p.name} ($${p.price})`).join(', ')}
+        - Existing Products: ${productsList.map(p => `${p.name} ($${p.price}) [ID: ${p.id}]`).join(', ')}
         - Page Components: ${componentsList.map(c => `${c.type} [ID: ${c.id}]`).join(', ')}
         `;
         }).join('\n');
@@ -403,12 +408,15 @@ class AIService {
            - Method: PUT
            - URL: /stores/:id
            - Purpose: Update store identity, branding, and global settings
-           - Optional Fields: ["name", "tagline", "description", "contact_email", "contact_phone", "address", "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "tiktok_url", "settings"]
+           - Optional Fields: ["name", "slug", "tagline", "description", "contact_email", "contact_phone", "address", "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "tiktok_url", "settings", "business_hours"]
            - Settings Protocol: 
              * Change theme color: { "settings": { "primaryColor": "#HEX_CODE" } }
              * Update logo: { "settings": { "logo_url": "URL" } }
+             * Update background: { "settings": { "background_url": "URL" } }
              * Toggle features: { "settings": { "reviews_enabled": boolean } }
-           - CRITICAL: Only include fields that are changing, preserve all other settings
+             * Change Typography: { "settings": { "font_family": "string" } }
+             * Product Grid Columns: { "settings": { "product_grid_columns": number } }
+           - CRITICAL: Only include fields that are changing, preserve all other settings. You have access to ALL store fields, if the user asks for a customization not explicitly listed here, try to find a logical field in the store model to update.
         
         2. CREATE_PRODUCT
            - Method: POST
@@ -419,7 +427,7 @@ class AIService {
         3. UPDATE_PRODUCT
            - Method: PUT
            - URL: /products/:id
-           - Optional: ["name", "price", "description", "stock", "categoryId"]
+           - Optional: ["name", "price", "description", "stock", "categoryId", "images"]
         
         4. DELETE_PRODUCT
            - Method: DELETE
@@ -429,7 +437,7 @@ class AIService {
         5. CREATE_CATEGORY
            - Method: POST
            - URL: /categories
-           - Required: ["name", "storeId", "slug"]
+           - Fields: ["name", "slug", "description", "image_url", "storeId", "parentId"]
            - Slug Protocol: Generate URL-safe slug (lowercase, hyphens instead of spaces)
         
         6. DELETE_CATEGORY
@@ -440,7 +448,7 @@ class AIService {
         7. UPDATE_CATEGORY
            - Method: PUT
            - URL: /categories/:id
-           - Optional: ["name", "description", "slug"]
+           - Optional: ["name", "slug", "description", "image_url", "parentId"]
         
         8. LIST_PRODUCTS
            - Method: GET

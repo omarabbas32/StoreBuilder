@@ -4,7 +4,7 @@ import Button from './Button';
 import { formatImageUrl } from '../../utils/imageUtils';
 import './ProductPicker.css';
 
-const ProductPicker = ({ isOpen, onClose, products = [], selectedIds = [], onToggle }) => {
+const ProductPicker = ({ onClose, products = [], selectedIds = [], onToggle }) => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredProducts = useMemo(() => {
@@ -15,8 +15,6 @@ const ProductPicker = ({ isOpen, onClose, products = [], selectedIds = [], onTog
             (p.description && p.description.toLowerCase().includes(query))
         );
     }, [products, searchQuery]);
-
-    if (!isOpen) return null;
 
     return (
         <div className="product-picker-overlay" onClick={onClose}>

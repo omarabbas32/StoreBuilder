@@ -33,6 +33,16 @@ const authService = {
     async logout() {
         return await apiClient.post('/auth/logout');
     },
+
+    // Customer login (same endpoint, customers use /auth/login with role=customer)
+    async loginCustomer(email, password) {
+        return await apiClient.post('/auth/login', { email, password });
+    },
+
+    // Customer register
+    async registerCustomer(userData) {
+        return await apiClient.post('/auth/register', { ...userData, role: 'customer' });
+    },
 };
 
 export default authService;

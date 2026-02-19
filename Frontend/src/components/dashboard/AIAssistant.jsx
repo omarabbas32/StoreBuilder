@@ -67,9 +67,7 @@ const AIAssistant = () => {
 
     // Drag Handlers
     const handleDragStart = (e) => {
-        // Only allow left click
         if (e.button !== 0) return;
-
         setIsDragging(true);
         dragRef.current = {
             startX: e.clientX,
@@ -77,30 +75,24 @@ const AIAssistant = () => {
             initialX: position.x,
             initialY: position.y
         };
-        e.preventDefault(); // Prevent text selection
+        e.preventDefault();
     };
 
     useEffect(() => {
         const handleDragMove = (e) => {
             if (!isDragging) return;
-
             const deltaX = e.clientX - dragRef.current.startX;
             const deltaY = e.clientY - dragRef.current.startY;
-
             const newX = dragRef.current.initialX + deltaX;
             const newY = dragRef.current.initialY + deltaY;
-
-            // Simple boundary detection
             const boundedX = Math.max(0, Math.min(newX, window.innerWidth - 60));
             const boundedY = Math.max(0, Math.min(newY, window.innerHeight - 60));
-
             setPosition({ x: boundedX, y: boundedY });
         };
 
         const handleDragEnd = () => {
             if (isDragging) {
                 setIsDragging(false);
-                // Save the top-left position
                 localStorage.setItem('storely_ai_assistant_pos', JSON.stringify(position));
             }
         };
@@ -115,6 +107,113 @@ const AIAssistant = () => {
             window.removeEventListener('mouseup', handleDragEnd);
         };
     }, [isDragging, position]);
+
+    const [actionHistory, setActionHistory] = useState([]);
+
+    const DESTRUCTIVE_ACTIONS = ['DELETE_STORE', 'DELETE_PRODUCT', 'DELETE_CATEGORY'];
+    const ALLOWED_ACTIONS = new Set([
+        'UPDATE_STORE', 'CREATE_PRODUCT', 'UPDATE_PRODUCT', 'DELETE_PRODUCT', 'LIST_PRODUCTS', 'BULK_UPDATE_PRODUCTS',
+        'CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY',
+        'GET_STORE_STATS', 'UPDATE_COMPONENT_CONTENT', 'SEARCH_IMAGES', 'GENERATE_IMAGE'
+    ]);
+
+    const getActionMessage = (actionType) => {
+        const messages = {
+            'UPDATE_STORE': 'Updating your store settings',
+            'CREATE_PRODUCT': 'Creating a new product',
+            'UPDATE_PRODUCT': 'Updating product details',
+            'DELETE_PRODUCT': 'Removing product',
+            'CREATE_CATEGORY': 'Creating a new category',
+            'UPDATE_CATEGORY': 'Updating category',
+            'DELETE_CATEGORY': 'Removing category',
+            'UPDATE_COMPONENT_CONTENT': 'Updating page content',
+            'SEARCH_IMAGES': 'Searching for images',
+            'GENERATE_IMAGE': 'Generating AI image',
+            'GET_STORE_STATS': 'Fetching store analytics',
+            'LIST_PRODUCTS': 'Loading products',
+            'BULK_UPDATE_PRODUCTS': 'Updating multiple products'
+        };
+        return messages[actionType] || actionType;
+    };
+
+    const executeAction = async (action) => {
+        const executionRecord = {
+            timestamp: new Date().toISOString(),
+            action,
+            result: null
+        };
+
+        try {
+            if (!action?.method || !action?.url || !action?.type) {
+                throw new Error('Invalid action format: Missing method, URL, or type');
+            }
+
+            if (!ALLOWED_ACTIONS.has(action.type)) {
+                throw new Error(`Unauthorized action type: ${action.type}`);
+            }
+
+            if (DESTRUCTIVE_ACTIONS.includes(action.type)) {
+                console.warn(`[AIAssistant] Executing destructive action: ${action.type}`);
+            }
+
+            const { method, url, data } = action;
+
+            if (data && JSON.stringify(data).toLowerCase().includes("url here") ||
+                data && JSON.stringify(data).toLowerCase().includes("example.com")) {
+                toast.error("Action contains placeholder data. Please ask AI for real content.");
+                throw new Error("Action blocked: Contains placeholder data");
+            }
+
+            const userFriendlyMessage = getActionMessage(action.type);
+            setMessages(prev => [...prev, { role: 'system', content: `${userFriendlyMessage}...` }]);
+
+            const response = await apiClient({
+                method: method.toLowerCase(),
+                url: url,
+                data: data
+            });
+
+            if (response.success) {
+                executionRecord.result = { success: true, data: response.data, error: response.error };
+                const successMessage = getActionMessage(action.type);
+                toast.success(`${successMessage} completed!`);
+                setIsSuccess(true);
+                setTimeout(() => setIsSuccess(false), 1000);
+
+                if (action.type !== 'GENERATE_IMAGE' && action.type !== 'SEARCH_IMAGES') {
+                    setMessages(prev => [...prev, { role: 'assistant', content: `✅ ${successMessage} completed successfully!` }]);
+                }
+
+                if (action.type === 'UPDATE_STORE' || action.type === 'UPDATE_COMPONENT_CONTENT') {
+                    window.dispatchEvent(new CustomEvent('storely-store-update'));
+                }
+            } else {
+                throw new Error(response.error || 'Unknown API error');
+            }
+        } catch (error) {
+            executionRecord.result = { success: false, error: error.message };
+            const errorMessage = error.response?.data?.message || error.message || "Execution failed";
+            toast.error(`Action failed: ${errorMessage}`);
+            setMessages(prev => [...prev, { role: 'assistant', content: `I tried to perform that action but it failed: ${errorMessage}` }]);
+        } finally {
+            if (action.type === 'SEARCH_IMAGES' || action.type === 'GENERATE_IMAGE') {
+                setMessages(prev => prev.map(m => {
+                    if (m.role === 'assistant' && m.actions) {
+                        const hasAction = m.actions.some(a => a.id === action.id);
+                        if (hasAction) {
+                            return {
+                                ...m,
+                                actions: m.actions.map(a => a.id === action.id ? { ...a, results: executionRecord.result?.data, error: executionRecord.result?.error } : a)
+                            };
+                        }
+                    }
+                    return m;
+                }));
+            }
+            setPendingActions(prev => prev.filter(a => a.id !== action.id));
+            setActionHistory(prev => [...prev, executionRecord]);
+        }
+    };
 
     const handleSend = async (e, manualInput = null) => {
         if (e) e.preventDefault();
@@ -131,27 +230,27 @@ const AIAssistant = () => {
             const response = await onboardingService.assistantChat(history, aiProvider);
 
             if (response.success && response.data) {
-                // UNWRAP STRATEGY:
-                // The API returns { success: true, data: { success: true, data: { message: "..." } } }
-                // So response.data is the INNER object from the controller.
                 const innerResult = response.data;
-
                 if (innerResult.success === false) {
                     throw new Error(innerResult.error || "AI Service Error");
                 }
 
                 const aiPayload = innerResult.data || innerResult;
                 const aiMessage = { role: 'assistant', content: aiPayload.message };
-
-                // Handle both single 'action' (back-compat) and 'actions' array
                 const actions = aiPayload.actions || (aiPayload.action ? [aiPayload.action] : []);
 
                 if (actions.length > 0) {
-                    aiMessage.actions = actions.map((a, idx) => ({ ...a, id: `${Date.now()}-${idx}` }));
-                    // Force manual confirmation for ALL actions as requested by user
-                    setPendingActions(prev => [...prev, ...aiMessage.actions]);
+                    const mappedActions = actions.map((a, idx) => ({ ...a, id: `${Date.now()}-${idx}` }));
+                    aiMessage.actions = mappedActions;
+                    const autoExecuteTypes = ['GENERATE_IMAGE', 'SEARCH_IMAGES', 'LIST_PRODUCTS', 'GET_STORE_STATS'];
+                    mappedActions.forEach(act => {
+                        if (autoExecuteTypes.includes(act.type)) {
+                            executeAction(act);
+                        } else {
+                            setPendingActions(prev => [...prev, act]);
+                        }
+                    });
                 }
-
                 setMessages(prev => [...prev, aiMessage]);
             } else {
                 throw new Error("Invalid response from server");
@@ -159,159 +258,32 @@ const AIAssistant = () => {
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || "Connection failed";
             setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${errorMsg}` }]);
-
-            // Handle rate limit with countdown
-            if (errorMsg.includes('Rate Limit') || errorMsg.includes('busy')) {
-                setRetryCountdown(30);
-                const interval = setInterval(() => {
-                    setRetryCountdown(prev => {
-                        if (prev <= 1) {
-                            clearInterval(interval);
-                            return 0;
-                        }
-                        return prev - 1;
-                    });
-                }, 1000);
-            }
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const [actionHistory, setActionHistory] = useState([]);
-
-    const DESTRUCTIVE_ACTIONS = ['DELETE_STORE', 'DELETE_PRODUCT', 'DELETE_CATEGORY'];
-    const ALLOWED_ACTIONS = new Set([
-        // Store
-        'UPDATE_STORE',
-        // Products
-        'CREATE_PRODUCT', 'UPDATE_PRODUCT', 'DELETE_PRODUCT', 'LIST_PRODUCTS', 'BULK_UPDATE_PRODUCTS',
-        // Categories
-        'CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY',
-        // Analytics
-        'GET_STORE_STATS',
-        'UPDATE_COMPONENT_CONTENT',
-        'SEARCH_IMAGES'
-    ]);
-
-    const executeAction = async (action) => {
-        const executionRecord = {
-            timestamp: new Date().toISOString(),
-            action,
-            result: null
-        };
-
-        try {
-            // 1. Validate Action Structure
-            if (!action?.method || !action?.url || !action?.type) {
-                throw new Error('Invalid action format: Missing method, URL, or type');
-            }
-
-            // 2. Allowed Actions Check
-            if (!ALLOWED_ACTIONS.has(action.type)) {
-                throw new Error(`Unauthorized action type: ${action.type}`);
-            }
-
-            // 3. Confirm Destructive Actions
-            if (DESTRUCTIVE_ACTIONS.includes(action.type)) {
-                // If not already confirmed via UI (which calls this function), we could double-check here
-                // But generally, the UI button "Confirm" is the explicit consent.
-                // We add a safety log here.
-                console.warn(`[AIAssistant] Executing destructive action: ${action.type}`);
-            }
-
-            const { method, url, data } = action;
-
-            // 4. Validation for Placeholders
-            if (JSON.stringify(data).toLowerCase().includes("url here") ||
-                JSON.stringify(data).toLowerCase().includes("example.com")) {
-                toast.error("Action contains placeholder data. Please ask AI for real content.");
-                throw new Error("Action blocked: Contains placeholder data");
-            }
-
-            setMessages(prev => [...prev, { role: 'system', content: `Executing: ${action.type}...` }]);
-
-            // 5. Execute API Call
-            const response = await apiClient({
-                method: method.toLowerCase(),
-                url: url,
-                data: data
-            });
-
-            if (response.success) {
-                executionRecord.result = { success: true, data: response.data };
-                toast.success(`${action.type} successful!`);
-                setIsSuccess(true);
-                setTimeout(() => setIsSuccess(false), 1000);
-                setMessages(prev => [...prev, { role: 'assistant', content: `Done! I've successfully processed the ${action.type}. 🎉` }]);
-
-                if (action.type === 'UPDATE_STORE' || action.type === 'UPDATE_COMPONENT_CONTENT') {
-                    // Trigger live update without page reload
-                    window.dispatchEvent(new CustomEvent('storely-store-update'));
-                }
-            } else {
-                throw new Error(response.error || 'Unknown API error');
-            }
-        } catch (error) {
-            executionRecord.result = { success: false, error: error.message };
-            const errorMessage = error.response?.data?.message || error.message || "Execution failed";
-            toast.error(`Action failed: ${errorMessage}`);
-            setMessages(prev => [...prev, { role: 'assistant', content: `I tried to perform that action but it failed: ${errorMessage}` }]);
-            console.error('[AIAssistant] Action Error:', error);
-        } finally {
-            if (action.type === 'SEARCH_IMAGES' && executionRecord.result?.success) {
-                // Find the assistant message that contains this specific action id and update it with results
-                setMessages(prev => {
-                    return prev.map(m => {
-                        if (m.role === 'assistant' && m.actions) {
-                            const hasAction = m.actions.some(a => a.id === action.id);
-                            if (hasAction) {
-                                return {
-                                    ...m,
-                                    actions: m.actions.map(a => a.id === action.id ? { ...a, results: executionRecord.result.data } : a)
-                                };
-                            }
-                        }
-                        return m;
-                    });
-                });
-            } else {
-                setPendingActions(prev => prev.filter(a => a.id !== action.id));
-            }
-            setActionHistory(prev => [...prev, executionRecord]);
         }
     };
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         setIsUploading(true);
         try {
-            // Use onboardingService if available for consistency, or direct API
             const result = await onboardingService.uploadLogo(file);
-
             if (result.success) {
-                const imageUrl = result.data.url;
-                // Send the image URL to the chat context
-                handleSend(null, `[Uploaded Image] ${imageUrl}`);
+                handleSend(null, `[Uploaded Image] ${result.data.url}`);
             } else {
                 toast.error(result.error || "Failed to upload image");
             }
         } catch (error) {
-            console.error('File upload error:', error);
             toast.error("Error uploading image");
         } finally {
             setIsUploading(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
     const toggleOpen = () => {
         if (isOpen) {
-            // Reset minimize state when closing
             setIsMinimized(false);
             setIsOpen(false);
         } else {
@@ -359,12 +331,7 @@ const AIAssistant = () => {
             <div
                 className="ai-assistant-header"
                 onMouseDown={handleDragStart}
-                onClick={(e) => {
-                    // If minimized and not dragging, click to expand
-                    if (isMinimized && !isDragging) {
-                        setIsMinimized(false);
-                    }
-                }}
+                onClick={() => isMinimized && !isDragging && setIsMinimized(false)}
                 style={{ cursor: isMinimized ? 'pointer' : 'move', userSelect: 'none' }}
             >
                 <div className="header-info">
@@ -383,11 +350,8 @@ const AIAssistant = () => {
                                 border: '1px solid #ddd',
                                 fontSize: '12px',
                                 cursor: 'pointer',
-                                background: '#f8f9fa',
-                                position: 'relative',
-                                zIndex: 10
+                                background: '#f8f9fa'
                             }}
-                            title="Select AI Provider"
                         >
                             <option value="gemini">⚡ Gemini</option>
                             <option value="openai">🤖 GPT-4</option>
@@ -397,7 +361,7 @@ const AIAssistant = () => {
                 </div>
                 <div className="header-actions">
                     {!isMinimized && (
-                        <button onClick={(e) => { e.stopPropagation(); clearHistory(); }} onMouseDown={(e) => e.stopPropagation()} title="Clear chat history">
+                        <button onClick={(e) => { e.stopPropagation(); clearHistory(); }} onMouseDown={(e) => e.stopPropagation()} title="Clear history">
                             <Trash2 size={16} />
                         </button>
                     )}
@@ -416,51 +380,59 @@ const AIAssistant = () => {
                         {messages.map((m, i) => (
                             <div key={i} className={`message ${m.role}`}>
                                 <div className="message-content">{m.content}</div>
-                                {m.role === 'assistant' && m.actions && m.actions.some(a => pendingActions.find(pa => pa.id === a.id)) && (
+                                {m.role === 'assistant' && m.actions && (
                                     <div className="multi-actions-container">
-                                        {m.actions.filter(a => pendingActions.find(pa => pa.id === a.id)).map((act) => (
-                                            <div key={act.id} className="action-confirmation">
-                                                <div className="action-details">
-                                                    <strong>{act.type.replace(/_/g, ' ')}</strong>
-                                                    {act.type === 'UPDATE_STORE' && (
-                                                        <p>Update store identity & settings</p>
-                                                    )}
-                                                    {act.type === 'CREATE_PRODUCT' && (
-                                                        <p>New Product: <strong>{act.data.name}</strong> - ${act.data.price}</p>
-                                                    )}
-                                                    {act.type === 'UPDATE_COMPONENT_CONTENT' && (
-                                                        <p>Update {act.url.split('/').pop()} content</p>
-                                                    )}
-                                                    {act.type === 'SEARCH_IMAGES' && act.results && (
-                                                        <div className="image-search-results">
-                                                            <p>Suggested Images:</p>
-                                                            <div className="results-grid">
-                                                                {act.results.map((res, ridx) => (
-                                                                    <div key={ridx} className="search-result-item" onClick={() => {
-                                                                        // Inform the AI directly with the selected URL
-                                                                        handleSend(null, `I like this one, set it as my store logo: ${res.url}`);
-                                                                        setPendingActions(prev => prev.filter(p => p.id !== act.id));
-                                                                    }}>
-                                                                        <img src={res.thumbnail} alt={res.title} title="Click to use this logo" />
-                                                                    </div>
-                                                                ))}
+                                        {m.actions.map((act) => {
+                                            const isPending = pendingActions.some(pa => pa.id === act.id);
+                                            const hasResults = act.results && act.results.length > 0;
+
+                                            // Only show the card if it's pending OR if it has results to show
+                                            if (!isPending && !hasResults) return null;
+
+                                            return (
+                                                <div key={act.id} className="action-confirmation">
+                                                    <div className="action-details">
+                                                        <strong>{getActionMessage(act.type)}</strong>
+                                                        {act.type === 'UPDATE_STORE' && <p>Update store identity & settings</p>}
+                                                        {act.type === 'CREATE_PRODUCT' && <p>New Product: <strong>{act.data.name}</strong> - ${act.data.price}</p>}
+                                                        {act.type === 'UPDATE_COMPONENT_CONTENT' && <p>Update {act.url.split('/').pop()} content</p>}
+
+                                                        {act.results && (
+                                                            <div className="image-search-results">
+                                                                <p>{act.type === 'GENERATE_IMAGE' ? 'AI Generated Visuals:' : 'Suggested Images:'}</p>
+                                                                {act.error === 'REPLICATE_NO_CREDIT' && (
+                                                                    <p className="ai-warning" style={{ fontSize: '0.75rem', color: '#f59e0b', margin: '4px 0 12px 0' }}>
+                                                                        ⚠️ AI generation is in high demand (Out of credits). Showing high-quality design alternatives.
+                                                                    </p>
+                                                                )}
+                                                                <div className="results-grid">
+                                                                    {act.results.map((res, ridx) => (
+                                                                        <div key={ridx} className="search-result-item" onClick={() => {
+                                                                            const assetType = act.type === 'GENERATE_IMAGE' ? 'header image' : 'logo';
+                                                                            handleSend(null, `Use this ${assetType}: ${res.url}`);
+                                                                        }}>
+                                                                            <img src={res.thumbnail} alt={res.title} />
+                                                                            {act.type === 'GENERATE_IMAGE' && <div className="ai-badge">AI</div>}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
+                                                        )}
+
+                                                        {!['UPDATE_STORE', 'CREATE_PRODUCT', 'UPDATE_COMPONENT_CONTENT', 'SEARCH_IMAGES', 'GENERATE_IMAGE'].includes(act.type) && isPending && (
+                                                            <pre>{JSON.stringify(act.data || {}, null, 2)}</pre>
+                                                        )}
+                                                    </div>
+
+                                                    {isPending && (
+                                                        <div className="confirmation-buttons">
+                                                            <button className="confirm-btn" onClick={() => executeAction(act)}><Check size={14} /> Confirm</button>
+                                                            <button className="cancel-btn" onClick={() => setPendingActions(prev => prev.filter(a => a.id !== act.id))}><X size={14} /> Skip</button>
                                                         </div>
                                                     )}
-                                                    {!['UPDATE_STORE', 'CREATE_PRODUCT', 'UPDATE_COMPONENT_CONTENT', 'SEARCH_IMAGES'].includes(act.type) && (
-                                                        <pre>{JSON.stringify(act.data || {}, null, 2)}</pre>
-                                                    )}
                                                 </div>
-                                                <div className="confirmation-buttons">
-                                                    <button className="confirm-btn" onClick={() => executeAction(act)}>
-                                                        <Check size={14} /> Confirm
-                                                    </button>
-                                                    <button className="cancel-btn" onClick={() => setPendingActions(prev => prev.filter(a => a.id !== act.id))}>
-                                                        <X size={14} /> Skip
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -474,86 +446,22 @@ const AIAssistant = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {!isLoading && pendingActions.length === 0 && messages.length < 5 && (
-                        <div className="quick-chips">
-                            {[
-                                "Update store info",
-                                "Add a new product",
-                                "Change brand color",
-                                "Update footer about us"
-                            ].map((chip) => (
-                                <button key={chip} className="chip" onClick={() => {
-                                    setInput(chip);
-                                    // Submit automatically
-                                    setTimeout(() => handleSend({ preventDefault: () => { } }), 50);
-                                }}>
-                                    {chip}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Rate Limit Notice */}
-                    {retryCountdown > 0 && (
-                        <div className="rate-limit-notice" style={{ padding: '10px', background: '#fff3cd', borderRadius: '8px', margin: '10px', textAlign: 'center' }}>
-                            ⏳ AI is cooling down... Retry in <strong>{retryCountdown}s</strong>
-                            <button onClick={() => { setRetryCountdown(0); }} style={{ marginLeft: '10px', padding: '5px 10px', cursor: 'pointer' }}>
-                                Retry Now
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Action History Panel */}
-                    {actionHistory.length > 0 && (
-                        <div className="action-history" style={{ padding: '10px', borderTop: '1px solid #eee' }}>
-                            <button onClick={() => setShowHistory(!showHistory)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                                {showHistory ? '▼' : '▶'} Recent Actions ({actionHistory.length})
-                            </button>
-                            {showHistory && (
-                                <ul style={{ listStyle: 'none', padding: 0, margin: '10px 0 0 0' }}>
-                                    {actionHistory.slice(-5).reverse().map((h, i) => (
-                                        <li key={i} style={{ padding: '8px', background: h.result?.success ? '#d4edda' : '#f8d7da', borderRadius: '4px', marginBottom: '5px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                                            <span>{h.action.type}</span>
-                                            <span>{h.result?.success ? '✓' : '✗'}</span>
-                                            <small>{new Date(h.timestamp).toLocaleTimeString()}</small>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
+                    <div className="quick-chips">
+                        {["Update store info", "Add a new product", "Change brand color", "Update footer about us"].map((chip, idx) => (
+                            <button key={idx} className="chip" onClick={() => handleSend(null, chip)}>{chip}</button>
+                        ))}
+                    </div>
 
                     <form className="ai-assistant-input" onSubmit={handleSend}>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            style={{ display: 'none' }}
-                            accept="image/*"
-                            onChange={handleFileUpload}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isLoading || isUploading}
-                            title="Upload Image"
-                            style={{ background: '#f1f5f9', color: '#64748b' }}
-                        >
+                        <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
+                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isUploading}>
                             {isUploading ? <Loader className="spin" size={18} /> : <ImageIcon size={18} />}
                         </button>
-                        <input
-                            type="text"
-                            placeholder="Ask me to do something..."
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            disabled={isLoading}
-                        />
-                        <button type="submit" disabled={isLoading || !input.trim()}>
-                            <Send size={18} />
-                        </button>
+                        <input type="text" placeholder="Ask me to do something..." value={input} onChange={(e) => setInput(e.target.value)} disabled={isLoading} />
+                        <button type="submit" disabled={isLoading || !input.trim()}><Send size={18} /></button>
                     </form>
                 </>
-            )
-            }
+            )}
         </div>
     );
 };

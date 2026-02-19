@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Package, ShoppingCart } from 'lucide-react';
+import { Package, ShoppingCart, Search, Filter } from 'lucide-react';
 import productService from '../services/productService';
 import storeService from '../services/storeService';
 import StorefrontNavbar from '../components/storefront/StorefrontNavbar';
@@ -21,6 +21,8 @@ const ProductsPage = ({ slug: slugProp }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('newest'); // 'newest', 'price-low', 'price-high'
     const storePath = useStorePath();
 
     const addItem = useCartStore(state => state.addItem);
@@ -131,26 +133,26 @@ const ProductsPage = ({ slug: slugProp }) => {
             />
 
             <main className="products-main">
-                <div className="products-mini-hero">
-                    <div className="hero-background">
-                        {store.settings?.globalHeaderAsset ? (
-                            <img src={formatImageUrl(store.settings.globalHeaderAsset)} alt="" className="header-library-asset" />
-                        ) : (
-                            <>
-                                <div className="glass-blob blob-1"></div>
-                                <div className="glass-blob blob-2"></div>
-                            </>
-                        )}
-                    </div>
-                    <div className="container">
-                        <div className="page-header">
-                            <h1>Our Products</h1>
-                            <p>Discover our curated collection of premium items</p>
+                <div className="container">
+                    <div className="products-controls">
+                        <div className="search-wrapper">
+                            <Search size={18} className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="sort-wrapper">
+                            <Filter size={18} className="filter-icon" />
+                            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                                <option value="newest">Newest Arrivals</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                            </select>
                         </div>
                     </div>
-                </div>
-
-                <div className="container">
                     {products.length === 0 ? (
                         <div className="no-products-glass">
                             <div className="empty-visual">
@@ -164,36 +166,55 @@ const ProductsPage = ({ slug: slugProp }) => {
                             </Link>
                         </div>
                     ) : (
-                        <div className="products-grid">
-                            {products.map(product => (
-                                <Card key={product._id || product.id} className="product-card">
-                                    <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
-                                        <div className="product-image">
-                                            {product.images?.[0] ? (
-                                                <img src={formatImageUrl(product.images[0])} alt={product.name} />
-                                            ) : (
-                                                <div className="product-placeholder">
-                                                    <Package size={48} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="product-info">
-                                            <h3>{product.name}</h3>
-                                            <p className="product-price">${product.price}</p>
-                                        </div>
-                                    </Link>
-                                    <button
-                                        className="add-to-cart-btn"
-                                        style={{ backgroundColor: brandColor }}
-                                        onClick={() => handleAddToCart(product)}
-                                        disabled={product.stock <= 0}
-                                    >
-                                        <ShoppingCart size={18} />
-                                        {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-                                    </button>
-                                </Card>
-                            ))}
-                        </div>
+                        <>
+                            {products
+                                .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .length === 0 ? (
+                                <div className="no-results">
+                                    <Search size={48} />
+                                    <p>No products match your search "{searchTerm}"</p>
+                                    <button onClick={() => setSearchTerm('')} className="clear-search">Clear Search</button>
+                                </div>
+                            ) : (
+                                <div className="products-grid">
+                                    {products
+                                        .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                        .sort((a, b) => {
+                                            if (sortBy === 'price-low') return a.price - b.price;
+                                            if (sortBy === 'price-high') return b.price - a.price;
+                                            return new Date(b.created_at) - new Date(a.created_at);
+                                        })
+                                        .map(product => (
+                                            <Card key={product._id || product.id} className="product-card">
+                                                <Link to={`${storePath}/product/${product._id || product.id}`} className="product-link">
+                                                    <div className="product-image">
+                                                        {product.images?.[0] ? (
+                                                            <img src={formatImageUrl(product.images[0])} alt={product.name} />
+                                                        ) : (
+                                                            <div className="product-placeholder">
+                                                                <Package size={48} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="product-info">
+                                                        <h3>{product.name}</h3>
+                                                        <p className="product-price">${product.price}</p>
+                                                    </div>
+                                                </Link>
+                                                <button
+                                                    className="add-to-cart-btn"
+                                                    style={{ backgroundColor: brandColor }}
+                                                    onClick={() => handleAddToCart(product)}
+                                                    disabled={product.stock <= 0}
+                                                >
+                                                    <ShoppingCart size={18} />
+                                                    {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                                                </button>
+                                            </Card>
+                                        ))}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </main>

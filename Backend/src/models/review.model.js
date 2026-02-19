@@ -27,7 +27,19 @@ class ReviewModel {
                 productId: productId,
                 ...(status && { status })
             },
-            orderBy: { createdAt: 'desc' },
+            ...(includeCustomer && {
+                include: {
+                    customer: {
+                        select: {
+                            id: true,
+                            user: {
+                                select: { name: true }
+                            }
+                        }
+                    }
+                }
+            }),
+            orderBy: { created_at: 'desc' },
             take: parseInt(limit),
             skip: parseInt(offset)
         });

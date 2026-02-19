@@ -111,34 +111,6 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
             )}
 
             <main className="category-products-main">
-                <div className="category-hero">
-                    <div className="hero-background">
-                        {store.settings?.globalHeaderAsset ? (
-                            <img src={formatImageUrl(store.settings.globalHeaderAsset)} alt="" className="header-library-asset" />
-                        ) : (
-                            <>
-                                <div className="glass-blob blob-1"></div>
-                                <div className="glass-blob blob-2"></div>
-                            </>
-                        )}
-                    </div>
-                    <div className="container">
-                        <div className="breadcrumb">
-                            <Link to={`${storePath}/categories`} className="back-link">
-                                <ArrowLeft size={16} />
-                                Back to Categories
-                            </Link>
-                        </div>
-                        <div className="page-header">
-                            <h1>{category?.name}</h1>
-                            {category?.description && (
-                                <p className="category-desc">{category.description}</p>
-                            )}
-                            <p className="products-count">{products.length} products</p>
-                        </div>
-                    </div>
-                </div>
-
                 {products.length === 0 ? (
                     <div className="no-products">
                         <Package size={64} className="empty-icon" />

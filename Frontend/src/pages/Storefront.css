@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@400;700&family=Outfit:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
 .storefront {
     min-height: 100vh;
     display: flex;
@@ -9,6 +11,9 @@
     line-height: var(--line-height, 1.6);
     letter-spacing: var(--letter-spacing, 0);
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -28,7 +33,7 @@ h6 {
 }
 
 .store-name {
-    font-size: var(--heading-font-size, 2.5rem);
+    font-size: var(--heading-font-size-config, 2.5rem);
     font-weight: 800;
     color: var(--primary-color);
     margin-bottom: var(--space-2);
@@ -54,7 +59,7 @@ h6 {
 }
 
 .section-header-modern h2 {
-    font-size: var(--heading-font-size, 2.5rem);
+    font-size: var(--heading-font-size-config, 2.5rem);
     font-weight: 800;
     margin-bottom: var(--space-4);
     color: var(--color-text);

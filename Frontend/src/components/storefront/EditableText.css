@@ -1,35 +1,112 @@
+/* Editable Text Styles */
 .editable-text {
-    outline: 2px dashed transparent;
+    position: relative;
+    outline: none;
     transition: all 0.2s ease;
-    cursor: text;
-    display: inline-block;
-    min-width: 20px;
-    border-radius: 4px;
-    padding: 2px 4px;
-    margin: -2px -4px;
+    min-height: 1.2em;
 }
 
 .editable-text:hover {
-    outline-color: var(--primary-color, #2563eb);
-    background-color: rgba(37, 99, 235, 0.05);
+    outline: 1px dashed rgba(59, 130, 246, 0.5);
+    background: rgba(59, 130, 246, 0.03);
 }
 
 .editable-text:focus {
-    outline-color: var(--primary-color, #2563eb);
-    outline-style: solid;
-    background-color: white;
-    color: #1e293b;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    z-index: 10;
+    outline: 1px solid #3b82f6;
+    background: transparent;
 }
 
-.editable-text:empty::before {
+.editable-text ::selection {
+    background: rgba(59, 130, 246, 0.3);
+}
+
+/* Tiptap Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
-    opacity: 0.5;
-    font-style: italic;
+    float: left;
+    color: #94a3b8;
+    pointer-events: none;
+    height: 0;
 }
 
-/* Ensure darker text for visibility when editing if background is dark */
-.has-bg .editable-text:focus {
-    color: #0f172a;
+.ProseMirror {
+    outline: none;
+}
+
+/* Bubble Menu Styles */
+.bubble-menu {
+    display: flex;
+    background: #1e293b;
+    /* Dark theme like Notion */
+    padding: 2px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    align-items: center;
+    gap: 2px;
+    z-index: 9999;
+}
+
+.bubble-menu-group {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.bubble-menu-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 4px;
+}
+
+.bubble-menu button {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.bubble-menu button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.bubble-menu button.is-active {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Color Picker */
+.color-picker-wrapper {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.color-picker-wrapper:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.color-picker-wrapper input[type="color"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.color-icon {
+    color: white;
+    pointer-events: none;
 }

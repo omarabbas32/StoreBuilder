@@ -96,19 +96,31 @@
     gap: 4rem;
 }
 
-.hero-title {
+.hero-title,
+.hero-title .editable-text,
+.hero-title .ProseMirror {
     font-family: var(--heading-font-family, inherit);
-    font-size: var(--heading-font-size, 4.5rem);
+    font-size: var(--heading-font-size, clamp(2.5rem, 8vw, 4.5rem));
     font-weight: 850;
     background: linear-gradient(135deg, var(--color-text, #0f172a) 0%, var(--primary-color, #2563eb) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 1.5rem;
-    line-height: 1.05;
-    letter-spacing: -0.04em;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
     animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), gradientShift 8s ease infinite;
     background-size: 200% 200%;
+}
+
+.hero-title .ProseMirror h1 {
+    font-size: inherit;
+    font-weight: inherit;
+    margin: 0;
+    background: inherit;
+    -webkit-background-clip: inherit;
+    -webkit-text-fill-color: inherit;
+    background-clip: inherit;
 }
 
 @keyframes gradientShift {
@@ -131,6 +143,43 @@
     line-height: 1.6;
     max-width: 540px;
     animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both;
+}
+
+/* --- Visibility & Contrast Overrides for Backgrounds --- */
+.storefront-hero.has-bg .hero-title,
+.storefront-hero.has-bg .hero-title .editable-text,
+.storefront-hero.has-bg .hero-title .ProseMirror,
+.storefront-hero.has-bg .hero-title .ProseMirror h1 {
+    background: linear-gradient(135deg, #ffffff 0%, var(--primary-color, #ffffff) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+
+.storefront-hero.has-bg .hero-subtitle,
+.storefront-hero.has-bg .hero-subtitle .editable-text,
+.storefront-hero.has-bg .hero-subtitle .ProseMirror,
+.storefront-hero.has-bg .hero-subtitle .ProseMirror p {
+    color: rgba(255, 255, 255, 0.98) !important;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* Ensure placeholder is visible but muted */
+.storefront-hero.has-bg .ProseMirror p.is-editor-empty:first-child::before {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.storefront-hero.has-bg .hero-secondary-cta {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    backdrop-filter: blur(4px);
+}
+
+.storefront-hero.has-bg .hero-secondary-cta:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .hero-actions {
@@ -353,7 +402,7 @@
 .storefront-hero.layout-full-cover .hero-title {
     font-family: var(--heading-font-family, inherit);
     color: white;
-    font-size: 5.5rem;
+    font-size: clamp(3rem, 10vw, 5.5rem);
     text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 

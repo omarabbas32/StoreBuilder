@@ -21,14 +21,30 @@ class ReviewService {
     }
 
     /**
+     * Resolve User ID to Customer ID
+     */
+    async _resolveCustomerId(userId) {
+        if (!userId) return null;
+        const customer = await this.prisma.customer.findFirst({
+            where: { user_id: userId }
+        });
+        return customer ? customer.id : null;
+    }
+
+    /**
      * Create review
      * Business Rules:
      * - Product must exist
-     * - IP-based rate limiting (handled by middleware)
-     * - One review per IP per product (handled by middleware)
+     * - Customer should have purchased the product
+     * - One review per customer per product
      */
-    async createReview(dto, ipAddress) {
+    async createReview(dto, userId) {
         const { productId, rating, title, comment, images, orderId } = dto;
+        const customerId = await this._resolveCustomerId(userId);
+
+        if (!customerId) {
+            throw new AppError('Customer profile not found. Please ensure you are logged in correctly.', 401);
+        }
 
         // Business Rule 1: Product must exist
         const product = await this.productModel.findById(productId);
@@ -36,44 +52,74 @@ class ReviewService {
             throw new AppError('Product not found', 404);
         }
 
-        // Business Rule 2: Validate rating (redundant with validator but good for service safety)
+        // Business Rule 2: Validate rating
         const numericRating = parseInt(rating);
         if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
             throw new AppError('Rating must be between 1 and 5', 400);
         }
 
-        // Business Rule 3: Verify order ownership if provided
-        let isVerifiedEntry = !!orderId;
-        if (orderId) {
-            const order = await this.orderModel.findById(orderId);
-            if (!order || order.customer_id !== customerId) {
-                // If order belongs to someone else, we don't allow it to be used for verification
-                // We could throw error, or just null it out. Throwing is safer for API integrity.
-                throw new AppError('Invalid order ID provided for this customer', 403);
-            }
+        // Business Rule 3: STRICT Enforcement - Only verified purchasers can review
+        // Check for ANY completed/delivered order by this customer that contains this product
+        const purchaseRecord = await this.prisma.order.findFirst({
+            where: {
+                customer_id: customerId,
+                status: {
+                    in: ['delivered', 'completed', 'paid']
+                },
+                order_items: {
+                    some: {
+                        product_id: productId
+                    }
+                }
+            },
+            select: { id: true }
+        });
 
-            // Check if product is actually in that order
-            const itemInOrder = order.order_items?.some(item => item.product_id === productId);
-            if (order.order_items && !itemInOrder) {
-                isVerifiedEntry = false;
-            }
+        if (!purchaseRecord) {
+            throw new AppError('Only customers who have purchased this product can leave a review.', 403);
         }
+
+        const isVerifiedEntry = true;
+        const finalOrderId = orderId || purchaseRecord.id;
 
         // Create review
         const review = await this.reviewModel.create({
             product_id: productId,
             store_id: product.store_id || null,
             customer_id: customerId,
-            order_id: isVerifiedEntry ? orderId : null,
+            order_id: isVerifiedEntry ? finalOrderId : null,
             rating: numericRating,
             title: title.trim(),
             comment: comment.trim(),
             images: images || [],
-            status: 'pending',
+            status: 'approved', // Auto-approve for now
             is_verified_purchase: isVerifiedEntry
         });
 
+        // Recalculate product rating stats
+        await this.syncProductRating(productId);
+
         return review;
+    }
+
+    /**
+     * Recalculate and sync product rating statistics
+     */
+    async syncProductRating(productId) {
+        const reviews = await this.prisma.productReview.findMany({
+            where: { product_id: productId, status: 'approved' },
+            select: { rating: true }
+        });
+
+        const count = reviews.length;
+        const avg = count > 0
+            ? reviews.reduce((acc, r) => acc + r.rating, 0) / count
+            : 0;
+
+        await this.productModel.update(productId, {
+            average_rating: avg,
+            reviews_count: count
+        });
     }
 
     /**
@@ -124,8 +170,7 @@ class ReviewService {
     }
 
     /**
-     * Update review status (admin/store owner)
-     * Business Rule: Only store owner can approve/reject reviews
+     * Update review status
      */
     async updateReviewStatus(reviewId, newStatus, ownerId) {
         const review = await this.reviewModel.findById(reviewId);
@@ -139,7 +184,6 @@ class ReviewService {
             throw new AppError('You do not own this store', 403);
         }
 
-        // Valid statuses
         const validStatuses = ['pending', 'approved', 'rejected'];
         if (!validStatuses.includes(newStatus)) {
             throw new AppError('Invalid status', 400);
@@ -151,7 +195,6 @@ class ReviewService {
 
     /**
      * Add owner response to review
-     * Business Rule: Only store owner can respond
      */
     async addOwnerResponse(reviewId, response, ownerId) {
         const review = await this.reviewModel.findById(reviewId);
@@ -174,18 +217,19 @@ class ReviewService {
 
     /**
      * Mark review as helpful
-     * Business Rules:
-     * - IP-based voting (one vote per review per IP)
-     * - Must be atomic (transaction)
      */
-    async markHelpful(reviewId, ipAddress) {
+    async markHelpful(reviewId, userId) {
+        const customerId = await this._resolveCustomerId(userId);
+        if (!customerId) {
+            throw new AppError('Customer profile not found', 401);
+        }
+
         const review = await this.reviewModel.findById(reviewId);
         if (!review) {
             throw new AppError('Review not found', 404);
         }
 
-        // Business Rule: Check if already voted
-        const existingVote = await this.reviewHelpfulVoteModel.findByReviewAndIp(
+        const existingVote = await this.reviewHelpfulVoteModel.findByReviewAndCustomer(
             reviewId,
             ipAddress
         );
@@ -194,7 +238,6 @@ class ReviewService {
             throw new AppError('You have already marked this review as helpful', 400);
         }
 
-        // Atomic transaction: create vote + increment count
         await this.prisma.$transaction(async (tx) => {
             await this.reviewHelpfulVoteModel.create({
                 review_id: reviewId,
@@ -209,21 +252,67 @@ class ReviewService {
 
     /**
      * Delete review
-     * Business Rule: Only review author or store owner can delete
      */
     async deleteReview(reviewId, userId, isOwner = false) {
+        const customerId = await this._resolveCustomerId(userId);
         const review = await this.reviewModel.findById(reviewId);
         if (!review) {
             throw new AppError('Review not found', 404);
         }
 
-        // Check permissions
-        if (!isOwner && review.customer_id !== userId) {
+        if (!isOwner && review.customer_id !== customerId) {
             throw new AppError('You can only delete your own reviews', 403);
         }
 
         await this.reviewModel.delete(reviewId);
         return { success: true, message: 'Review deleted successfully' };
+    }
+
+    /**
+     * Check if a customer can review a product
+     */
+    async checkReviewEligibility(productId, userId) {
+        const customerId = await this._resolveCustomerId(userId);
+
+        if (!customerId) {
+            return { eligible: false, reason: 'Customer profile not found. Only registered customers can leave reviews.' };
+        }
+
+        // 1. Check if already reviewed
+        const existingReview = await this.prisma.productReview.findFirst({
+            where: { product_id: productId, customer_id: customerId }
+        });
+
+        if (existingReview) {
+            return { eligible: false, reason: 'You have already reviewed this product.' };
+        }
+
+        // 2. Check if purchased at all (any status)
+        const anyPurchase = await this.prisma.order.findFirst({
+            where: {
+                customer_id: customerId,
+                order_items: { some: { product_id: productId } }
+            }
+        });
+
+        if (!anyPurchase) {
+            return { eligible: false, reason: 'Only customers who have purchased this product can leave a review.' };
+        }
+
+        // 3. Check if order is in a "reviewable" status
+        const eligiblePurchase = await this.prisma.order.findFirst({
+            where: {
+                customer_id: customerId,
+                status: { in: ['delivered', 'completed', 'paid'] },
+                order_items: { some: { product_id: productId } }
+            }
+        });
+
+        if (!eligiblePurchase) {
+            return { eligible: false, reason: 'You can leave a review once your order is delivered.' };
+        }
+
+        return { eligible: true };
     }
 }
 

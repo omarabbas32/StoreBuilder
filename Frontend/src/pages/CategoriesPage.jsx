@@ -123,65 +123,51 @@ const CategoriesPage = ({ slug: slugProp }) => {
             />
 
             <main className="categories-main">
-                <div className="categories-hero">
-                    <div className="hero-background">
-                        {store.settings?.globalHeaderAsset ? (
-                            <img src={formatImageUrl(store.settings.globalHeaderAsset)} alt="" className="header-library-asset" />
-                        ) : (
-                            <>
-                                <div className="glass-blob blob-1"></div>
-                                <div className="glass-blob blob-2"></div>
-                            </>
-                        )}
+                <div className="container">
+                    <div className="page-header">
+                        <h1>Categories</h1>
+                        <p>Explore our products by category</p>
                     </div>
-                    <div className="container">
-                        <nav className="breadcrumbs">
-                            <Link to={`${storePath}/`}>Home</Link>
-                            <ArrowRight size={12} />
-                            <span>Categories</span>
-                        </nav>
-                        <div className="page-header">
-                            <h1>Categories</h1>
-                            <p>Explore our curated collections and find exactly what you're looking for.</p>
-                        </div>
-                    </div>
-                </div>
 
-                {categories.length === 0 ? (
-                    <div className="no-categories">
-                        <Package size={64} className="empty-icon" />
-                        <p>No categories found yet. Please check back soon.</p>
-                    </div>
-                ) : (
-                    <div className="categories-grid">
-                        {categories.map(category => (
-                            <Link
-                                key={category._id || category.id}
-                                to={`${storePath}/category/${category._id || category.id}`}
-                                className="category-card"
-                            >
-                                <div className="category-image">
-                                    {category.image_url ? (
-                                        <img src={category.image_url} alt={category.name} />
-                                    ) : (
-                                        <div className="category-placeholder">
-                                            <Package size={48} />
+                    {categories.length === 0 ? (
+                        <div className="no-categories">
+                            <Package size={64} className="empty-icon" />
+                            <p>No categories found yet. Please check back soon.</p>
+                        </div>
+                    ) : (
+                        <div className="categories-grid">
+                            {categories.map(category => {
+                                console.log('[DEBUG_CATEGORIES_PAGE] Rendering category:', category);
+                                return (
+                                    <Link
+                                        key={category.id}
+                                        to={`${storePath}/category/${category.id}`}
+                                        className="category-card"
+                                    >
+                                        <div className="category-image">
+                                            {category.imageUrl ? (
+                                                <img src={formatImageUrl(category.imageUrl)} alt={category.name} />
+                                            ) : (
+                                                <div className="category-placeholder">
+                                                    <Package size={48} />
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                                <div className="category-info">
-                                    <h3>{category.name}</h3>
-                                    {category.description && (
-                                        <p className="category-description">{category.description}</p>
-                                    )}
-                                    <span className="view-products" style={{ color: brandColor }}>
-                                        View products <ArrowRight size={16} />
-                                    </span>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
+                                        <div className="category-info">
+                                            <h3 className="category-title">{category.name || 'Category Name'}</h3>
+                                            <p className="category-description">
+                                                {category.description || 'Discover our curated collection and find the perfect items for your needs.'}
+                                            </p>
+                                            <span className="view-products" style={{ color: brandColor }}>
+                                                View products <ArrowRight size={16} />
+                                            </span>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </main>
 
             {footerConfig !== null ? (
