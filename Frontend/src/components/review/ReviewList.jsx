@@ -73,7 +73,7 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
                                         )}
                                     </div>
                                     <span className="review-date">
-                                        {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Recently'}
+                                        {review.created_at || review.createdAt ? new Date(review.created_at || review.createdAt).toLocaleDateString() : 'Recently'}
                                     </span>
                                 </div>
                                 <StarRating rating={review.rating || 5} readonly size={16} />

@@ -132,11 +132,28 @@ class ReviewService {
         const reviews = await this.reviewModel.findByProduct(productId, {
             limit,
             offset,
-            status,
-            includeCustomer: true
+            status
         });
 
         const total = await this.reviewModel.countByProduct(productId, status);
+
+        return new PaginationDTO(reviews, total, page, limit);
+    }
+
+    /**
+     * Get reviews by store
+     */
+    async getStoreReviews(storeId, options = {}) {
+        const { page = 1, limit = 20, status = null } = options;
+        const offset = (page - 1) * limit;
+
+        const reviews = await this.reviewModel.findByStore(storeId, {
+            limit,
+            offset,
+            status
+        });
+
+        const total = await this.reviewModel.countByStore(storeId, status);
 
         return new PaginationDTO(reviews, total, page, limit);
     }
@@ -214,7 +231,7 @@ class ReviewService {
 
         const existingVote = await this.reviewHelpfulVoteModel.findByReviewAndCustomer(
             reviewId,
-            customerId
+            ipAddress
         );
 
         if (existingVote) {
@@ -224,7 +241,7 @@ class ReviewService {
         await this.prisma.$transaction(async (tx) => {
             await this.reviewHelpfulVoteModel.create({
                 review_id: reviewId,
-                customer_id: customerId
+                ip_address: ipAddress
             });
 
             await this.reviewModel.incrementHelpfulCount(reviewId);

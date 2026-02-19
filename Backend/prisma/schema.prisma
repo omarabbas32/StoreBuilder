@@ -27,10 +27,8 @@ model Cart {
   store_id    String?    @db.Uuid
   customer_id String?    @db.Uuid
   cart_items  CartItem[]
-  customer    Customer?  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   store       Store?     @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([customer_id, store_id], map: "unique_customer_store_cart")
   @@unique([session_id, store_id], map: "unique_session_store_cart")
   @@index([store_id], map: "idx_carts_store")
   @@map("carts")
@@ -69,21 +67,6 @@ model Component {
   @@map("components")
 }
 
-model Customer {
-  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id              String?             @db.Uuid
-  phone                String?             @db.VarChar(50)
-  address              String?
-  created_at           DateTime?           @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?           @default(now()) @db.Timestamp(6)
-  carts                Cart[]
-  user                 User?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  orders               Order[]
-  product_reviews      ProductReview[]
-  review_helpful_votes ReviewHelpfulVote[]
-
-  @@map("customers")
-}
 
 model Migration {
   id          Int       @id @default(autoincrement())
@@ -120,7 +103,6 @@ model Order {
   notes            String?
   customer_id      String?         @db.Uuid
   order_items      OrderItem[]
-  customer         Customer?       @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
   store            Store?          @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_reviews  ProductReview[]
 
@@ -154,7 +136,9 @@ model ProductReview {
   @@index([product_id, status], map: "idx_reviews_product")
   @@index([rating], map: "idx_reviews_rating")
   @@index([status], map: "idx_reviews_status")
-  @@index([store_id], map: "idx_reviews_store")
+  @@index([storeId], map: "idx_reviews_store")
+  @@index([ipAddress, createdAt], map: "idx_reviews_ip_date")
+  @@unique([ipAddress, productId], map: "unique_ip_product")
   @@map("product_reviews")
 }
 
@@ -285,7 +269,6 @@ model User {
   verification_token String?    @db.VarChar(255)
   reset_token        String?    @db.VarChar(255)
   reset_expires      DateTime?  @db.Timestamp(6)
-  customers          Customer[]
   stores             Store[]
   themes             Theme[]
 

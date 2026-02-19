@@ -9,7 +9,6 @@ const orderModel = require('../models/order.model');
 const orderItemModel = require('../models/orderItem.model');
 const storeModel = require('../models/store.model');
 const categoryModel = require('../models/category.model');
-const customerModel = require('../models/customer.model');
 const reviewModel = require('../models/review.model');
 const reviewHelpfulVoteModel = require('../models/reviewHelpfulVote.model');
 const themeModel = require('../models/theme.model');
@@ -23,7 +22,6 @@ const StoreService = require('../services/store.service');
 const AuthService = require('../services/auth.service');
 const CategoryService = require('../services/category.service');
 const ReviewService = require('../services/review.service');
-const CustomerService = require('../services/customer.service');
 const ThemeService = require('../services/theme.service');
 const ComponentService = require('../services/component.service');
 const EmailService = require('../services/email.service');
@@ -42,7 +40,6 @@ const StoreController = require('../controllers/store.controller');
 const AuthController = require('../controllers/auth.controller');
 const CategoryController = require('../controllers/category.controller');
 const ReviewController = require('../controllers/review.controller');
-const CustomerController = require('../controllers/customer.controller');
 const ThemeController = require('../controllers/theme.controller');
 const ComponentController = require('../controllers/component.controller');
 const OnboardingController = require('../controllers/onboarding.controller');
@@ -66,7 +63,6 @@ const storeService = new StoreService({ storeModel, userModel, categoryModel, pr
 const authService = new AuthService({ userModel, emailService });
 const categoryService = new CategoryService({ categoryModel, storeModel, prisma });
 const reviewService = new ReviewService({ reviewModel, reviewHelpfulVoteModel, productModel, orderModel, storeModel, prisma });
-const customerService = new CustomerService({ customerModel, userModel });
 const themeService = new ThemeService({ themeModel, userModel });
 const componentService = new ComponentService({ componentModel });
 const paymentService = new PaymentService({ orderModel });
@@ -82,7 +78,6 @@ const storeController = new StoreController(storeService);
 const authController = new AuthController(authService);
 const categoryController = new CategoryController(categoryService);
 const reviewController = new ReviewController(reviewService);
-const customerController = new CustomerController(customerService);
 const themeController = new ThemeController(themeService);
 const componentController = new ComponentController(componentService);
 const onboardingController = new OnboardingController(onboardingService);
@@ -91,15 +86,15 @@ const webhookController = new WebhookController({ webhookService });
 
 const container = {
     cartService, productService, orderService, storeService, authService, categoryService,
-    reviewService, customerService, themeService, componentService, emailService,
+    reviewService, themeService, componentService, emailService,
     uploadService, aiService, paymentService, analyticsService, onboardingService, webhookService,
     notificationService,
     cartController, productController, orderController, storeController, authController,
-    categoryController, reviewController, customerController, themeController,
+    categoryController, reviewController, themeController,
     componentController, onboardingController, mediaController, webhookController,
     notificationController,
     cartModel, cartItemModel, productModel, userModel, orderModel, orderItemModel,
-    storeModel, categoryModel, customerModel, reviewModel, reviewHelpfulVoteModel,
+    storeModel, categoryModel, reviewModel, reviewHelpfulVoteModel,
     themeModel, componentModel, prisma
 };
 

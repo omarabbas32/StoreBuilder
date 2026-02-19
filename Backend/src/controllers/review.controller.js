@@ -47,8 +47,27 @@ class ReviewController {
     });
 
     markHelpful = asyncHandler(async (req, res) => {
-        await this.reviewService.markHelpful(req.params.id, req.user.id);
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        await this.reviewService.markHelpful(req.params.id, ipAddress);
         res.status(200).json({ success: true, message: 'Review marked as helpful' });
+    });
+
+    getByStore = asyncHandler(async (req, res) => {
+        const result = await this.reviewService.getStoreReviews(req.params.storeId, req.query);
+        result.data = ReviewResponseDTO.fromArray(result.data);
+        res.status(200).json({ success: true, data: result });
+    });
+
+    updateStatus = asyncHandler(async (req, res) => {
+        const { status } = req.body;
+        const result = await this.reviewService.updateReviewStatus(req.params.id, status, req.user.id);
+        res.status(200).json({ success: true, data: new ReviewResponseDTO(result) });
+    });
+
+    addResponse = asyncHandler(async (req, res) => {
+        const { response } = req.body;
+        const result = await this.reviewService.addOwnerResponse(req.params.id, response, req.user.id);
+        res.status(200).json({ success: true, data: new ReviewResponseDTO(result) });
     });
 
     delete = asyncHandler(async (req, res) => {
