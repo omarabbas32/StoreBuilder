@@ -27,7 +27,10 @@ import {
     Copy,
     Minimize2,
     Maximize2,
-    ArrowRight
+    ArrowRight,
+    Minus,
+    RotateCcw,
+    RefreshCw
 } from 'lucide-react';
 import { useRef } from 'react';
 import storeService from '../services/storeService';
@@ -92,54 +95,67 @@ const AccordionSection = ({ id, title, description, icon, children, openSections
     );
 };
 
-const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, handleSaveAsTemplate, undo, redo, historyIndex, historyLength, onReset, justSaved, setShowTemplatePicker }) => (
-    <div className="sticky-editor-bar">
-        <div className="editor-title">
-            <h2>{storeName}</h2>
-            <div className={`save-status ${hasUnsavedChanges ? 'unsaved' : 'saved'}`}>
-                {hasUnsavedChanges ? '● Unsaved' : '✓ Saved'}
+const StickyToolbar = ({ storeName, hasUnsavedChanges, saving, handleSave, handleSaveAsTemplate, undo, redo, historyIndex, historyLength, onReset, justSaved, setShowTemplatePicker }) => {
+    const navigate = useNavigate();
+
+    return (
+        <div className="sticky-editor-bar">
+            <div className="editor-title">
+                <button
+                    className="back-to-dashboard"
+                    onClick={() => navigate('/dashboard')}
+                    title="Back to Dashboard"
+                >
+                    <ArrowLeft size={20} />
+                </button>
+                <div className="title-group">
+                    <h2>{storeName} <span className="studio-badge">Studio Focus</span></h2>
+                    <div className={`save-status ${hasUnsavedChanges ? 'unsaved' : 'saved'}`}>
+                        {hasUnsavedChanges ? '● Changes Unsaved' : '✓ All Saved'}
+                    </div>
+                </div>
+            </div>
+            <div className="editor-actions">
+                <button className="toolbar-btn glass" onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)">
+                    <Undo size={18} />
+                </button>
+                <button className="toolbar-btn glass" onClick={redo} disabled={historyIndex >= historyLength - 1} title="Redo (Ctrl+Y)">
+                    <Redo size={18} />
+                </button>
+                <div className="toolbar-divider-v" />
+                <button className="toolbar-btn glass" onClick={() => setShowTemplatePicker(true)} title="Browse and apply templates">
+                    <Layout size={18} />
+                    <span className="btn-label-sm">Templates</span>
+                </button>
+                <button className="toolbar-btn glass" onClick={handleSaveAsTemplate} title="Save current design as a new template">
+                    <Copy size={18} />
+                </button>
+                <button className="toolbar-btn glass" onClick={onReset} title="Reset all to defaults">
+                    <X size={18} />
+                </button>
+                <Button
+                    onClick={handleSave}
+                    className={`save-btn-modern ${justSaved ? 'success' : ''}`}
+                    size="sm"
+                    loading={saving}
+                    disabled={saving || (!hasUnsavedChanges && !justSaved)}
+                >
+                    {justSaved ? (
+                        <>
+                            <Check size={18} />
+                            Saved!
+                        </>
+                    ) : (
+                        <>
+                            <Save size={18} />
+
+                        </>
+                    )}
+                </Button>
             </div>
         </div>
-        <div className="editor-actions">
-            <button className="toolbar-btn glass" onClick={undo} disabled={historyIndex <= 0} title="Undo (Ctrl+Z)">
-                <Undo size={18} />
-            </button>
-            <button className="toolbar-btn glass" onClick={redo} disabled={historyIndex >= historyLength - 1} title="Redo (Ctrl+Y)">
-                <Redo size={18} />
-            </button>
-            <div className="toolbar-divider-v" />
-            <button className="toolbar-btn glass" onClick={() => setShowTemplatePicker(true)} title="Browse and apply templates">
-                <Layout size={18} />
-                <span className="btn-label-sm">Templates</span>
-            </button>
-            <button className="toolbar-btn glass" onClick={handleSaveAsTemplate} title="Save current design as a new template">
-                <Copy size={18} />
-            </button>
-            <button className="toolbar-btn glass" onClick={onReset} title="Reset all to defaults">
-                <X size={18} />
-            </button>
-            <Button
-                onClick={handleSave}
-                className={`save-btn-modern ${justSaved ? 'success' : ''}`}
-                size="sm"
-                loading={saving}
-                disabled={saving || (!hasUnsavedChanges && !justSaved)}
-            >
-                {justSaved ? (
-                    <>
-                        <Check size={18} />
-                        Saved!
-                    </>
-                ) : (
-                    <>
-                        <Save size={18} />
-
-                    </>
-                )}
-            </Button>
-        </div>
-    </div>
-);
+    );
+};
 
 const CustomizationProgress = ({ settings }) => {
     // Basic logic to check "completeness"
@@ -169,68 +185,79 @@ const CustomizationProgress = ({ settings }) => {
             <div className="progress-bar-bg">
                 <div className="progress-bar-fill" style={{ width: `${percentage}%` }} />
             </div>
+            <p className="progress-status-msg" style={{ fontSize: '0.7rem', color: 'var(--designer-text-muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                {percentage < 50 ? '🌱 Almost there! Keep going.' : percentage < 90 ? '✨ Looking great! Just a few more tweaks.' : '👑 Perfect! Your store is ready.'}
+            </p>
         </div>
     );
 };
 
-const DeviceFrame = ({ children, device, onDeviceChange, scale, onScaleChange, subdomain }) => (
-    <div className="designer-preview-pane">
+const DeviceFrame = ({ children, device, onDeviceChange, scale, onScaleChange, onRefresh, subdomain }) => (
+    <div className={`designer-preview-pane ${device}`}>
         <div className="preview-toolbar">
             <div className="device-selectors">
                 <button
-                    className={`toolbar-btn ${device === 'mobile' ? 'active' : ''}`}
-                    onClick={() => onDeviceChange('mobile')}
-                    title="Mobile View"
+                    className={`toolbar-btn ${device === 'desktop' ? 'active' : ''}`}
+                    onClick={() => onDeviceChange('desktop')}
                 >
-                    <Smartphone size={18} />
+                    <Monitor size={18} />
                 </button>
                 <button
                     className={`toolbar-btn ${device === 'tablet' ? 'active' : ''}`}
                     onClick={() => onDeviceChange('tablet')}
-                    title="Tablet View"
                 >
                     <Tablet size={18} />
                 </button>
                 <button
-                    className={`toolbar-btn ${device === 'desktop' ? 'active' : ''}`}
-                    onClick={() => onDeviceChange('desktop')}
-                    title="Desktop View"
+                    className={`toolbar-btn ${device === 'mobile' ? 'active' : ''}`}
+                    onClick={() => onDeviceChange('mobile')}
                 >
-                    <Monitor size={18} />
+                    <Smartphone size={18} />
                 </button>
             </div>
 
-            <div className="toolbar-divider-v" />
+            <div className="toolbar-divider-v"></div>
 
             <div className="zoom-controls">
-                <button className="toolbar-btn" onClick={() => onScaleChange(Math.max(0.25, scale - 0.25))} title="Zoom Out">
-                    <Minimize2 size={16} />
+                <button className="toolbar-btn" onClick={() => onScaleChange(Math.max(0.1, scale - 0.1))}>
+                    <Minus size={14} />
                 </button>
-                <span className="zoom-level">{Math.round(scale * 100)}%</span>
-                <button className="toolbar-btn" onClick={() => onScaleChange(Math.min(1, scale + 0.25))} title="Zoom In">
-                    <Maximize2 size={16} />
+                <span className="scale-display">{Math.round(scale * 100)}%</span>
+                <button className="toolbar-btn" onClick={() => onScaleChange(Math.min(2, scale + 0.1))}>
+                    <Plus size={14} />
+                </button>
+                <button className="toolbar-btn glass" onClick={() => onScaleChange(1)}>
+                    <RotateCcw size={14} />
                 </button>
             </div>
-        </div>
 
-        <div className="preview-iframe-wrapper">
+            <div className="toolbar-divider-v"></div>
+
+            <button
+                className="toolbar-btn glass"
+                onClick={onRefresh}
+                title="Refresh Preview"
+            >
+                <RefreshCw size={14} />
+            </button>
+        </div>
+        <div className={`preview-iframe-wrapper ${device}`}>
             <div
                 className={`preview-device-frame ${device}`}
                 style={{
-                    transform: `scale(${scale})`,
+                    transform: device === 'desktop' ? 'none' : `scale(${scale})`,
                     transformOrigin: 'center top'
                 }}
             >
-                <div className={`device-top-bar ${device === 'desktop' ? 'desktop' : ''}`}>
-                    <div className="status-dot dot-red" />
-                    <div className="status-dot dot-yellow" />
-                    <div className="status-dot dot-green" />
-                    {device === 'desktop' && (
-                        <div className="device-address-bar desktop">
-                            {window.location.origin}/{subdomain || 'store-id'}
+                {device !== 'desktop' && (
+                    <div className="device-top-bar">
+                        <div className="status-dots">
+                            <span className="status-dot dot-red"></span>
+                            <span className="status-dot dot-yellow"></span>
+                            <span className="status-dot dot-green"></span>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
                 <div className={`preview-iframe-container ${device}`}>
                     {children}
                 </div>
@@ -263,6 +290,7 @@ const CustomizerMainMenu = ({ onSelect, activeSection }) => {
                         <span className="menu-nav-title">{item.title}</span>
                         <span className="menu-nav-desc">{item.description}</span>
                     </div>
+                    <ArrowRight size={16} className="menu-nav-chevron" style={{ marginLeft: 'auto', opacity: 0.3 }} />
                 </button>
             ))}
         </div>
@@ -283,7 +311,7 @@ const StoreCustomizer = () => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [previewMode, setPreviewMode] = useState('split'); // 'split' or 'full' (editor only)
     const [previewDevice, setPreviewDevice] = useState('desktop'); // 'mobile', 'tablet', 'desktop'
-    const [previewScale, setPreviewScale] = useState(0.75); // Added scaling support
+    const [previewScale, setPreviewScale] = useState(1); // Added scaling support
     const [draftAvailable, setDraftAvailable] = useState(null);
     const [history, setHistory] = useState([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
@@ -306,6 +334,7 @@ const StoreCustomizer = () => {
     });
     const [justSaved, setJustSaved] = useState(false);
     const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+    const [previewKey, setPreviewKey] = useState(0);
 
     const toggleSection = (section) => {
         setOpenSections(prev => ({
@@ -1213,29 +1242,28 @@ const StoreCustomizer = () => {
 
     return (
         <div className="store-customizer-modern">
+            <StickyToolbar
+                storeName={store.name}
+                hasUnsavedChanges={hasUnsavedChanges}
+                saving={saving}
+                handleSave={handleSave}
+                handleSaveAsTemplate={handleSaveAsTemplate}
+                justSaved={justSaved}
+                undo={undo}
+                redo={redo}
+                historyIndex={historyIndex}
+                historyLength={history.length}
+                setShowTemplatePicker={setShowTemplatePicker}
+                onReset={() => {
+                    if (window.confirm('Are you sure you want to reset ALL settings to defaults? This cannot be undone.')) {
+                        setStore(prev => ({ ...prev, settings: { components: [], componentContent: {} } }));
+                        setHasUnsavedChanges(true);
+                    }
+                }}
+            />
+
             <div className="designer-main-container">
                 <div className={`designer-sidebar ${previewMode === 'split' ? 'split' : ''}`} role="region" aria-label="Customization Options">
-                    <StickyToolbar
-                        storeName={store.name}
-                        hasUnsavedChanges={hasUnsavedChanges}
-                        saving={saving}
-                        handleSave={handleSave}
-                        handleSaveAsTemplate={handleSaveAsTemplate}
-                        justSaved={justSaved}
-                        undo={undo}
-                        redo={redo}
-                        historyIndex={historyIndex}
-                        historyLength={history.length}
-                        setShowTemplatePicker={setShowTemplatePicker}
-                        onReset={() => {
-                            if (window.confirm('Are you sure you want to reset ALL settings to defaults? This cannot be undone.')) {
-                                // Full reset logic
-                                setStore(prev => ({ ...prev, settings: { components: [], componentContent: {} } }));
-                                setHasUnsavedChanges(true);
-                            }
-                        }}
-                    />
-
                     <CustomizationProgress settings={settings} />
 
                     <div className="designer-layout">
@@ -1850,11 +1878,13 @@ const StoreCustomizer = () => {
                     onDeviceChange={setPreviewDevice}
                     scale={previewScale}
                     onScaleChange={setPreviewScale}
+                    onRefresh={() => setPreviewKey(prev => prev + 1)}
                     subdomain={store?.subdomain}
                 >
                     <iframe
+                        key={previewKey}
                         ref={iframeRef}
-                        src={`${window.location.origin}/preview/${store?._id || store?.id || storeId}?preview=true`}
+                        src={`${window.location.origin}/preview/${store?._id || store?.id || storeId}?preview=true&t=${previewKey}`}
                         title="Store Preview"
                         style={{ width: '100%', height: '100%', border: 'none' }}
                         onLoad={() => {

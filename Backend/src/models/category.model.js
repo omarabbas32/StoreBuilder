@@ -13,14 +13,19 @@ class CategoryModel {
         });
     }
 
-    async findByStore(storeId, options = {}) {
-        const { limit, offset } = options;
-        return prisma.category.findMany({
-            where: { store_id: storeId },
-            orderBy: { created_at: 'desc' },
-            ...(limit && { take: parseInt(limit) }),
-            ...(offset && { skip: parseInt(offset) })
-        });
+    async findByStore(store_id, options = {}) {
+        console.log('[DEBUG_CATEGORY_MODEL] findByStore:', { store_id, options });
+        try {
+            // Simplify query to isolate the issue
+            const results = await prisma.category.findMany({
+                where: { store_id }
+            });
+            console.log('[DEBUG_CATEGORY_MODEL] Found categories:', results.length);
+            return results;
+        } catch (error) {
+            console.error('[DEBUG_CATEGORY_MODEL] findMany failed:', error);
+            throw error;
+        }
     }
 
     async create(data) {

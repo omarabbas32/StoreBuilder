@@ -158,10 +158,8 @@
     font-weight: 700;
 }
 
-.reviews-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-8);
+.reviews-container-single {
+    width: 100%;
 }
 
 .product-detail-loading,
@@ -180,9 +178,8 @@
         gap: var(--space-8);
     }
 
-    .reviews-grid {
-        grid-template-columns: 1fr;
-        gap: var(--space-12);
+    .reviews-container-single {
+        width: 100%;
     }
 }
 

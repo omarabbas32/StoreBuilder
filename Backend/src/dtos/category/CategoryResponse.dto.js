@@ -7,6 +7,7 @@ class CategoryResponseDTO {
         this.name = category.name;
         this.slug = category.slug;
         this.description = category.description;
+        this.imageUrl = category.image_url;
         this.storeId = category.store_id;
         this.parentId = category.parent_id;
         this.createdAt = category.created_at;

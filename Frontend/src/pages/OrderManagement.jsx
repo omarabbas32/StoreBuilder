@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ShoppingBag, Eye, CheckCircle, Clock, Copy, Check } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { ShoppingBag, Eye, CheckCircle, Clock, Copy, Check, Truck, Package, XCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import PageLoader from '../components/ui/PageLoader';
@@ -13,8 +14,10 @@ const OrderManagement = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
+    const [filters, setFilters] = useState({ status: 'all', startDate: '', endDate: '' });
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [copiedId, setCopiedId] = useState(null);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
 
     const handleCopyId = (id) => {
         navigator.clipboard.writeText(id);
@@ -22,15 +25,36 @@ const OrderManagement = () => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const handleStatusUpdate = async (orderId, newStatus) => {
+        setUpdatingStatus(true);
+        try {
+            const result = await orderService.updateOrderStatus(orderId, newStatus);
+            if (result.success) {
+                toast.success(`Order status updated to ${newStatus}`);
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+                if (selectedOrder?.id === orderId) {
+                    setSelectedOrder(prev => ({ ...prev, status: newStatus }));
+                }
+            } else {
+                toast.error(result.message || 'Failed to update status');
+            }
+        } catch (error) {
+            console.error('Status update error:', error);
+            toast.error('An error occurred while updating status');
+        } finally {
+            setUpdatingStatus(false);
+        }
+    };
+
     useEffect(() => {
         if (store?.id) {
             loadOrders(pagination.currentPage);
         }
-    }, [store?.id, pagination.currentPage]);
+    }, [store?.id, pagination.currentPage, filters]);
 
     const loadOrders = async (page = 1) => {
         setLoading(true);
-        const result = await orderService.getStoreOrders(store.id, page);
+        const result = await orderService.getStoreOrders(store.id, page, 20, filters);
         if (result.success) {
             setOrders(result.data || []);
             if (result.pagination) {
@@ -44,10 +68,15 @@ const OrderManagement = () => {
     };
 
     const getStatusIcon = (status) => {
+        const iconSize = 16;
         switch (status) {
-            case 'pending': return <Clock size={16} className="status-pending" />;
-            case 'completed': return <CheckCircle size={16} className="status-completed" />;
-            default: return <Clock size={16} />;
+            case 'pending': return <Clock size={iconSize} />;
+            case 'processing': return <Package size={iconSize} />;
+            case 'shipped': return <Truck size={iconSize} />;
+            case 'delivered':
+            case 'completed': return <CheckCircle size={iconSize} />;
+            case 'cancelled': return <XCircle size={iconSize} />;
+            default: return <Clock size={iconSize} />;
         }
     };
 
@@ -59,6 +88,55 @@ const OrderManagement = () => {
                 <h1>Order Management</h1>
                 <p className="text-muted">View and manage orders for {store.name}</p>
             </div>
+
+            <Card className="filters-card">
+                <div className="filters-grid">
+                    <div className="filter-item">
+                        <label>Order Status</label>
+                        <select
+                            value={filters.status}
+                            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                            className="filter-select"
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div className="filter-item">
+                        <label>From Date</label>
+                        <input
+                            type="date"
+                            value={filters.startDate}
+                            onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                            className="filter-input"
+                        />
+                    </div>
+                    <div className="filter-item">
+                        <label>To Date</label>
+                        <input
+                            type="date"
+                            value={filters.endDate}
+                            onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                            className="filter-input"
+                        />
+                    </div>
+                    <div className="filter-item actions">
+                        <label>&nbsp;</label>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setFilters({ status: 'all', startDate: '', endDate: '' })}
+                            className="clear-filters"
+                        >
+                            Reset Filters
+                        </Button>
+                    </div>
+                </div>
+            </Card>
 
             <div className="orders-container">
                 {orders.length === 0 ? (
@@ -176,7 +254,21 @@ const OrderManagement = () => {
                                     )}
 
                                     <div className="details-actions">
-                                        <Button fullWidth>Mark as Completed</Button>
+                                        <h4>Update Order Status</h4>
+                                        <div className="status-grid">
+                                            {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+                                                <Button
+                                                    key={status}
+                                                    variant={selectedOrder.status === status ? 'primary' : 'secondary'}
+                                                    size="sm"
+                                                    onClick={() => handleStatusUpdate(selectedOrder.id, status)}
+                                                    disabled={updatingStatus || selectedOrder.status === status}
+                                                    className={`status-btn-${status}`}
+                                                >
+                                                    {status}
+                                                </Button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </Card>
                             </div>

@@ -123,6 +123,26 @@ const Storefront = ({ slug: slugProp }) => {
                     ...prev,
                     settings: event.data.settings
                 }));
+
+                // Dynamically sync fonts if they changed
+                if (event.data.settings?.typography?.fontFamily) {
+                    const font = event.data.settings.typography.fontFamily;
+                    const headingFont = event.data.settings.typography.headingFontFamily || font;
+                    const linkId = 'dynamic-google-fonts';
+                    let link = document.getElementById(linkId);
+                    if (!link) {
+                        link = document.createElement('link');
+                        link.id = linkId;
+                        link.rel = 'stylesheet';
+                        document.head.appendChild(link);
+                    }
+                    // Load all weights for both body and heading fonts
+                    const weights = 'wght@300;400;500;600;700;800;900';
+                    const fontNames = [...new Set([font, headingFont, 'Inter', 'Cairo'])]
+                        .map(f => `family=${f.replace(/ /g, '+')}:${weights}`)
+                        .join('&');
+                    link.href = `https://fonts.googleapis.com/css2?${fontNames}&display=swap`;
+                }
             }
         };
 
@@ -403,16 +423,20 @@ const Storefront = ({ slug: slugProp }) => {
     // Apply CSS variables for color palette and typography
     const cssVariables = {
         '--primary-color': brandColor,
+        '--primary-color-rgb': brandColor.startsWith('#') ? hexToRgb(brandColor) : '37, 99, 235',
         '--color-palette-primary': colorPalette[0] || brandColor,
         '--color-palette-secondary': colorPalette[1] || brandColor,
         '--color-palette-accent': colorPalette[2] || brandColor,
-        '--font-family': typography.fontFamily,
-        '--heading-font-family': typography.headingFontFamily || typography.fontFamily,
-        '--font-weight': typography.fontWeight === 'bold' ? '700' : (typography.fontWeight === 'light' ? '300' : '400'),
+        '--font-family': typography.fontFamily || 'Inter',
+        '--heading-font-family': typography.headingFontFamily || typography.fontFamily || 'Inter',
+        '--font-weight': typography.fontWeight === 'bold' ? 'var(--font-bold)' : (typography.fontWeight === 'light' ? 'var(--font-light)' : 'var(--font-normal)'),
         '--base-font-size': fontSizeMap[typography.bodySize] || '1rem',
-        '--heading-font-size': headingSizeMap[typography.headingSize] || '2rem',
+        '--heading-font-size-config': headingSizeMap[typography.headingSize], // Pass specific config if set
         '--line-height': typography.lineHeight || '1.6',
         '--letter-spacing': typography.letterSpacing || '0px',
+        '--color-text': '#0f172a',
+        '--color-text-muted': '#64748b',
+        '--color-bg': '#ffffff',
     };
 
     return (
@@ -420,6 +444,7 @@ const Storefront = ({ slug: slugProp }) => {
             {navbarConfig && (
                 <StorefrontNavbar
                     config={navbarConfig}
+                    componentId={navbarComp?.id}
                     brandColor={brandColor}
                     storeName={store.name}
                     logo={store.settings?.logo_url ? formatImageUrl(store.settings.logo_url) : null}
@@ -440,8 +465,11 @@ const Storefront = ({ slug: slugProp }) => {
                 {sidebarConfig && (
                     <StorefrontSidebar
                         config={sidebarConfig}
+                        componentId={sidebarComp?.id}
                         brandColor={brandColor}
                         categories={categories}
+                        onSearch={setSearchQuery}
+                        searchQuery={searchQuery}
                     />
                 )}
                 <div className="storefront-content">
@@ -492,6 +520,14 @@ const Storefront = ({ slug: slugProp }) => {
             />
         </div >
     );
+};
+
+// Helper for RGB conversion
+const hexToRgb = (hex) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `${r}, ${g}, ${b}`;
 };
 
 export default Storefront;

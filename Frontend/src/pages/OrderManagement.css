@@ -6,6 +6,60 @@
     margin-bottom: var(--space-8);
 }
 
+/* Filters Bar */
+.filters-card {
+    margin-bottom: 2rem;
+    padding: 1.5rem !important;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    align-items: flex-end;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-item label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.filter-select,
+.filter-input {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #1e293b;
+    background-color: white;
+    transition: all 0.2s;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-item.actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.clear-filters {
+    width: 100%;
+    justify-content: center;
+}
+
 .orders-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -55,6 +109,27 @@
     color: #92400e;
 }
 
+.status-badge.processing {
+    background-color: #e0f2fe;
+    color: #075985;
+}
+
+.status-badge.shipped {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.status-badge.delivered {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.cancelled {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* For backward compatibility with legacy 'completed' status */
 .status-badge.completed {
     background-color: #d1fae5;
     color: #065f46;
@@ -102,24 +177,25 @@
     margin-bottom: 0.75rem;
 }
 
-.address-text,
-.note-text {
-    background-color: var(--color-bg-alt);
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-}
-
-.order-items-list {
-    margin-bottom: 1rem;
-}
-
 .order-item {
     display: flex;
     justify-content: space-between;
     font-size: var(--text-sm);
     padding: 0.5rem 0;
     border-bottom: 1px dashed var(--color-border-light);
+}
+
+.address-text,
+.note-text {
+    font-size: var(--text-sm);
+    color: #475569;
+    background-color: #f1f5f9;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+    margin-top: 0.5rem;
 }
 
 .order-total {
@@ -142,8 +218,44 @@
     }
 }
 
+.status-btn-delivered:not(:disabled) {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.status-btn-delivered:not(:disabled):hover {
+    background-color: #10b981;
+    color: white;
+}
+
 @media (max-width: 1024px) {
     .orders-grid:has(.order-details-panel) {
         grid-template-columns: 1fr;
     }
+}
+
+.details-actions h4 {
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border-light);
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.status-grid button {
+    text-transform: capitalize;
+    font-size: 11px !important;
+    padding: 0.6rem 0.2rem !important;
+    white-space: nowrap;
+    width: 100%;
 }

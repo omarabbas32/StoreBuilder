@@ -75,7 +75,10 @@ router.use('/orders', orderRouter);
 
 // Reviews
 const reviewRouter = express.Router();
-reviewRouter.post('/', auth, (req, res, next) => container.reviewController.create(req, res, next));
+reviewRouter.get('/product/:productId', (req, res, next) => container.reviewController.getByProduct(req, res, next));
+reviewRouter.post('/', optionalAuth, (req, res, next) => container.reviewController.create(req, res, next));
+reviewRouter.post('/:id/helpful', auth, (req, res, next) => container.reviewController.markHelpful(req, res, next));
+reviewRouter.delete('/:id', auth, (req, res, next) => container.reviewController.delete(req, res, next));
 router.use('/reviews', reviewRouter);
 
 // Themes

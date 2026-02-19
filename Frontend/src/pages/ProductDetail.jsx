@@ -8,7 +8,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ReviewList from '../components/review/ReviewList';
-import ReviewForm from '../components/review/ReviewForm';
+// import ReviewForm from '../components/review/ReviewForm'; // Moving review submission to Orders page
 import RecentlyViewed from '../components/storefront/RecentlyViewed';
 import { useStorePath } from '../hooks/useStorePath';
 import { formatImageUrl } from '../utils/imageUtils';
@@ -32,15 +32,15 @@ const ProductDetail = () => {
 
     const loadProductData = async () => {
         setLoading(true);
+        // Add cache breaker for reviews to avoid 304 on fresh submissions
         const [productResult, reviewsResult] = await Promise.all([
             productService.getProductById(productId),
-            reviewService.getProductReviews(productId)
+            reviewService.getProductReviews(productId, { _t: Date.now() })
         ]);
 
         if (productResult.success) {
             setProduct(productResult.data);
 
-            // Load store info only if store_id exists
             const storeId = productResult.data.storeId || productResult.data.store_id;
             if (storeId) {
                 const storeResult = await storeService.getStoreById(storeId);
@@ -53,8 +53,21 @@ const ProductDetail = () => {
         }
 
         if (reviewsResult.success) {
-            // Backend returns { reviews: [], pagination: {} }
-            setReviews(reviewsResult.data?.reviews || reviewsResult.data || []);
+            // Very robust extraction
+            const reviewData = reviewsResult.data;
+            let extractedReviews = [];
+
+            if (Array.isArray(reviewData)) {
+                extractedReviews = reviewData;
+            } else if (reviewData && typeof reviewData === 'object') {
+                if (Array.isArray(reviewData.data)) {
+                    extractedReviews = reviewData.data;
+                } else if (Array.isArray(reviewData.reviews)) {
+                    extractedReviews = reviewData.reviews;
+                }
+            }
+
+            setReviews(extractedReviews);
         }
 
         // Add to recently viewed
@@ -164,17 +177,10 @@ const ProductDetail = () => {
                         <h2>Customer Reviews</h2>
                     </div>
 
-                    <div className="reviews-grid">
-                        <div className="reviews-list-col">
-                            <ErrorBoundary>
-                                <ReviewList reviews={reviews} onHelpfulVote={loadProductData} />
-                            </ErrorBoundary>
-                        </div>
-                        <div className="reviews-form-col">
-                            <ErrorBoundary>
-                                <ReviewForm productId={productId} onReviewSubmitted={handleReviewSubmitted} />
-                            </ErrorBoundary>
-                        </div>
+                    <div className="reviews-container-single">
+                        <ErrorBoundary>
+                            <ReviewList reviews={reviews} onHelpfulVote={loadProductData} />
+                        </ErrorBoundary>
                     </div>
                 </div>
 

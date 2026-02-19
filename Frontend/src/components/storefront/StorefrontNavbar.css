@@ -5,7 +5,7 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 50;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -50,7 +50,6 @@
     background: linear-gradient(135deg, var(--color-text, #0f172a) 0%, var(--brand-color, #2563eb) 100%);
     -webkit-background-clip: text;
     background-clip: text;
-    /* Added for compatibility */
     -webkit-text-fill-color: transparent;
 }
 
@@ -87,24 +86,8 @@
     transition: color 0.2s ease;
 }
 
-.nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background-color: var(--brand-color, #2563eb);
-    transition: width 0.3s ease;
-    border-radius: 2px;
-}
-
 .nav-link:hover {
-    color: #0f172a;
-}
-
-.nav-link:hover::after {
-    width: 100%;
+    color: var(--brand-color, #2563eb);
 }
 
 .nav-link.mobile-only {
@@ -174,12 +157,15 @@
     padding-left: 1.25rem;
 }
 
-.navbar-cart {
+/* Action Buttons (Cart + Account) */
+.navbar-cart,
+.navbar-auth {
     position: relative;
 }
 
-.cart-button {
-    background: rgba(241, 245, 249, 0.8);
+.cart-button,
+.account-button {
+    background: transparent;
     border: 1px solid rgba(226, 232, 240, 0.5);
     border-radius: 50%;
     width: 44px;
@@ -190,15 +176,17 @@
     cursor: pointer;
     position: relative;
     color: #475569;
+    text-decoration: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cart-button:hover {
-    background: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
+.cart-button:hover,
+.account-button:hover {
+    background: rgba(241, 245, 249, 0.8);
     color: var(--brand-color, #2563eb);
     border-color: var(--brand-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .cart-badge {
@@ -253,7 +241,12 @@
     .navbar-cart {
         order: 2;
         margin-left: auto;
-        margin-right: 1rem;
+        margin-right: 0.5rem;
+    }
+
+    .navbar-auth {
+        order: 2;
+        margin-right: 0.5rem;
     }
 
     .navbar-menu {
@@ -279,6 +272,7 @@
 
     .navbar-brand,
     .navbar-cart,
+    .navbar-auth,
     .mobile-menu-toggle {
         position: relative;
         z-index: 2100;
@@ -410,6 +404,23 @@
 
     .search-wrapper {
         display: none;
-        /* Hide desktop search on mobile */
     }
+}
+
+/* Account Dropdown specific positioning */
+.auth-dropdown {
+    left: auto;
+    right: 0;
+    transform: translateY(10px);
+}
+
+.nav-dropdown-wrapper:hover .auth-dropdown {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+.logout-link:hover {
+    color: #ef4444 !important;
+    background-color: #fef2f2 !important;
 }

@@ -8,11 +8,10 @@ const { auth } = require('../middleware/auth');
  */
 
 router.get('/product/:productId', reviewController.getByProduct);
+router.get('/eligibility/:productId', auth, reviewController.checkEligibility);
 
 router.post('/',
-   // auth,
-    // NOTE: FormData cannot be validated by middleware before body parsing
-    // Validation happens inside controller instead
+    auth,
     reviewController.create
 );
 

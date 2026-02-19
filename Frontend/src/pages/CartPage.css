@@ -324,6 +324,101 @@
     color: var(--brand-color);
 }
 
+/* Checkout Steps & Trust Badges */
+.checkout-steps {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 3rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.checkout-steps .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+.checkout-steps .step.active .step-number {
+    background: var(--brand-color);
+    color: white;
+    box-shadow: 0 0 15px rgba(var(--brand-color-rgb, 37, 99, 235), 0.4);
+}
+
+.checkout-steps .step.completed .step-number {
+    background: #10b981;
+    color: white;
+}
+
+.checkout-steps .step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.checkout-steps span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.checkout-steps .step.active span {
+    color: var(--brand-color);
+}
+
+.checkout-steps .step-line {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin-bottom: 2rem;
+    /* Align with circles */
+}
+
+.checkout-steps .step-line.active {
+    background: var(--brand-color);
+}
+
+.trust-badges,
+.trust-badges-checkout {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px dashed #cbd5e1;
+}
+
+.trust-badges .badge,
+.trust-badges-checkout .badge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.trust-badges .badge svg,
+.trust-badges-checkout .badge svg {
+    color: #10b981;
+}
+
 /* Footer */
 .store-footer {
     background: #1e293b;

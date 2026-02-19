@@ -102,7 +102,7 @@ class OnboardingService {
                     field: 'style_preference',
                     question: 'What style best describes your brand?',
                     type: 'single-select',
-                    required: true,
+                    required: false,
                     options: [
                         { id: 'modern-minimal', label: 'Modern & Minimal' },
                         { id: 'classic-elegant', label: 'Classic & Elegant' },
@@ -114,7 +114,7 @@ class OnboardingService {
                     field: 'enabledSections',
                     question: 'What sections do you want on your homepage?',
                     type: 'multi-select',
-                    required: true,
+                    required: false,
                     minSelections: 1,
                     options: [
                         { id: 'hero', label: 'Large Hero Banner' },
@@ -127,7 +127,7 @@ class OnboardingService {
                     field: 'productDisplayStyle',
                     question: 'How should products be displayed?',
                     type: 'single-select',
-                    required: true,
+                    required: false,
                     options: [
                         { id: 'grid-4', label: 'Grid (4 columns)' },
                         { id: 'grid-3', label: 'Grid (3 columns)' },

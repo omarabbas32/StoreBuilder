@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import storeService from '../services/storeService';
 import StorefrontNavbar from '../components/storefront/StorefrontNavbar';
 import useCartStore from '../store/cartStore';
@@ -85,6 +85,23 @@ const CartPage = ({ slug: slugProp }) => {
                     <h1>Shopping Cart</h1>
                 </div>
 
+                <div className="checkout-steps">
+                    <div className="step active">
+                        <div className="step-number">1</div>
+                        <span>Cart</span>
+                    </div>
+                    <div className="step-line"></div>
+                    <div className="step">
+                        <div className="step-number">2</div>
+                        <span>Checkout</span>
+                    </div>
+                    <div className="step-line"></div>
+                    <div className="step">
+                        <div className="step-number">3</div>
+                        <span>Success</span>
+                    </div>
+                </div>
+
                 {items.length === 0 ? (
                     <div className="empty-cart">
                         <ShoppingBag size={80} className="empty-icon" />
@@ -167,6 +184,22 @@ const CartPage = ({ slug: slugProp }) => {
                                 Checkout
                                 <ArrowRight size={18} />
                             </Button>
+
+                            <div className="trust-badges">
+                                <div className="badge">
+                                    <ShieldCheck size={18} />
+                                    <span>Secure Checkout</span>
+                                </div>
+                                <div className="badge">
+                                    <Truck size={18} />
+                                    <span>Fast Delivery</span>
+                                </div>
+                                <div className="badge">
+                                    <RotateCcw size={18} />
+                                    <span>30-Day Returns</span>
+                                </div>
+                            </div>
+
                             <Link to={`${storePath}/categories`} className="continue-link">
                                 Continue Shopping
                             </Link>

@@ -7,7 +7,83 @@
     font-weight: var(--font-weight, 400);
     line-height: var(--line-height, 1.6);
     letter-spacing: var(--letter-spacing, 0);
-    background-color: var(--color-bg, #ffffff);
+    background-color: #f8fafc;
+}
+
+.products-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+}
+
+.search-wrapper,
+.sort-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.search-wrapper:focus-within,
+.sort-wrapper:focus-within {
+    border-color: var(--brand-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.search-wrapper {
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-icon,
+.filter-icon {
+    color: #94a3b8;
+    margin-right: 0.75rem;
+}
+
+.search-wrapper input,
+.sort-wrapper select {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.95rem;
+    color: #1e293b;
+    width: 100%;
+}
+
+.sort-wrapper select {
+    cursor: pointer;
+    padding-right: 1.5rem;
+}
+
+.no-results {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: #64748b;
+}
+
+.no-results svg {
+    margin-bottom: 1.5rem;
+    opacity: 0.3;
+}
+
+.clear-search {
+    margin-top: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--brand-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
 }
 
 .products-page h1,
@@ -21,7 +97,7 @@
 
 .products-mini-hero {
     position: relative;
-    padding: 6rem 0 4rem;
+    padding: 4rem 0 3rem;
     background: linear-gradient(135deg, var(--color-bg, #f8fafc) 0%, var(--color-bg-alt, #f1f5f9) 100%);
     overflow: hidden;
     margin-bottom: 2rem;
@@ -199,8 +275,23 @@
     }
 }
 
+.product-card {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.product-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.1);
+}
+
 .add-to-cart-btn {
-    width: 100%;
+    width: 90%;
+    margin: 0 auto 1.25rem;
     padding: 0.875rem 1.5rem;
     border: none;
     border-radius: 12px;
@@ -214,7 +305,6 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 1rem;
 }
 
 .add-to-cart-btn:hover {

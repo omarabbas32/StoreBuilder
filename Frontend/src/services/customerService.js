@@ -26,6 +26,19 @@ const customerService = {
             };
         }
     },
+
+    // Get current customer profile
+    async getMe() {
+        try {
+            const response = await apiClient.get('/customers/me');
+            return { success: true, data: response.data };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to fetch profile',
+            };
+        }
+    },
 };
 
 export default customerService;

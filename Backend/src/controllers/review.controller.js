@@ -29,8 +29,12 @@ class ReviewController {
         }
 
         const dto = CreateReviewRequestDTO.fromRequest(validation.data);
-        // Handle case where auth is optional - use authenticated user or generate guest UUID
-        const customerId = req.user?.id || req.body.customerId || uuidv4();
+        // Strict enforcement: Must be an authenticated customer
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ success: false, error: 'Authentication required to post a review' });
+        }
+
+        const customerId = req.user.id;
         const result = await this.reviewService.createReview(dto, customerId);
         res.status(201).json({ success: true, data: new ReviewResponseDTO(result) });
     });
@@ -51,6 +55,11 @@ class ReviewController {
         const isOwner = req.user.role === 'merchant' || req.user.role === 'admin';
         await this.reviewService.deleteReview(req.params.id, req.user.id, isOwner);
         res.status(200).json({ success: true, message: 'Review deleted successfully' });
+    });
+
+    checkEligibility = asyncHandler(async (req, res) => {
+        const result = await this.reviewService.checkReviewEligibility(req.params.productId, req.user.id);
+        res.status(200).json({ success: true, data: result });
     });
 }
 

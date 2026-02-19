@@ -1,5 +1,6 @@
 const { asyncHandler } = require('../middleware/errorHandler');
 const CreateCategoryRequestDTO = require('../dtos/category/CreateCategoryRequest.dto');
+const UpdateCategoryRequestDTO = require('../dtos/category/UpdateCategoryRequest.dto');
 const CategoryResponseDTO = require('../dtos/category/CategoryResponse.dto');
 
 class CategoryController {
@@ -24,7 +25,8 @@ class CategoryController {
     });
 
     update = asyncHandler(async (req, res) => {
-        const result = await this.categoryService.updateCategory(req.params.id, req.validatedData, req.user.id);
+        const dto = UpdateCategoryRequestDTO.fromRequest(req.validatedData);
+        const result = await this.categoryService.updateCategory(req.params.id, dto.toPrisma(), req.user.id);
         res.status(200).json({ success: true, data: new CategoryResponseDTO(result) });
     });
 

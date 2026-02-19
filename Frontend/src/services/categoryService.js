@@ -40,6 +40,32 @@ const categoryService = {
             };
         }
     },
+
+    // Update category
+    async update(id, categoryData) {
+        try {
+            const response = await apiClient.put(`/categories/${id}`, categoryData);
+            return { success: true, data: response.data };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to update category',
+            };
+        }
+    },
+
+    // Delete category
+    async delete(id) {
+        try {
+            await apiClient.delete(`/categories/${id}`);
+            return { success: true };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to delete category',
+            };
+        }
+    }
 };
 
 export default categoryService;

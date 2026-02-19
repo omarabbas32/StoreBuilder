@@ -1,10 +1,13 @@
-import { ThumbsUp } from 'lucide-react';
+import { useState } from 'react';
+import { ThumbsUp, CheckCircle } from 'lucide-react';
 import StarRating from '../ui/StarRating';
 import Card from '../ui/Card';
 import reviewService from '../../services/reviewService';
 import './ReviewList.css';
 
 const ReviewList = ({ reviews, onHelpfulVote }) => {
+    const [votingIds, setVotingIds] = useState(new Set());
+
     if (!Array.isArray(reviews) || reviews.length === 0) {
         return (
             <div className="review-list-empty">
@@ -19,9 +22,22 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
         : 0;
 
     const handleHelpful = async (reviewId) => {
-        const result = await reviewService.markHelpful(reviewId);
-        if (result.success && onHelpfulVote) {
-            onHelpfulVote(reviewId);
+        if (votingIds.has(reviewId)) return;
+
+        setVotingIds(prev => new Set(prev).add(reviewId));
+        try {
+            const result = await reviewService.markHelpful(reviewId);
+            if (result.success && onHelpfulVote) {
+                onHelpfulVote(reviewId);
+            }
+        } catch (err) {
+            console.error('Failed to mark review as helpful:', err);
+        } finally {
+            setVotingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(reviewId);
+                return newSet;
+            });
         }
     };
 
@@ -36,17 +52,26 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
             </div>
 
             <div className="reviews-container">
-                {reviews.map((review) => {
-                    // Handle null or undefined reviews
+                {reviews.map((review, index) => {
                     if (!review || typeof review !== 'object') {
                         return null;
                     }
 
+                    const reviewId = review.id || `temp-${index}`;
+
                     return (
-                        <Card key={review.id || Math.random()} className="review-card">
+                        <Card key={reviewId} className="review-card">
                             <div className="review-header">
                                 <div className="user-info">
-                                    <span className="user-name">{review.user_name || review.userName || 'Anonymous'}</span>
+                                    <div className="name-wrapper">
+                                        <span className="user-name">{review.user_name || review.userName || 'Anonymous'}</span>
+                                        {review.is_verified_purchase && (
+                                            <span className="verified-badge" title="Verified Purchase">
+                                                <CheckCircle size={12} className="verified-icon" />
+                                                Verified
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className="review-date">
                                         {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Recently'}
                                     </span>
@@ -57,11 +82,12 @@ const ReviewList = ({ reviews, onHelpfulVote }) => {
                             <p className="review-comment">{review.comment || ''}</p>
                             <div className="review-footer">
                                 <button
-                                    className="helpful-button"
-                                    onClick={() => handleHelpful(review.id)}
+                                    className={`helpful-button ${votingIds.has(reviewId) ? 'loading' : ''}`}
+                                    onClick={() => handleHelpful(reviewId)}
+                                    disabled={votingIds.has(reviewId)}
                                 >
                                     <ThumbsUp size={14} />
-                                    Helpful ({review.helpful_count || 0})
+                                    {votingIds.has(reviewId) ? 'Voting...' : `Helpful (${review.helpful_count || 0})`}
                                 </button>
                             </div>
                         </Card>

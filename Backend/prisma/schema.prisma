@@ -21,11 +21,11 @@ model CartItem {
 
 model Cart {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id String?    @db.Uuid
   session_id  String?    @db.VarChar(255)
   created_at  DateTime?  @default(now()) @db.Timestamp(6)
   updated_at  DateTime?  @default(now()) @db.Timestamp(6)
   store_id    String?    @db.Uuid
+  customer_id String?    @db.Uuid
   cart_items  CartItem[]
   customer    Customer?  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   store       Store?     @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -45,6 +45,7 @@ model Category {
   updated_at    DateTime?  @default(now()) @db.Timestamp(6)
   slug          String     @db.VarChar(255)
   parent_id     String?    @db.Uuid
+  image_url     String?    @db.VarChar(500)
   parent        Category?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onUpdate: NoAction)
   subcategories Category[] @relation("categoriesTocategories")
   store         Store?     @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -108,7 +109,6 @@ model OrderItem {
 model Order {
   id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   store_id         String?         @db.Uuid
-  customer_id      String?         @db.Uuid
   total_amount     Decimal         @db.Decimal(10, 2)
   status           String?         @default("pending") @db.VarChar(50)
   created_at       DateTime?       @default(now()) @db.Timestamp(6)
@@ -118,6 +118,7 @@ model Order {
   customer_phone   String?         @db.VarChar(50)
   shipping_address String?
   notes            String?
+  customer_id      String?         @db.Uuid
   order_items      OrderItem[]
   customer         Customer?       @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
   store            Store?          @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -130,7 +131,6 @@ model ProductReview {
   id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   product_id           String?             @db.Uuid
   store_id             String?             @db.Uuid
-  customer_id          String?             @db.Uuid
   order_id             String?             @db.Uuid
   rating               Int
   title                String?             @db.VarChar(255)
@@ -143,6 +143,7 @@ model ProductReview {
   helpful_count        Int?                @default(0)
   created_at           DateTime?           @default(now()) @db.Timestamp(6)
   updated_at           DateTime?           @default(now()) @db.Timestamp(6)
+  customer_id          String?             @db.Uuid
   customer             Customer?           @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
   order                Order?              @relation(fields: [order_id], references: [id], onUpdate: NoAction)
   product              Product?            @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -184,8 +185,8 @@ model Product {
 model ReviewHelpfulVote {
   id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   review_id      String?        @db.Uuid
-  customer_id    String?        @db.Uuid
   created_at     DateTime?      @default(now()) @db.Timestamp(6)
+  customer_id    String?        @db.Uuid
   customer       Customer?      @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_review ProductReview? @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
