@@ -7,7 +7,7 @@ Storely is a high-performance, AI-driven e-commerce platform designed for multi-
 ## 🖼️ Visual Experience
 
 ### Premium Storefront
-![Storefront Hero](./assets/branding/storefront_hero.png)
+
 *A sleek, modern storefront with glassmorphism effects and responsive design.*
 
 <p align="center">
