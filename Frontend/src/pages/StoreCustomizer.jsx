@@ -441,6 +441,13 @@ const StoreCustomizer = () => {
                 setStore(fetchedStore);
                 setAuthStore(fetchedStore);
 
+                // Initialize history with server state
+                if (fetchedStore.settings) {
+                    const initialSettings = JSON.parse(JSON.stringify(fetchedStore.settings));
+                    setHistory([initialSettings]);
+                    setHistoryIndex(0);
+                }
+
                 // Check for local draft
                 const savedDraft = localStorage.getItem(`store_draft_${activeStoreId}`);
                 if (savedDraft) {
@@ -505,8 +512,12 @@ const StoreCustomizer = () => {
             isUndoing.current = true;
             const prevIndex = historyIndex - 1;
             const prevSettings = history[prevIndex];
-            setStore(prev => ({ ...prev, settings: prevSettings }));
-            setAuthStore({ ...store, settings: prevSettings });
+
+            // Deep clone to prevent direct mutations of history objects
+            const clonedSettings = JSON.parse(JSON.stringify(prevSettings));
+
+            setStore(prev => ({ ...prev, settings: clonedSettings }));
+            setAuthStore({ ...store, settings: clonedSettings });
             setHistoryIndex(prevIndex);
             setHasUnsavedChanges(true);
             toast.success('Undo', { id: 'undo-redo', duration: 1000 });
@@ -518,8 +529,12 @@ const StoreCustomizer = () => {
             isUndoing.current = true;
             const nextIndex = historyIndex + 1;
             const nextSettings = history[nextIndex];
-            setStore(prev => ({ ...prev, settings: nextSettings }));
-            setAuthStore({ ...store, settings: nextSettings });
+
+            // Deep clone
+            const clonedSettings = JSON.parse(JSON.stringify(nextSettings));
+
+            setStore(prev => ({ ...prev, settings: clonedSettings }));
+            setAuthStore({ ...store, settings: clonedSettings });
             setHistoryIndex(nextIndex);
             setHasUnsavedChanges(true);
             toast.success('Redo', { id: 'undo-redo', duration: 1000 });
@@ -531,16 +546,31 @@ const StoreCustomizer = () => {
         () => debounce((newSettings) => {
             setHistory(prev => {
                 const currentSettingsJSON = JSON.stringify(newSettings);
-                const lastSettingsJSON = prev.length > 0 ? JSON.stringify(prev[prev.length - 1]) : null;
+                // Important: Compare with state at current historyIndex, not end of array
+                const lastSettingsJSON = historyIndex >= 0 ? JSON.stringify(prev[historyIndex]) : null;
 
                 if (currentSettingsJSON !== lastSettingsJSON) {
+                    // Create new history branch: slice up to current index and add new state
                     const newHistory = [...prev.slice(0, historyIndex + 1), newSettings];
-                    if (newHistory.length > 50) newHistory.shift();
+
+                    // Limit history size to 50
+                    if (newHistory.length > 50) {
+                        newHistory.shift();
+                    }
+
+                    // We need to update historyIndex to correctly reflect the new position
+                    // Since we can't easily call setHistoryIndex inside setHistory (it's an anti-pattern),
+                    // we'll rely on the fact that historyIndex will be updated in the next step
                     return newHistory;
                 }
                 return prev;
             });
-            setHistoryIndex(prev => Math.min(prev + 1, 49));
+
+            // Update index: if it was at the end, it increments. if we branch, it point to new end.
+            setHistoryIndex(prev => {
+                // If we are at index 49 (max), we stay at 49 because of the shift()
+                return Math.min(prev + 1, 49);
+            });
         }, 500),
         [historyIndex]
     );

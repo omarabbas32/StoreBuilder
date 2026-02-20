@@ -13,6 +13,7 @@ import RecentlyViewed from '../components/storefront/RecentlyViewed';
 import { useStorePath } from '../hooks/useStorePath';
 import { formatImageUrl } from '../utils/imageUtils';
 import useCartStore from '../store/cartStore';
+import { ProductDetailSkeleton } from '../components/storefront/StorefrontSkeletons';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -103,7 +104,7 @@ const ProductDetail = () => {
         loadProductData();
     };
 
-    if (loading) return <div className="product-detail-loading">Loading product...</div>;
+    if (loading) return <ProductDetailSkeleton />;
     if (error) return <div className="product-detail-error"><h1>Error</h1><p>{error}</p></div>;
 
     const brandColor = store?.settings?.primaryColor || '#2563eb';

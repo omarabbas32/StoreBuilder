@@ -9,6 +9,7 @@ import CartDrawer from '../components/storefront/CartDrawer';
 import useCartStore from '../store/cartStore';
 import { useStorePath } from '../hooks/useStorePath';
 import { formatImageUrl } from '../utils/imageUtils';
+import { CategoriesPageSkeleton } from '../components/storefront/StorefrontSkeletons';
 import './CategoriesPage.css';
 
 const CategoriesPage = ({ slug: slugProp }) => {
@@ -57,7 +58,7 @@ const CategoriesPage = ({ slug: slugProp }) => {
         setLoading(false);
     };
 
-    if (loading) return <div className="categories-loading">Loading categories...</div>;
+    if (loading) return <CategoriesPageSkeleton />;
     if (error) return <div className="categories-error"><h1>Error</h1><p>{error}</p></div>;
 
     const brandColor = store?.settings?.colorPalette?.[0] || store?.settings?.primaryColor || '#2563eb';
