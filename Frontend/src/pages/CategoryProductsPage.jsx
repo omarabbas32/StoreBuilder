@@ -10,6 +10,7 @@ import Card from '../components/ui/Card';
 import useCartStore from '../store/cartStore';
 import { useStorePath } from '../hooks/useStorePath';
 import { formatImageUrl } from '../utils/imageUtils';
+import { ProductsPageSkeleton } from '../components/storefront/StorefrontSkeletons';
 import './CategoryProductsPage.css';
 
 const CategoryProductsPage = ({ slug: slugProp }) => {
@@ -78,7 +79,7 @@ const CategoryProductsPage = ({ slug: slugProp }) => {
         setIsCartOpen(true);
     };
 
-    if (loading) return <div className="category-products-loading">Loading...</div>;
+    if (loading) return <ProductsPageSkeleton />;
     if (error) return <div className="category-products-error"><h1>Error</h1><p>{error}</p></div>;
 
     const brandColor = store?.settings?.primaryColor || '#2563eb';

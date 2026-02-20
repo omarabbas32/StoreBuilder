@@ -43,30 +43,37 @@
    ========================================================= */
 
 .sticky-editor-bar {
+    position: sticky;
+    top: 0;
     padding: 0 1.5rem;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
     border-bottom: 1px solid var(--designer-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    z-index: 100;
-    height: 64px;
+    z-index: 1000;
+    height: 70px;
     flex-shrink: 0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    width: 100%;
+    gap: 1.5rem;
 }
 
 .editor-title {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
+    flex: 1;
 }
 
 .back-to-dashboard {
     background: #f8fafc;
     border: 1px solid var(--designer-border);
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--designer-text-muted);
@@ -80,11 +87,17 @@
     border-color: var(--designer-accent);
     color: var(--designer-accent);
     transform: translateX(-3px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .title-group h2 {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: 800;
     margin: 0;
     color: var(--designer-primary);
@@ -95,22 +108,26 @@
 }
 
 .studio-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
+    font-size: 0.6rem;
+    font-weight: 800;
     text-transform: uppercase;
     background: var(--designer-accent-soft);
     color: var(--designer-accent);
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 6px;
-    margin-left: 0.75rem;
+    margin-left: 0.85rem;
     letter-spacing: 0.05em;
     border: 1px solid rgba(99, 102, 241, 0.2);
+    display: inline-flex;
+    align-items: center;
 }
 
 .save-status {
-    font-size: 0.7rem;
+    font-size: 0.725rem;
     font-weight: 600;
-    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .save-status.saved {
@@ -118,7 +135,7 @@
 }
 
 .save-status.unsaved {
-    color: #f59e0b;
+    color: var(--designer-text-muted);
 }
 
 .editor-actions {
@@ -554,49 +571,7 @@
     border: 1px solid var(--designer-border);
 }
 
-/* =========================================================
-   STICKY EDITOR BAR
-   ========================================================= */
-
-.sticky-editor-bar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    padding: 0.875rem 1.5rem;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.7);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    gap: 1rem;
-}
-
-.editor-title {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.editor-title h2 {
-    font-size: 1.125rem;
-    font-weight: 800;
-    color: var(--designer-secondary);
-    margin: 0;
-    letter-spacing: -0.01em;
-}
-
-.save-status {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #10b981;
-}
-
-.save-status.unsaved {
-    color: #64748b;
-}
+/* STICKY EDITOR BAR DEFINITIONS CONSOLIDATED ABOVE */
 
 .editor-actions {
     display: flex;
