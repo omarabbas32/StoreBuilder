@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Info, Wand2, CheckCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { Upload, Info, CheckCircle, ArrowRight, ArrowLeft, Loader2, Store } from 'lucide-react';
 import storeService from '../services/storeService';
 import useAuthStore from '../store/authStore';
 import './AIStoreCreation.css';
@@ -12,29 +12,25 @@ const AIStoreCreation = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Form State
     const [logo, setLogo] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         email: user?.email || '',
+        description: '',
+        tagline: '',
         facebook: '',
         instagram: '',
         twitter: '',
-        linkedin: '',
         tiktok: '',
-        description: '',
-        tagline: '',
-        businessHours: '',
     });
 
     const fileInputRef = useRef(null);
 
     const steps = [
-        { id: 1, title: 'Brand Identity', icon: <Upload size={20} /> },
-        { id: 2, title: 'Basic Information', icon: <Info size={20} /> },
-        { id: 3, title: 'AI Generation', icon: <Wand2 size={20} /> },
-        { id: 4, title: 'Finalize', icon: <CheckCircle size={20} /> },
+        { id: 1, title: 'Brand Logo', icon: <Upload size={20} /> },
+        { id: 2, title: 'Store Details', icon: <Info size={20} /> },
+        { id: 3, title: 'Finalize', icon: <CheckCircle size={20} /> },
     ];
 
     const handleLogoChange = (e) => {
@@ -57,60 +53,22 @@ const AIStoreCreation = () => {
             .replace(/(^-|-$)/g, '') + '-' + randomStr;
     };
 
-    const handleNext = async () => {
+    const handleNext = () => {
+        setError(null);
         if (step === 1) {
             setStep(2);
         } else if (step === 2) {
-            if (!formData.name) {
+            if (!formData.name.trim()) {
                 setError('Store name is required');
                 return;
             }
             setStep(3);
-            generateAIDetails();
-        } else if (step === 3) {
-            setStep(4);
         }
     };
 
-    const generateAIDetails = async () => {
-        setLoading(true);
+    const handleBack = () => {
         setError(null);
-        try {
-            // We use the general aiChat endpoint with a specific prompt
-            const prompt = `Based on the following store information, generate a professional description (max 300 chars), a catchy tagline (max 60 chars), and typical business hours.
-            Store Name: ${formData.name}
-            Email: ${formData.email}
-            Socials: FB: ${formData.facebook}, IG: ${formData.instagram}
-            
-            Return ONLY a JSON object with keys: description, tagline, businessHours.`;
-
-            const response = await storeService.aiChat([{ role: 'user', content: prompt }], 'gemini');
-
-            if (response.success && response.data) {
-                const aiPayload = response.data;
-                const aiMessage = aiPayload.message || '';
-
-                let aiData = {};
-                try {
-                    // Try to parse from message string
-                    const jsonMatch = aiMessage.match(/\{.*\}/s);
-                    aiData = JSON.parse(jsonMatch ? jsonMatch[0] : aiMessage);
-                } catch (e) {
-                    console.error('Failed to parse AI response', e);
-                }
-
-                setFormData(prev => ({
-                    ...prev,
-                    description: aiData.description || prev.description,
-                    tagline: aiData.tagline || prev.tagline,
-                    businessHours: aiData.businessHours || prev.businessHours
-                }));
-            }
-        } catch (err) {
-            setError('Failed to generate AI details. You can fill them manually.');
-        } finally {
-            setLoading(false);
-        }
+        setStep(prev => prev - 1);
     };
 
     const finalizeStore = async () => {
@@ -126,17 +84,15 @@ const AIStoreCreation = () => {
             }
 
             const storeData = {
-                name: formData.name,
+                name: formData.name.trim(),
                 slug: generateSlug(formData.name),
-                description: formData.description,
-                tagline: formData.tagline,
+                description: formData.description.trim(),
+                tagline: formData.tagline.trim(),
                 contact_email: formData.email,
                 facebook_url: formData.facebook,
                 instagram_url: formData.instagram,
                 twitter_url: formData.twitter,
-                linkedin_url: formData.linkedin,
                 tiktok_url: formData.tiktok,
-                business_hours: { hours: formData.businessHours },
                 settings: {
                     logo: logoUrl,
                     primaryColor: '#2563eb'
@@ -145,7 +101,7 @@ const AIStoreCreation = () => {
 
             const result = await storeService.createStore(storeData);
             if (result.success) {
-                navigate(`/dashboard`);
+                navigate('/dashboard');
             } else {
                 setError(result.error || 'Failed to create store');
             }
@@ -159,6 +115,7 @@ const AIStoreCreation = () => {
     return (
         <div className="ai-store-wizard">
             <div className="wizard-card">
+                {/* Progress Steps */}
                 <div className="wizard-progress">
                     {steps.map((s) => (
                         <div
@@ -173,14 +130,14 @@ const AIStoreCreation = () => {
                 <div className="wizard-header">
                     <h1>{steps[step - 1].title}</h1>
                     <p>
-                        {step === 1 && "Upload your brand's logo to get started."}
-                        {step === 2 && "Tell us a bit about your store."}
-                        {step === 3 && "Gemini is crafting your store's content..."}
-                        {step === 4 && "Review and finalize your new store."}
+                        {step === 1 && 'Upload your brand logo to get started. You can skip this step.'}
+                        {step === 2 && 'Tell us about your store so customers know what you offer.'}
+                        {step === 3 && 'Review your store details and hit Create to launch.'}
                     </p>
                 </div>
 
                 <div className="wizard-step-content">
+                    {/* Step 1: Logo */}
                     {step === 1 && (
                         <div className="logo-upload-container">
                             <div
@@ -193,9 +150,19 @@ const AIStoreCreation = () => {
                                     <div className="upload-placeholder">
                                         <Upload size={40} strokeWidth={1.5} />
                                         <span>Click to upload logo</span>
+                                        <span style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '0.25rem' }}>PNG, JPG, SVG — optional</span>
                                     </div>
                                 )}
                             </div>
+                            {logoPreview && (
+                                <button
+                                    className="btn-wizard btn-wizard-secondary"
+                                    style={{ marginTop: '1rem', width: 'fit-content', alignSelf: 'center' }}
+                                    onClick={() => { setLogo(null); setLogoPreview(null); }}
+                                >
+                                    Remove Logo
+                                </button>
+                            )}
                             <input
                                 type="file"
                                 ref={fileInputRef}
@@ -206,15 +173,36 @@ const AIStoreCreation = () => {
                         </div>
                     )}
 
+                    {/* Step 2: Store Details */}
                     {step === 2 && (
                         <div className="form-grid">
                             <div className="form-group full-width">
-                                <label>Store Name *</label>
+                                <label>Store Name <span style={{ color: '#ef4444' }}>*</span></label>
                                 <input
                                     name="name"
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     placeholder="e.g. Minimalist Home"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="form-group full-width">
+                                <label>Tagline</label>
+                                <input
+                                    name="tagline"
+                                    value={formData.tagline}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g. Curated minimalist pieces for modern living"
+                                />
+                            </div>
+                            <div className="form-group full-width">
+                                <label>Description</label>
+                                <textarea
+                                    name="description"
+                                    rows={3}
+                                    value={formData.description}
+                                    onChange={handleInputChange}
+                                    placeholder="Briefly describe what your store sells..."
                                 />
                             </div>
                             <div className="form-group">
@@ -224,6 +212,7 @@ const AIStoreCreation = () => {
                                     type="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
+                                    placeholder="hello@yourstore.com"
                                 />
                             </div>
                             <div className="form-group">
@@ -241,6 +230,7 @@ const AIStoreCreation = () => {
                                     name="facebook"
                                     value={formData.facebook}
                                     onChange={handleInputChange}
+                                    placeholder="https://facebook.com/..."
                                 />
                             </div>
                             <div className="form-group">
@@ -249,67 +239,52 @@ const AIStoreCreation = () => {
                                     name="tiktok"
                                     value={formData.tiktok}
                                     onChange={handleInputChange}
+                                    placeholder="https://tiktok.com/@..."
                                 />
                             </div>
                         </div>
                     )}
 
+                    {/* Step 3: Finalize / Review */}
                     {step === 3 && (
-                        <div className="ai-generation-state">
-                            {loading ? (
-                                <>
-                                    <div className="ai-loader">
-                                        <div className="ai-loader-ring"></div>
-                                        <Wand2 className="ai-icon" size={32} />
+                        <div className="finalize-preview">
+                            <div className="preview-logo-row">
+                                {logoPreview ? (
+                                    <img src={logoPreview} alt="Logo" className="preview-logo-img" />
+                                ) : (
+                                    <div className="preview-logo-placeholder">
+                                        <Store size={32} />
                                     </div>
-                                    <h3>Generating Magic...</h3>
-                                </>
-                            ) : (
-                                <div className="form-grid">
-                                    <div className="form-group full-width">
-                                        <label>Tagline</label>
-                                        <input
-                                            name="tagline"
-                                            value={formData.tagline}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-                                    <div className="form-group full-width">
-                                        <label>Description</label>
-                                        <textarea
-                                            name="description"
-                                            rows={4}
-                                            value={formData.description}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-                                    <div className="form-group full-width">
-                                        <label>Business Hours</label>
-                                        <input
-                                            name="businessHours"
-                                            value={formData.businessHours}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
+                                )}
+                            </div>
+                            <div className="preview-item">
+                                <strong>Store Name</strong>
+                                <span>{formData.name}</span>
+                            </div>
+                            {formData.tagline && (
+                                <div className="preview-item">
+                                    <strong>Tagline</strong>
+                                    <span>{formData.tagline}</span>
                                 </div>
                             )}
-                        </div>
-                    )}
-
-                    {step === 4 && (
-                        <div className="finalize-preview">
-                            <div className="preview-item">
-                                <strong>Name:</strong> {formData.name}
-                            </div>
-                            <div className="preview-item">
-                                <strong>Tagline:</strong> {formData.tagline}
-                            </div>
-                            <div className="preview-item">
-                                <strong>Description:</strong> {formData.description}
-                            </div>
-                            {logoPreview && (
+                            {formData.description && (
                                 <div className="preview-item">
-                                    <strong>Logo Selected</strong>
+                                    <strong>Description</strong>
+                                    <span>{formData.description}</span>
+                                </div>
+                            )}
+                            {formData.email && (
+                                <div className="preview-item">
+                                    <strong>Contact Email</strong>
+                                    <span>{formData.email}</span>
+                                </div>
+                            )}
+                            {(formData.instagram || formData.facebook || formData.tiktok) && (
+                                <div className="preview-item">
+                                    <strong>Social Links</strong>
+                                    <span>
+                                        {[formData.instagram && 'Instagram', formData.facebook && 'Facebook', formData.tiktok && 'TikTok'].filter(Boolean).join(', ')}
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -322,20 +297,20 @@ const AIStoreCreation = () => {
                     {step > 1 && (
                         <button
                             className="btn-wizard btn-wizard-secondary"
-                            onClick={() => setStep(step - 1)}
+                            onClick={handleBack}
                             disabled={loading}
                         >
                             <ArrowLeft size={18} /> Back
                         </button>
                     )}
-                    <div style={{ flex: 1 }}></div>
-                    {step < 4 ? (
+                    <div style={{ flex: 1 }} />
+                    {step < 3 ? (
                         <button
                             className="btn-wizard btn-wizard-primary"
                             onClick={handleNext}
-                            disabled={loading || (step === 2 && !formData.name)}
+                            disabled={step === 2 && !formData.name.trim()}
                         >
-                            Next <ArrowRight size={18} />
+                            {step === 1 ? 'Next' : 'Review'} <ArrowRight size={18} />
                         </button>
                     ) : (
                         <button
@@ -343,7 +318,7 @@ const AIStoreCreation = () => {
                             onClick={finalizeStore}
                             disabled={loading}
                         >
-                            {loading ? <Loader2 className="animate-spin" /> : "Create Store"}
+                            {loading ? <Loader2 className="animate-spin" size={18} /> : 'Create Store'}
                         </button>
                     )}
                 </div>

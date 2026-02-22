@@ -861,6 +861,27 @@ const StoreCustomizer = () => {
         return Array.isArray(content.selectedProductIds) ? content.selectedProductIds.map(String) : [];
     };
 
+    const updateComponentVisibility = useCallback((componentId, isVisible) => {
+        if (!componentId) return;
+
+        setStore(prev => {
+            const currentComponents = (prev.settings?.components && prev.settings.components.length > 0)
+                ? prev.settings.components
+                : availableComponents;
+
+            return {
+                ...prev,
+                settings: {
+                    ...prev.settings,
+                    components: currentComponents.map(c =>
+                        c.id === componentId ? { ...c, disabled: !isVisible } : c
+                    )
+                }
+            };
+        });
+        setHasUnsavedChanges(true);
+    }, [availableComponents]);
+
     // Listen for inline edit updates from preview iframe
     useEffect(() => {
         const handleMessage = (event) => {
@@ -882,22 +903,7 @@ const StoreCustomizer = () => {
 
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, []);
-
-    const updateComponentVisibility = (componentId, isVisible) => {
-        if (!componentId) return;
-
-        setStore(prev => ({
-            ...prev,
-            settings: {
-                ...prev.settings,
-                components: (prev.settings?.components || availableComponents).map(c =>
-                    c.id === componentId ? { ...c, disabled: !isVisible } : c
-                )
-            }
-        }));
-        setHasUnsavedChanges(true);
-    };
+    }, [updateComponentVisibility]);
 
     const handleDragEnd = (result) => {
         const { source, destination } = result;
@@ -909,7 +915,9 @@ const StoreCustomizer = () => {
         if (source.index === destination.index) return;
 
         setStore((prev) => {
-            const currentComponents = prev.settings?.components || availableComponents;
+            const currentComponents = (prev.settings?.components && prev.settings.components.length > 0)
+                ? prev.settings.components
+                : availableComponents;
             const newComponents = Array.from(currentComponents);
             const [removed] = newComponents.splice(source.index, 1);
             newComponents.splice(destination.index, 0, removed);
