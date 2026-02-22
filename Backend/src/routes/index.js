@@ -23,6 +23,15 @@ const authRouter = express.Router();
 authRouter.post('/register', validate(registerSchema), (req, res, next) => container.authController.register(req, res, next));
 authRouter.post('/login', validate(loginSchema), (req, res, next) => container.authController.login(req, res, next));
 authRouter.post('/verify-email', (req, res, next) => container.authController.verifyEmail(req, res, next));
+
+// Google OAuth
+authRouter.get('/google/url/customer', (req, res, next) => container.googleOAuthController.getCustomerAuthUrl(req, res, next));
+authRouter.get('/google/url/owner', (req, res, next) => container.googleOAuthController.getOwnerAuthUrl(req, res, next));
+authRouter.get('/google/callback/customer', (req, res, next) => container.googleOAuthController.customerCallback(req, res, next));
+authRouter.get('/google/callback/owner', (req, res, next) => container.googleOAuthController.ownerCallback(req, res, next));
+authRouter.get('/google/callback', (req, res, next) => container.googleOAuthController.handleCallback(req, res, next));
+authRouter.post('/google/verify-token', (req, res, next) => container.googleOAuthController.verifyToken(req, res, next));
+
 router.use('/auth', authRouter);
 
 // Stores

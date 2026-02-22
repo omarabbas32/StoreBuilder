@@ -53,6 +53,19 @@ model Category {
   @@map("categories")
 }
 
+model Customer {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String?             @db.Uuid
+  phone                 String?             @db.VarChar(50)
+  address               String?
+  created_at            DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?           @default(now()) @db.Timestamp(6)
+  product_reviews       ProductReview[]
+  review_helpful_votes  ReviewHelpfulVote[]
+
+  @@map("customers")
+}
+
 model Component {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String    @db.VarChar(255)
@@ -136,9 +149,7 @@ model ProductReview {
   @@index([product_id, status], map: "idx_reviews_product")
   @@index([rating], map: "idx_reviews_rating")
   @@index([status], map: "idx_reviews_status")
-  @@index([storeId], map: "idx_reviews_store")
-  @@index([ipAddress, createdAt], map: "idx_reviews_ip_date")
-  @@unique([ipAddress, productId], map: "unique_ip_product")
+  @@index([store_id], map: "idx_reviews_store")
   @@map("product_reviews")
 }
 
@@ -261,7 +272,7 @@ model User {
   id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name               String     @db.VarChar(255)
   email              String     @unique @db.VarChar(255)
-  password           String     @db.VarChar(255)
+  password           String?    @db.VarChar(255)
   role               String?    @default("customer") @db.VarChar(50)
   created_at         DateTime?  @default(now()) @db.Timestamp(6)
   updated_at         DateTime?  @default(now()) @db.Timestamp(6)
@@ -269,6 +280,7 @@ model User {
   verification_token String?    @db.VarChar(255)
   reset_token        String?    @db.VarChar(255)
   reset_expires      DateTime?  @db.Timestamp(6)
+  google_id          String?    @unique @db.VarChar(255)
   stores             Store[]
   themes             Theme[]
 

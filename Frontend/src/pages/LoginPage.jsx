@@ -6,6 +6,7 @@ import { z } from 'zod';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
+import GoogleAuthButton from '../components/common/GoogleAuthButton';
 import authService from '../services/authService';
 import useAuthStore from '../store/authStore';
 import './Auth.css';
@@ -97,6 +98,8 @@ const LoginPage = () => {
                     <div className="demo-login-divider">
                         <span>OR</span>
                     </div>
+
+                    <GoogleAuthButton role="customer" className="mb-3" />
 
                     <div className="demo-login-section">
                         <Button

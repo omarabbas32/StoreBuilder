@@ -13,6 +13,7 @@ const reviewModel = require('../models/review.model');
 const reviewHelpfulVoteModel = require('../models/reviewHelpfulVote.model');
 const themeModel = require('../models/theme.model');
 const componentModel = require('../models/component.model');
+const customerModel = require('../models/customer.model');
 
 // Import Services
 const CartService = require('../services/cart.service');
@@ -31,6 +32,7 @@ const OnboardingService = require('../services/onboarding.service');
 const PaymentService = require('../services/payment.service');
 const UploadService = require('../services/upload.service');
 const WebhookService = require('../services/webhook.service');
+const GoogleOAuthService = require('../services/google-oauth.service');
 
 // Import Controllers
 const CartController = require('../controllers/cart.controller');
@@ -45,6 +47,7 @@ const ComponentController = require('../controllers/component.controller');
 const OnboardingController = require('../controllers/onboarding.controller');
 const MediaController = require('../controllers/media.controller');
 const WebhookController = require('../controllers/webhook.controller');
+const GoogleOAuthController = require('../controllers/google-oauth.controller');
 const NotificationService = require('../services/notification.service');
 const NotificationController = require('../controllers/notification.controller');
 
@@ -56,6 +59,7 @@ const aiService = new AIService();
 // Services
 const webhookService = new WebhookService({ prisma });
 const notificationService = new NotificationService({ prisma });
+const googleOAuthService = new GoogleOAuthService({ userModel, storeModel, emailService });
 const cartService = new CartService({ cartModel, cartItemModel, productModel, prisma });
 const productService = new ProductService({ productModel, storeModel, categoryModel, prisma, webhookService, notificationService });
 const orderService = new OrderService({ orderModel, orderItemModel, productModel, cartModel, cartItemModel, storeModel, customerModel, prisma, webhookService, notificationService });
@@ -76,6 +80,7 @@ const productController = new ProductController(productService);
 const orderController = new OrderController(orderService);
 const storeController = new StoreController(storeService);
 const authController = new AuthController(authService);
+const googleOAuthController = new GoogleOAuthController(googleOAuthService);
 const categoryController = new CategoryController(categoryService);
 const reviewController = new ReviewController(reviewService);
 const themeController = new ThemeController(themeService);
@@ -88,9 +93,9 @@ const container = {
     cartService, productService, orderService, storeService, authService, categoryService,
     reviewService, themeService, componentService, emailService,
     uploadService, aiService, paymentService, analyticsService, onboardingService, webhookService,
-    notificationService,
+    notificationService, googleOAuthService,
     cartController, productController, orderController, storeController, authController,
-    categoryController, reviewController, themeController,
+    googleOAuthController, categoryController, reviewController, themeController,
     componentController, onboardingController, mediaController, webhookController,
     notificationController,
     cartModel, cartItemModel, productModel, userModel, orderModel, orderItemModel,

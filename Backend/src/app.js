@@ -1,4 +1,5 @@
-const { port } = require('./config/env');
+const { port, nodeEnv } = require('./config/env');
+console.log('[DEBUG_APP] Starting app.js');
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -13,6 +14,8 @@ const { v4: uuidv4 } = require('uuid');
 // Create Express app
 const app = express();
 
+console.log(`[DEBUG] Environment: ${nodeEnv}`);
+
 // Request ID Middleware
 app.use((req, res, next) => {
     const requestId = req.headers['x-request-id'] || uuidv4();
@@ -21,8 +24,11 @@ app.use((req, res, next) => {
     next();
 });
 
+const isDevelopment = nodeEnv === 'development';
+
 // Middleware
 app.use(helmet({
+    contentSecurityPolicy: isDevelopment ? false : undefined,
     crossOriginResourcePolicy: { policy: "cross-origin" },
     crossOriginEmbedderPolicy: false
 }));

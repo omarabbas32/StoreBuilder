@@ -6,6 +6,7 @@ import { z } from 'zod';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
+import GoogleAuthButton from '../components/common/GoogleAuthButton';
 import authService from '../services/authService';
 import './Auth.css';
 
@@ -128,6 +129,12 @@ const RegisterPage = () => {
                     <Button type="submit" fullWidth loading={isLoading}>
                         Create Account
                     </Button>
+
+                    <div style={{ textAlign: 'center', margin: '20px 0', position: 'relative' }}>
+                        <span style={{ backgroundColor: 'white', padding: '0 10px' }}>OR</span>
+                    </div>
+
+                    <GoogleAuthButton role="customer" />
 
                     <p className="auth-footer">
                         Already have an account?{' '}

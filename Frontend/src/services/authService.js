@@ -43,6 +43,22 @@ const authService = {
     async registerCustomer(userData) {
         return await apiClient.post('/auth/register', { ...userData, role: 'customer' });
     },
+
+    // Google OAuth - Get auth URL for customer
+    async getGoogleAuthUrlCustomer() {
+        return await apiClient.get('/auth/google/url/customer');
+    },
+
+    // Google OAuth - Get auth URL for owner
+    async getGoogleAuthUrlOwner() {
+        return await apiClient.get('/auth/google/url/owner');
+    },
+
+    // Google OAuth - Handle callback (this happens server-side)
+    async handleGoogleCallback() {
+        // Backend handles this, frontend doesn't need to call it
+        // It happens when user is redirected back from Google
+    },
 };
 
 export default authService;

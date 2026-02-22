@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import GoogleOAuthCallback from './pages/GoogleOAuthCallback';
 import CustomerLoginPage from './pages/CustomerLoginPage';
 import CustomerRegisterPage from './pages/CustomerRegisterPage';
 import AdminLayout from './components/layout/AdminLayout';
@@ -85,6 +86,7 @@ function App() {
                     path="/register"
                     element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
                 />
+                <Route path="/auth/callback" element={<GoogleOAuthCallback />} />
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
                 {/* Customer auth routes */}
