@@ -22,8 +22,9 @@ class OrderItemModel {
         });
     }
 
-    async create(data) {
-        return prisma.orderItem.create({
+    async create(data, tx = null) {
+        const client = tx || prisma;
+        return client.orderItem.create({
             data
         });
     }

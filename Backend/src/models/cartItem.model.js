@@ -61,8 +61,9 @@ class CartItemModel {
         });
     }
 
-    async deleteMany(where) {
-        return prisma.cartItem.deleteMany({
+    async deleteMany(where, tx = null) {
+        const client = tx || prisma;
+        return client.cartItem.deleteMany({
             where
         });
     }

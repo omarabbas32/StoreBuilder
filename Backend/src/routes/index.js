@@ -36,7 +36,8 @@ router.use('/auth', authRouter);
 
 // Stores
 const storeRouter = express.Router();
-storeRouter.get('/', auth, (req, res, next) => container.storeController.getMyStores(req, res, next));
+storeRouter.get('/', (req, res, next) => container.storeController.getAll(req, res, next));
+storeRouter.get('/me', auth, (req, res, next) => container.storeController.getMyStores(req, res, next));
 storeRouter.get('/:id', (req, res, next) => container.storeController.getById(req, res, next));
 storeRouter.get('/slug/:slug', (req, res, next) => container.storeController.getBySlug(req, res, next));
 storeRouter.post('/', auth, validate(createStoreSchema), (req, res, next) => container.storeController.create(req, res, next));

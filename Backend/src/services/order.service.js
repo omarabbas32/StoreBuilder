@@ -95,7 +95,7 @@ class OrderService {
                 customer_phone: customerPhone,
                 shipping_address: shippingAddress,
                 notes: notes || null
-            });
+            }, tx);
 
             // Create order items and decrement stock
             for (const item of cartItems) {
@@ -105,13 +105,13 @@ class OrderService {
                     product_id: item.product_id,
                     quantity: item.quantity,
                     unit_price: item.product.price
-                });
+                }, tx);
 
                 // Decrement stock
                 const newStock = item.product.stock - item.quantity;
                 await this.productModel.update(item.product_id, {
                     stock: newStock
-                });
+                }, tx);
 
                 // Trigger stock.low webhook if stock becomes low
                 if (this.webhookService && newStock <= 5) {
@@ -135,7 +135,7 @@ class OrderService {
             }
 
             // Clear cart
-            await this.cartItemModel.deleteMany({ cart_id: cart.id });
+            await this.cartItemModel.deleteMany({ cart_id: cart.id }, tx);
 
             return newOrder;
         });
@@ -243,7 +243,7 @@ class OrderService {
                 customer_phone: customerPhone,
                 shipping_address: shippingAddress,
                 notes: notes || null
-            });
+            }, tx);
 
             // Create order items and decrement stock
             for (const item of validatedItems) {
@@ -252,12 +252,12 @@ class OrderService {
                     product_id: item.product.id,
                     quantity: item.quantity,
                     unit_price: item.price
-                });
+                }, tx);
 
                 const newStock = item.product.stock - item.quantity;
                 await this.productModel.update(item.product.id, {
                     stock: newStock
-                });
+                }, tx);
 
                 // Trigger stock.low webhook if stock becomes low
                 if (this.webhookService && newStock <= 5) {
@@ -277,6 +277,17 @@ class OrderService {
                         message: `Product "${item.product.name}" is low on stock (${newStock} remains).`,
                         metadata: { productId: item.product.id, currentStock: newStock }
                     }).catch(err => console.error('[Notification] Failed to create low stock notification:', err.message));
+                }
+            }
+
+            // Clear cart if user is authenticated or has a session
+            if (customerId || dto.sessionId) {
+                const cart = customerId
+                    ? await this.cartModel.findByCustomerId(realCustomerId, storeId)
+                    : await this.cartModel.findBySessionId(dto.sessionId, storeId);
+
+                if (cart) {
+                    await this.cartItemModel.deleteMany({ cart_id: cart.id }, tx);
                 }
             }
 

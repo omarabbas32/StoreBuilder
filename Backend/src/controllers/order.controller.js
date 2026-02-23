@@ -1,4 +1,5 @@
 const { asyncHandler } = require('../middleware/errorHandler');
+const AppError = require('../utils/AppError');
 const CreateOrderRequestDTO = require('../dtos/order/CreateOrderRequest.dto');
 const OrderResponseDTO = require('../dtos/order/OrderResponse.dto');
 
@@ -8,6 +9,9 @@ class OrderController {
     }
 
     createFromCart = asyncHandler(async (req, res) => {
+        if (req.user && req.user.role !== 'customer') {
+            throw new AppError('Only customers can place orders. Please logout and login as a customer.', 403);
+        }
         const dto = CreateOrderRequestDTO.fromRequest(req.validatedData);
         const customerId = req.user?.id;
         const sessionId = req.sessionID || req.session?.id;
@@ -17,6 +21,9 @@ class OrderController {
     });
 
     create = asyncHandler(async (req, res) => {
+        if (req.user && req.user.role !== 'customer') {
+            throw new AppError('Only customers can place orders. Please logout and login as a customer.', 403);
+        }
         const dto = CreateOrderRequestDTO.fromRequest(req.validatedData);
         if (req.user?.id) {
             dto.customerId = req.user.id;

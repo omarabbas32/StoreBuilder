@@ -26,8 +26,9 @@ class ProductModel {
         });
     }
 
-    async update(id, data) {
-        return prisma.product.update({
+    async update(id, data, tx = null) {
+        const client = tx || prisma;
+        return client.product.update({
             where: { id },
             data
         });
