@@ -7,3 +7,4 @@ dist/
 build/
 
 /src/generated/prisma
+/debug_scripts/
