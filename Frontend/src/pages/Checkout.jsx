@@ -21,6 +21,7 @@ const Checkout = () => {
     const [orderComplete, setOrderComplete] = useState(false);
     const [orderResult, setOrderResult] = useState(null);
     const [store, setStore] = useState(null);
+    const { user, clearAuth } = useAuthStore();
 
     const [formData, setFormData] = useState({
         customer_name: '',
@@ -71,6 +72,19 @@ const Checkout = () => {
 
         if (items.length === 0) {
             alert('Your cart is empty');
+            return;
+        }
+
+        // Role check: Only customers or guests can place orders
+        if (user && user.role !== 'customer') {
+            alert('Only customers can place orders. Please logout and login as a customer.');
+
+            // Log out the non-customer user so they can sign in as a customer
+            clearAuth();
+
+            // Redirect to login - prioritizing the store-specific login if available
+            const loginPath = store?.slug ? `/${store.slug}/login` : '/login';
+            navigate(loginPath);
             return;
         }
 

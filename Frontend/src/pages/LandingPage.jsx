@@ -1,10 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, ShoppingBag, Palette, Zap } from 'lucide-react';
+import { Store, ShoppingBag, Palette, Zap, ArrowRight, ExternalLink } from 'lucide-react';
 import Button from '../components/ui/Button';
+import storeService from '../services/storeService';
 import './LandingPage.css';
 
 const LandingPage = () => {
+    const [stores, setStores] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStores = async () => {
+            try {
+                const result = await storeService.getAllStores({ limit: 5 });
+                if (result.success) {
+                    setStores(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch stores:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStores();
+    }, []);
+
     return (
         <div className="landing-page">
             {/* Navigation Bar */}
@@ -43,6 +63,46 @@ const LandingPage = () => {
                             </Link>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            {/* Featured Stores Section */}
+            <section className="featured-stores">
+                <div className="container">
+                    <div className="section-header">
+                        <h2 className="section-title">Discover Stores Built with Storely</h2>
+                        <p className="section-subtitle">Join hundreds of successful entrepreneurs who have launched their dreams.</p>
+                    </div>
+
+                    {loading ? (
+                        <div className="loading-state">
+                            <div className="loader"></div>
+                        </div>
+                    ) : (
+                        <div className="stores-grid">
+                            {stores.length > 0 ? (
+                                stores.map((store) => (
+                                    <Link to={`/s/${store.slug}`} key={store.id} className="store-card">
+                                        <div className="store-card-content">
+                                            <div className="store-icon">
+                                                <Store size={24} />
+                                            </div>
+                                            <h3>{store.name}</h3>
+                                            <p>{store.tagline || store.description || 'A beautiful online store.'}</p>
+                                            <div className="store-card-footer">
+                                                <span>Visit Store</span>
+                                                <ArrowRight size={16} />
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))
+                            ) : (
+                                <div className="no-stores">
+                                    <p>Be the first to create a store today!</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
 

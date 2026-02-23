@@ -14,7 +14,7 @@ const normalizeStore = (store) => {
 
 const storeService = {
   async getMyStores() {
-    const result = await apiClient.get("/stores");
+    const result = await apiClient.get("/stores/me");
     if (result.success && Array.isArray(result.data)) {
       return { ...result, data: result.data.map(normalizeStore) };
     }
@@ -130,6 +130,14 @@ const storeService = {
 
   async aiChat(messages, provider = 'gemini') {
     return await apiClient.post('/onboarding/assistant-chat', { messages, provider });
+  },
+
+  async getAllStores(params = {}) {
+    const result = await apiClient.get("/stores", { params });
+    if (result.success && Array.isArray(result.data)) {
+      return { ...result, data: result.data.map(normalizeStore) };
+    }
+    return result;
   },
 };
 
